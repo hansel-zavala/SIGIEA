@@ -1,0 +1,25 @@
+# Versión del formato de archivo de Docker Compose
+version: '3.8'
+
+# Definición de los servicios (contenedores) que nuestra aplicación necesita
+services:
+  # Nombre que le damos a nuestro servicio de base de datos
+  db:
+    # Le decimos que use la imagen oficial de MySQL, versión 8.0
+    image: mysql:8.0
+    # Siempre reiniciar el contenedor si se detiene (a menos que lo detengamos a propósito)
+    restart: unless-stopped
+    # Mapeo de puertos: Conecta el puerto 3306 del contenedor al puerto 3306 de tu computadora
+    ports:
+      - "3306:3306"
+    # Variables de entorno para la configuración inicial de MySQL
+    environment:
+      MYSQL_ROOT_PASSWORD: 'password' # ❗ Usa una contraseña segura en un proyecto real
+      MYSQL_DATABASE: 'sigiea_db'
+    # Volumen para que los datos de la base de datos no se borren
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+# Docker gestionará este volumen para persistir los datos
+volumes:
+  mysql_data:

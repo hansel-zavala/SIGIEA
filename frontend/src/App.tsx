@@ -8,6 +8,8 @@ import AddStudentPage from './pages/AddStudentPage';
 import DashboardPage from './pages/DashboardPage';
 import StudentsPage from './pages/StudentsPage';
 import EditStudentPage from './pages/EditStudentPage';
+import AssignPlanPage from './pages/AssignPlanPage';
+import StudentDetailPage from './pages/StudentDetailPage';
 
 function App() {
   const { user } = useAuth();
@@ -24,6 +26,8 @@ function App() {
             {/* Aquí añadiremos más rutas en el futuro */}
             <Route path="students/new" element={<AddStudentPage />} />
             <Route path="students/edit/:id" element={<EditStudentPage />} />
+            <Route path="students/:id" element={<StudentDetailPage />} />
+            <Route path="students/:id/assign-plan" element={<AssignPlanPage />} />
           </Route>
         ) : (
           // Si NO ha iniciado sesión, solo permite el acceso a /login

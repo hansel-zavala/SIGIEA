@@ -14,7 +14,8 @@ model User {
   email     String   @unique
   password  String
   name      String?
-  role      String   @default("admin") // Valores: "admin", "terapeuta", "padre"
+  role      String   @default("admin")
+  assignedPlans TherapyPlan[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -23,9 +24,27 @@ model Student {
   id            Int      @id @default(autoincrement())
   fullName      String
   dateOfBirth   DateTime
-  diagnosis     String?  // El '?' lo hace opcional
-  supportLevel  String?  // Ej: "Nivel 1", "Nivel 2", "Nivel 3"
+  diagnosis     String?  
+  supportLevel  String?  
   isActive      Boolean  @default(true)
+  therapyPlans  TherapyPlan[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   }
+
+  model TherapyPlan {
+  id           Int      @id @default(autoincrement())
+  dayOfWeek    String   // Ej: "Lunes", "Martes", etc.
+  time         String   // Ej: "10:00"
+  therapyTitle String
+
+  // --- Aquí ocurre la magia de las relaciones ---
+  student      Student  @relation(fields: [studentId], references: [id])
+  studentId    Int      // Clave foránea para Student
+
+  therapist    User     @relation(fields: [therapistId], references: [id])
+  therapistId  Int      // Clave foránea para User
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

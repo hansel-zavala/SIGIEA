@@ -73,13 +73,19 @@ function StudentsPage() {
           {students.map((student) => (
             <tr key={student.id}>
               <td>{student.id}</td>
-              <td>{student.fullName}</td>
+              <td><Link to={`/students/${student.id}`}>
+        {student.fullName}
+    </Link></td>
               <td>{student.diagnosis}</td>
               <td>{student.supportLevel}</td>
               <td>
-    {/* ✅ AÑADIMOS EL BOTÓN/ENLACE AQUÍ */}
+                
     <Link to={`/students/edit/${student.id}`}>
         <button style={{ marginRight: '5px' }}>Editar</button>
+    </Link>
+    {/* ✅ AÑADIMOS EL NUEVO BOTÓN/ENLACE AQUÍ */}
+    <Link to={`/students/${student.id}/assign-plan`}>
+        <button style={{ marginRight: '5px' }}>Asignar Plan</button>
     </Link>
     <button onClick={() => handleDelete(student.id)}>Eliminar</button>
 </td>

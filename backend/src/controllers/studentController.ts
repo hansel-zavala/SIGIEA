@@ -41,12 +41,15 @@ export const getAllStudents = async (req: Request, res: Response) => {
 export const getStudentById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    // ✅ CAMBIO: Buscamos un estudiante que coincida con el ID Y que esté activo
     const student = await prisma.student.findFirst({
       where: { 
         id: parseInt(id),
         isActive: true 
       },
+      // ✅ CAMBIO: Le decimos a Prisma que incluya los planes relacionados
+      include: {
+        therapyPlans: true,
+      }
     });
 
     if (!student) {

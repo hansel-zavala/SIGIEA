@@ -1,6 +1,7 @@
 // backend/src/routes/studentRoutes.ts
 
 import express from 'express';
+import therapyPlanRoutes from './therapyPlanRoutes.js';
 import {
     createStudent, 
     getAllStudents, 
@@ -16,5 +17,6 @@ router.get('/', protect, getAllStudents);
 router.get('/:id', protect, getStudentById);
 router.put('/:id', protect, updateStudent);
 router.delete('/:id', protect, deleteStudent);
+router.use('/:studentId/plans', therapyPlanRoutes);
 
 export default router;

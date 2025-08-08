@@ -42,20 +42,18 @@ export const getStudentById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const student = await prisma.student.findFirst({
-      where: { 
-        id: parseInt(id),
-        isActive: true 
-      },
-      // ✅ CAMBIO: Le decimos a Prisma que incluya los planes relacionados
+      where: { id: parseInt(id), isActive: true },
+      // ✅ CAMBIO: Filtramos para incluir solo los planes activos
       include: {
-        therapyPlans: true,
+        therapyPlans: {
+          where: { isActive: true }
+        },
       }
     });
-
+    // ... (el resto de la función se queda igual) ...
     if (!student) {
       return res.status(404).json({ error: 'Estudiante no encontrado o inactivo.' });
     }
-
     res.json(student);
   } catch (error) {
     res.status(500).json({ error: 'No se pudo obtener el estudiante.' });

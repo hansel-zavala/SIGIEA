@@ -36,3 +36,45 @@ export const createTherapyPlan = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'No se pudo crear el plan terapéutico.' });
   }
 };
+
+export const deleteTherapyPlan = async (req: Request, res: Response) => {
+  try {
+    const { planId } = req.params;
+
+    const updatedPlan = await prisma.therapyPlan.update({
+      where: { id: parseInt(planId) },
+      data: { isActive: false }, // Cambiamos el estado en lugar de borrar
+    });
+
+    res.json({ message: 'Plan terapéutico desactivado correctamente.', plan: updatedPlan });
+  } catch (error) {
+    console.error("Error al desactivar el plan terapéutico:", error);
+    res.status(500).json({ error: 'No se pudo desactivar el plan.' });
+  }
+};
+
+export const updateTherapyPlan = async (req: Request, res: Response) => {
+  try {
+    const { planId } = req.params;
+    const dataToUpdate = req.body;
+
+    const updatedPlan = await prisma.therapyPlan.update({
+      where: { id: parseInt(planId) },
+      data: dataToUpdate,
+    });
+
+    res.json(updatedPlan);
+  } catch (error) {
+    console.error("Error al actualizar el plan:", error);
+    res.status(500).json({ error: 'No se pudo actualizar el plan.' });
+  }
+};
+
+export const getTherapyPlanById = async (req: Request, res: Response) => {
+  try {
+    const { planId } = req.params;
+    const plan = await prisma.therapyPlan.findUnique({ where: { id: parseInt(planId) } });
+    if (!plan) return res.status(404).json({ error: 'Plan no encontrado.' });
+    res.json(plan);
+  } catch (error) { res.status(500).json({ error: 'Error al obtener el plan.' }); }
+};

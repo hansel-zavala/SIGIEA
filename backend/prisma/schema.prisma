@@ -37,6 +37,7 @@ model Student {
   dayOfWeek    String   // Ej: "Lunes", "Martes", etc.
   time         String   // Ej: "10:00"
   therapyTitle String
+  isActive     Boolean  @default(true)
 
   // --- Aquí ocurre la magia de las relaciones ---
   student      Student  @relation(fields: [studentId], references: [id])

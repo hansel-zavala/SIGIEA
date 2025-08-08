@@ -5,11 +5,10 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+// --- CREATE (Sin cambios) ---
 export const createStudent = async (req: Request, res: Response) => {
   try {
     const { fullName, dateOfBirth, diagnosis, supportLevel } = req.body;
-
-    // Prisma espera un objeto Date, pero JSON envía un string. Hacemos la conversión.
     const student = await prisma.student.create({
       data: {
         fullName,
@@ -18,7 +17,6 @@ export const createStudent = async (req: Request, res: Response) => {
         supportLevel,
       },
     });
-
     res.status(201).json(student);
   } catch (error) {
     console.error("Error al crear el estudiante:", error);
@@ -26,27 +24,33 @@ export const createStudent = async (req: Request, res: Response) => {
   }
 };
 
-// --- NUEVA FUNCIÓN: OBTENER TODOS LOS ESTUDIANTES ---
+// --- GET ALL (Modificado) ---
 export const getAllStudents = async (req: Request, res: Response) => {
   try {
-    const students = await prisma.student.findMany();
+    // ✅ CAMBIO: Añadimos un 'where' para traer solo los activos
+    const students = await prisma.student.findMany({
+      where: { isActive: true },
+    });
     res.json(students);
   } catch (error) {
     res.status(500).json({ error: 'No se pudieron obtener los estudiantes.' });
   }
 };
 
-
-// --- NUEVA FUNCIÓN: OBTENER UN ESTUDIANTE POR SU ID ---
+// --- GET BY ID (Modificado) ---
 export const getStudentById = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params; // Obtenemos el ID de los parámetros de la URL
-    const student = await prisma.student.findUnique({
-      where: { id: parseInt(id) }, // Convertimos el ID de string a número
+    const { id } = req.params;
+    // ✅ CAMBIO: Buscamos un estudiante que coincida con el ID Y que esté activo
+    const student = await prisma.student.findFirst({
+      where: { 
+        id: parseInt(id),
+        isActive: true 
+      },
     });
 
     if (!student) {
-      return res.status(404).json({ error: 'Estudiante no encontrado.' });
+      return res.status(404).json({ error: 'Estudiante no encontrado o inactivo.' });
     }
 
     res.json(student);
@@ -55,39 +59,47 @@ export const getStudentById = async (req: Request, res: Response) => {
   }
 };
 
-// --- NUEVA FUNCIÓN: ACTUALIZAR UN ESTUDIANTE ---
+// --- UPDATE (Modificado) ---
 export const updateStudent = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const dataToUpdate = req.body;
 
-    // Si la fecha de nacimiento se envía, la convertimos a objeto Date
     if (dataToUpdate.dateOfBirth) {
       dataToUpdate.dateOfBirth = new Date(dataToUpdate.dateOfBirth);
     }
-
-    const student = await prisma.student.update({
-      where: { id: parseInt(id) },
+    // ✅ CAMBIO: Usamos 'updateMany' para asegurar que solo actualizamos si está activo
+    const result = await prisma.student.updateMany({
+      where: { 
+        id: parseInt(id),
+        isActive: true,
+      },
       data: dataToUpdate,
     });
 
-    res.json(student);
+    if (result.count === 0) {
+      return res.status(404).json({ error: 'Estudiante no encontrado o inactivo.' });
+    }
+    // Devolvemos el registro actualizado
+    const updatedStudent = await prisma.student.findUnique({ where: { id: parseInt(id) }});
+    res.json(updatedStudent);
   } catch (error) {
     res.status(500).json({ error: 'No se pudo actualizar el estudiante.' });
   }
 };
 
-
-// --- NUEVA FUNCIÓN: ELIMINAR UN ESTUDIANTE ---
+// --- DELETE (Refactorizado a SOFT DELETE) ---
 export const deleteStudent = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    await prisma.student.delete({
+    // ✅ CAMBIO: Ya no usamos 'delete'. Usamos 'update' para cambiar el estado.
+    const student = await prisma.student.update({
       where: { id: parseInt(id) },
+      data: { isActive: false },
     });
 
-    res.json({ message: 'Estudiante eliminado correctamente.' });
+    res.json({ message: 'Estudiante desactivado correctamente.', student });
   } catch (error) {
-    res.status(500).json({ error: 'No se pudo eliminar el estudiante.' });
+    res.status(500).json({ error: 'No se pudo desactivar el estudiante.' });
   }
 };

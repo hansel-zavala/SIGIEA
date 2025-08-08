@@ -25,6 +25,7 @@ model Student {
   dateOfBirth   DateTime
   diagnosis     String?  // El '?' lo hace opcional
   supportLevel  String?  // Ej: "Nivel 1", "Nivel 2", "Nivel 3"
+  isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   }

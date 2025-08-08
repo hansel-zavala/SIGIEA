@@ -1,20 +1,39 @@
 // frontend/src/App.tsx
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
 
+import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
-import DashboardPage from './pages/DashboardPage'; // Importamos el Dashboard
-import { useAuth } from './context/AuthContext';   // Importamos el hook de autenticación
+import AddStudentPage from './pages/AddStudentPage';
+import DashboardPage from './pages/DashboardPage';
+import StudentsPage from './pages/StudentsPage';
+import EditStudentPage from './pages/EditStudentPage';
 
 function App() {
-  // Obtenemos la información del usuario desde nuestro contexto global
   const { user } = useAuth();
 
   return (
-    <div>
-      {/* Aquí está la magia: */}
-      {/* Si 'user' existe (no es nulo), muestra el Dashboard. */}
-      {/* Si no, muestra la página de Login. */}
-      {user ? <DashboardPage /> : <LoginPage />}
-    </div>
+    <BrowserRouter>
+      <Routes>
+        {/* Si el usuario ha iniciado sesión... */}
+        {user ? (
+          // ...renderiza el Layout principal, y dentro de él, las páginas anidadas
+          <Route path="/" element={<Layout />}>
+            <Route index element={<DashboardPage />} />
+            <Route path="students" element={<StudentsPage />} />
+            {/* Aquí añadiremos más rutas en el futuro */}
+            <Route path="students/new" element={<AddStudentPage />} />
+            <Route path="students/edit/:id" element={<EditStudentPage />} />
+          </Route>
+        ) : (
+          // Si NO ha iniciado sesión, solo permite el acceso a /login
+          <Route path="/login" element={<LoginPage />} />
+        )}
+
+        {/* Si se intenta acceder a cualquier otra ruta, redirige */}
+        <Route path="*" element={<Navigate to={user ? '/' : '/login'} />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

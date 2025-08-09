@@ -74,7 +74,7 @@ function StudentDetailPage() {
           <tbody>
             {student.therapyPlans.map((plan: any) => (
               <tr key={plan.id}>
-                <td>{plan.therapyTitle}</td>
+                <td>{plan.leccion.title}</td>
                 <td>{plan.dayOfWeek}</td>
                 <td>{plan.time}</td>
                 <td>

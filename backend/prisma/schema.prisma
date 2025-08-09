@@ -16,6 +16,7 @@ model User {
   name      String?
   role      String   @default("admin")
   assignedPlans TherapyPlan[]
+  createdLecciones Leccion[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -36,8 +37,10 @@ model Student {
   id           Int      @id @default(autoincrement())
   dayOfWeek    String   // Ej: "Lunes", "Martes", etc.
   time         String   // Ej: "10:00"
-  therapyTitle String
   isActive     Boolean  @default(true)
+
+  leccion   Leccion  @relation(fields: [leccionId], references: [id])
+  leccionId Int
 
   // --- Aquí ocurre la magia de las relaciones ---
   student      Student  @relation(fields: [studentId], references: [id])
@@ -48,4 +51,24 @@ model Student {
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-}
+  }
+
+model Leccion {
+  id           Int      @id @default(autoincrement())
+  title        String
+  objective    String
+  description  String?
+  category     String?
+  keySkill     String?
+  isActive     Boolean  @default(true)
+  
+  // Relación: Quién creó esta lección
+  createdBy    User     @relation(fields: [createdById], references: [id])
+  createdById  Int
+
+  // Relación: Qué planes terapéuticos usan esta lección
+  therapyPlans TherapyPlan[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  }

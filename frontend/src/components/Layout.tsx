@@ -1,24 +1,57 @@
 // frontend/src/components/Layout.tsx
-import { Link, Outlet } from 'react-router-dom';
+import { Outlet, NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import styles from './Layout.module.css'; // ¡Importamos nuestros estilos!
 
 function Layout() {
   const { user, logout } = useAuth();
 
+  const modules = [
+    { name: 'Dashboard', to: '/' },
+    { name: 'Estudiantes', to: '/students' },
+    // Puedes añadir futuros módulos aquí
+  ];
+
   return (
-    <div>
-      <nav style={{ padding: '1rem', background: '#f0f0f0', borderBottom: '1px solid #ccc' }}>
-        <Link to="/" style={{ marginRight: '1rem' }}>Dashboard</Link>
-        <Link to="/students">Estudiantes</Link>
-        <span style={{ float: 'right' }}>
-          Hola, {user?.role} | <button onClick={logout} style={{ marginLeft: '1rem' }}>Cerrar Sesión</button>
-        </span>
-      </nav>
-      <hr />
-      <main style={{ padding: '1rem' }}>
-        {/* El componente <Outlet> renderizará aquí la página activa (Dashboard o Estudiantes) */}
-        <Outlet />
-      </main>
+    <div className={styles.wrapper}>
+      <header className={styles.header}>
+        <div className={styles.headerContent}>
+          <div className={styles.headerLeft}>
+            <h1>SIGIEA</h1>
+          </div>
+          <div className={styles.headerRight}>
+            <span>{user?.role}</span>
+            <button onClick={logout}>Cerrar Sesión</button>
+          </div>
+        </div>
+      </header>
+
+      <div className={styles.container}>
+        <aside className={styles.sidebar}>
+          <nav>
+            <ul>
+              {modules.map((module) => (
+                <li key={module.name}>
+                  <NavLink 
+                    to={module.to}
+                    className={({ isActive }) => 
+                      `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`
+                    }
+                  >
+                    <span>{module.name}</span>
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </aside>
+
+        <main className={styles.mainContent}>
+          <div className={styles.mainContentInner}>
+            <Outlet />
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

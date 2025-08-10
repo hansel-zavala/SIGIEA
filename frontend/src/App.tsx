@@ -11,6 +11,9 @@ import EditStudentPage from './pages/EditStudentPage';
 import AssignPlanPage from './pages/AssignPlanPage';
 import StudentDetailPage from './pages/StudentDetailPage';
 import EditPlanPage from './pages/EditPlanPage';
+import LeccionesPage from './pages/LeccionesPage';
+import AddLeccionPage from './pages/AddLeccionPage';
+import EditLeccionPage from './pages/EditLeccionPage';
 
 function App() {
   const { user } = useAuth();
@@ -30,6 +33,9 @@ function App() {
             <Route path="students/:id" element={<StudentDetailPage />} />
             <Route path="students/:id/assign-plan" element={<AssignPlanPage />} />
             <Route path="/students/:studentId/plans/:planId/edit" element={<EditPlanPage />} />
+            <Route path="lecciones/" element={<LeccionesPage />} />
+            <Route path="lecciones/new" element={<AddLeccionPage />} />
+            <Route path="lecciones/edit/:id" element={<EditLeccionPage />} />
           </Route>
         ) : (
           // Si NO ha iniciado sesión, solo permite el acceso a /login

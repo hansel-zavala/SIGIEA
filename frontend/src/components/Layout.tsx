@@ -9,6 +9,7 @@ function Layout() {
   const modules = [
     { name: 'Dashboard', to: '/' },
     { name: 'Estudiantes', to: '/students' },
+    { name: 'Lecciones', to: '/lecciones' },
     // Puedes añadir futuros módulos aquí
   ];
 

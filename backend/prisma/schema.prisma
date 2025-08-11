@@ -17,6 +17,7 @@ model User {
   role      String   @default("admin")
   assignedPlans TherapyPlan[]
   createdLecciones Leccion[]
+  sessionLogs      SessionLog[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -29,6 +30,7 @@ model Student {
   supportLevel  String?  
   isActive      Boolean  @default(true)
   therapyPlans  TherapyPlan[]
+  sessionLogs   SessionLog[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   }
@@ -48,7 +50,7 @@ model Student {
 
   therapist    User     @relation(fields: [therapistId], references: [id])
   therapistId  Int      // Clave foránea para User
-
+  sessionLogs  SessionLog[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   }
@@ -72,3 +74,31 @@ model Leccion {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   }
+
+  model SessionLog {
+  id           Int      @id @default(autoincrement())
+  date         DateTime // La fecha específica en que ocurrió la sesión
+  attendance   AttendanceStatus // Usa nuestro nuevo tipo Enum
+  notes        String   @db.Text // @db.Text permite textos muy largos
+  behavior     String?  @db.Text
+  progress     String?  @db.Text
+
+  // --- Relaciones ---
+  student      Student     @relation(fields: [studentId], references: [id])
+  studentId    Int
+
+  therapist    User        @relation(fields: [therapistId], references: [id])
+  therapistId  Int
+
+  therapyPlan  TherapyPlan @relation(fields: [therapyPlanId], references: [id])
+  therapyPlanId Int
+
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+  enum AttendanceStatus {
+  Presente
+  Ausente
+  Justificado
+}

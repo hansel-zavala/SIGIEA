@@ -14,6 +14,8 @@ import EditPlanPage from './pages/EditPlanPage';
 import LeccionesPage from './pages/LeccionesPage';
 import AddLeccionPage from './pages/AddLeccionPage';
 import EditLeccionPage from './pages/EditLeccionPage';
+import LogSessionPage from './pages/LogSessionPage';
+
 
 function App() {
   const { user } = useAuth();
@@ -36,6 +38,7 @@ function App() {
             <Route path="lecciones/" element={<LeccionesPage />} />
             <Route path="lecciones/new" element={<AddLeccionPage />} />
             <Route path="lecciones/edit/:id" element={<EditLeccionPage />} />
+            <Route path="/students/:studentId/plans/:planId/log-session" element={<LogSessionPage />} />
           </Route>
         ) : (
           // Si NO ha iniciado sesión, solo permite el acceso a /login

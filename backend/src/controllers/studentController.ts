@@ -54,6 +54,7 @@ export const getStudentById = async (req: Request, res: Response) => {
             leccion: true, // ¡Incluye la lección para cada plan!
           }
         },
+        sessionLogs: true,
       }
     });
 

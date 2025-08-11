@@ -1,54 +1,19 @@
 // frontend/src/components/Layout.tsx
-import { Outlet, NavLink } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import styles from './Layout.module.css'; // ¡Importamos nuestros estilos!
+import { useState } from 'react';
+import { Outlet } from 'react-router-dom';
+import Header from './Header/Header';
+import Sidebar from './Sidebar/Sidebar';
 
 function Layout() {
-  const { user, logout } = useAuth();
-
-  const modules = [
-    { name: 'Dashboard', to: '/' },
-    { name: 'Estudiantes', to: '/students' },
-    { name: 'Lecciones', to: '/lecciones' },
-    // Puedes añadir futuros módulos aquí
-  ];
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
-    <div className={styles.wrapper}>
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <div className={styles.headerLeft}>
-            <h1>SIGIEA</h1>
-          </div>
-          <div className={styles.headerRight}>
-            <span>{user?.role}</span>
-            <button onClick={logout}>Cerrar Sesión</button>
-          </div>
-        </div>
-      </header>
-
-      <div className={styles.container}>
-        <aside className={styles.sidebar}>
-          <nav>
-            <ul>
-              {modules.map((module) => (
-                <li key={module.name}>
-                  <NavLink 
-                    to={module.to}
-                    className={({ isActive }) => 
-                      `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`
-                    }
-                  >
-                    <span>{module.name}</span>
-                  </NavLink>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        </aside>
-
-        <main className={styles.mainContent}>
-          <div className={styles.mainContentInner}>
+    <div className="flex h-screen bg-gray-100">
+      <Sidebar isOpen={sidebarOpen} />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header isOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+          <div className="bg-white rounded-lg shadow-md p-6 h-full">
             <Outlet />
           </div>
         </main>

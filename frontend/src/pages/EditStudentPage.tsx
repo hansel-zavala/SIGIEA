@@ -1,7 +1,11 @@
 // frontend/src/pages/EditStudentPage.tsx
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import studentService from '../services/studentService';
+
+// ✅ Importamos nuestros nuevos componentes
+import Label from '../components/ui/Label';
+import Input from '../components/ui/Input';
 
 function EditStudentPage() {
   const [formData, setFormData] = useState({
@@ -12,15 +16,12 @@ function EditStudentPage() {
   });
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>(); // Hook para leer el ':id' de la URL
+  const { id } = useParams<{ id: string }>();
 
   useEffect(() => {
-    // Cargar los datos del estudiante cuando la página carga
-    const fetchStudentData = async () => {
-      if (id) {
-        try {
-          const student = await studentService.getStudentById(parseInt(id, 10));
-          // Formateamos la fecha para el input type="date"
+    if (id) {
+      studentService.getStudentById(parseInt(id, 10))
+        .then(student => {
           const formattedDate = new Date(student.dateOfBirth).toISOString().split('T')[0];
           setFormData({
             fullName: student.fullName,
@@ -28,17 +29,13 @@ function EditStudentPage() {
             diagnosis: student.diagnosis || '',
             supportLevel: student.supportLevel || '',
           });
-        } catch (err) {
-          setError('No se pudieron cargar los datos del estudiante.');
-        }
-      }
-    };
-    fetchStudentData();
+        })
+        .catch(() => setError('No se pudieron cargar los datos del estudiante.'));
+    }
   }, [id]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -47,7 +44,7 @@ function EditStudentPage() {
     if (id) {
       try {
         await studentService.updateStudent(parseInt(id, 10), formData);
-        navigate('/students'); // Redirigir a la lista
+        navigate('/students');
       } catch (err) {
         setError('No se pudo actualizar el estudiante.');
       }
@@ -55,27 +52,35 @@ function EditStudentPage() {
   };
 
   return (
-    <div>
-      <h2>Editar Estudiante</h2>
-      <form onSubmit={handleSubmit}>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+    <div className="max-w-2xl mx-auto">
+      <h2 className="text-2xl font-bold mb-6">Editar Estudiante</h2>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {error && <p className="text-red-500">{error}</p>}
+
+        {/* ✅ Usamos nuestros nuevos componentes */}
         <div>
-          <label>Nombre Completo:</label>
-          <input name="fullName" type="text" value={formData.fullName} onChange={handleChange} required />
+          <Label htmlFor="fullName">Nombre Completo:</Label>
+          <Input name="fullName" id="fullName" type="text" value={formData.fullName} onChange={handleChange} required />
         </div>
         <div>
-          <label>Fecha de Nacimiento:</label>
-          <input name="dateOfBirth" type="date" value={formData.dateOfBirth} onChange={handleChange} required />
+          <Label htmlFor="dateOfBirth">Fecha de Nacimiento:</Label>
+          <Input name="dateOfBirth" id="dateOfBirth" type="date" value={formData.dateOfBirth} onChange={handleChange} required />
         </div>
         <div>
-          <label>Diagnóstico:</label>
-          <input name="diagnosis" type="text" value={formData.diagnosis} onChange={handleChange} />
+          <Label htmlFor="diagnosis">Diagnóstico:</Label>
+          <Input name="diagnosis" id="diagnosis" type="text" value={formData.diagnosis} onChange={handleChange} />
         </div>
         <div>
-          <label>Nivel de Apoyo:</label>
-          <input name="supportLevel" type="text" value={formData.supportLevel} onChange={handleChange} />
+          <Label htmlFor="supportLevel">Nivel de Apoyo:</Label>
+          <Input name="supportLevel" id="supportLevel" type="text" value={formData.supportLevel} onChange={handleChange} />
         </div>
-        <button type="submit">Guardar Cambios</button>
+
+        <button
+          type="submit"
+          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        >
+          Guardar Cambios
+        </button>
       </form>
     </div>
   );

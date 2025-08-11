@@ -1,9 +1,11 @@
 // frontend/src/pages/LeccionesPage.tsx
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import leccionService from '../services/leccionService';
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import leccionService from "../services/leccionService";
+import Badge from "../components/ui/Badge"; // Importamos el Badge
+import { FaBook } from "react-icons/fa"; // Importamos un ícono
+import { FaPencilAlt, FaTrash } from "react-icons/fa";
 
-// Definimos un tipo para la lección
 interface Leccion {
   id: number;
   title: string;
@@ -14,7 +16,7 @@ interface Leccion {
 function LeccionesPage() {
   const [lecciones, setLecciones] = useState<Leccion[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchLecciones = async () => {
@@ -22,64 +24,99 @@ function LeccionesPage() {
         const data = await leccionService.getAllLecciones();
         setLecciones(data);
       } catch (err) {
-        setError('No se pudo cargar la lista de lecciones.');
+        setError("No se pudo cargar la lista de lecciones.");
       } finally {
         setLoading(false);
       }
     };
-
     fetchLecciones();
   }, []);
 
   const handleDelete = async (leccionId: number) => {
-        if (window.confirm('¿Seguro que quieres desactivar esta lección?')) {
-            try {
-                await leccionService.deleteLeccion(leccionId);
-                setLecciones(lecciones.filter(l => l.id !== leccionId));
-            } catch (err) {
-                setError('No se pudo desactivar la lección.');
-            }
-        }
-    };
+    if (window.confirm("¿Seguro que quieres desactivar esta lección?")) {
+      try {
+        await leccionService.deleteLeccion(leccionId);
+        setLecciones(lecciones.filter((l) => l.id !== leccionId));
+      } catch (err) {
+        setError("No se pudo desactivar la lección.");
+      }
+    }
+  };
 
   if (loading) return <p>Cargando lecciones...</p>;
-  if (error) return <p style={{ color: 'red' }}>{error}</p>;
+  if (error) return <p className="text-red-500">{error}</p>;
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2>Catálogo de Lecciones</h2>
-        {/* Más adelante, este botón nos llevará a un formulario para crear una nueva lección */}
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-800">
+          Catálogo de Lecciones
+        </h2>
         <Link to="/lecciones/new">
-          <button>Crear Nueva Lección</button>
+          <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            Crear Nueva Lección
+          </button>
         </Link>
       </div>
-      <br />
-      <table border={1} style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th>Título</th>
-            <th>Objetivo</th>
-            <th>Categoría</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {lecciones.map((leccion) => (
-            <tr key={leccion.id}>
-              <td>{leccion.title}</td>
-              <td>{leccion.objective}</td>
-              <td>{leccion.category}</td>
-              <td>
-                    <Link to={`/lecciones/edit/${leccion.id}`}>
-                      <button style={{ marginRight: '5px' }}>Editar</button>
-                    </Link>
-                    <button onClick={() => handleDelete(leccion.id)}>Eliminar</button>
+
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <div className="max-w-full overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="border-b border-gray-100 bg-gray-50">
+              <tr>
+                <th className="px-5 py-3 font-medium text-gray-500 text-left">
+                  Título
+                </th>
+                <th className="px-5 py-3 font-medium text-gray-500 text-left">
+                  Categoría
+                </th>
+                <th className="px-5 py-3 font-medium text-gray-500 text-left">
+                  Acciones
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {lecciones.map((leccion) => (
+                <tr key={leccion.id}>
+                  <td className="px-5 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="text-blue-600">
+                        <FaBook size={30} />
+                      </div>
+                      <div>
+                        <span className="block font-medium text-gray-800">
+                          {leccion.title}
+                        </span>
+                        <span className="block text-gray-500 text-xs">
+                          {leccion.objective}
+                        </span>
+                      </div>
+                    </div>
                   </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                  <td className="px-5 py-4">
+                    <Badge color={leccion.category ? "info" : "warning"}>
+                      {leccion.category || "Sin categoría"}
+                    </Badge>
+                  </td>
+                  <td className="px-5 py-4">
+                    <div className="flex gap-4">
+                      <Link to={`/lecciones/edit/${leccion.id}`} title="Editar">
+                        <FaPencilAlt className="text-blue-500 hover:text-blue-700 cursor-pointer" />
+                      </Link>
+                      <button
+                        onClick={() => handleDelete(leccion.id)}
+                        title="Desactivar"
+                      >
+                        <FaTrash className="text-red-500 hover:text-red-700 cursor-pointer" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

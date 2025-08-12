@@ -23,17 +23,54 @@ model User {
 }
 
 model Student {
-  id            Int      @id @default(autoincrement())
-  fullName      String
-  dateOfBirth   DateTime
-  diagnosis     String?  
-  supportLevel  String?  
-  isActive      Boolean  @default(true)
-  therapyPlans  TherapyPlan[]
-  sessionLogs   SessionLog[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  }
+  id                      Int      @id @default(autoincrement())
+  fullName                String
+  dateOfBirth             DateTime
+  isActive                Boolean  @default(true)
+  lugarNacimiento         String?
+  direccion               String?
+  institucionProcedencia  String?
+  recibioEvaluacion       Boolean  @default(false)
+  resultadoEvaluacionUrl  String?  
+  anoIngreso              DateTime @default(now()) @map("año_ingreso")
+  zona                    Zona?
+  jornada                 Jornada?
+  genero                  Genero?
+  institutoIncluido       String?
+  partidaNacimientoUrl    String? 
+  atencionGrupal          Boolean @default(false)
+  atencionIndividual      Boolean @default(false)
+  atencionPrevocacional   Boolean @default(false)
+  atencionDistancia       Boolean @default(false)
+  terapiaDomicilio        Boolean @default(false)
+  atencionVocacional      Boolean @default(false)
+  inclusionEscolar        Boolean @default(false)
+  educacionFisica         Boolean @default(false)
+  usaMedicamentos         Boolean @default(false)
+  cualesMedicamentos      String?
+  esAlergico              Boolean @default(false)
+  cualesAlergias          String?
+  therapyPlans            TherapyPlan[]
+  sessionLogs             SessionLog[]
+  guardians               Guardian[]
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+}
+
+model Guardian {
+  id                      Int         @id @default(autoincrement())
+  fullName                String
+  direccionEmergencia     String?
+  numeroIdentidad         String      @unique
+  telefono                String
+  parentesco              Parentesco
+  copiaIdentidadUrl       String?     // Para el archivo
+  observaciones           String?     @db.Text
+  student                 Student     @relation(fields: [studentId], references: [id])
+  studentId               Int
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
+}
 
   model TherapyPlan {
   id           Int      @id @default(autoincrement())
@@ -101,4 +138,26 @@ model Leccion {
   Presente
   Ausente
   Justificado
+}
+
+enum Zona {
+  Rural
+  Urbano
+}
+
+enum Jornada {
+  Matutina
+  Vespertina
+}
+
+enum Genero {
+  Masculino
+  Femenino
+}
+
+enum Parentesco {
+  Padre
+  Madre
+  Tutor_Legal
+  Otro
 }

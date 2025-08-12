@@ -4,7 +4,7 @@ import { useAuth } from './context/AuthContext';
 
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
-import AddStudentPage from './pages/AddStudentPage';
+import MatriculaPage from './pages/MatriculaPage';
 import DashboardPage from './pages/DashboardPage';
 import StudentsPage from './pages/StudentsPage';
 import EditStudentPage from './pages/EditStudentPage';
@@ -29,8 +29,7 @@ function App() {
           <Route path="/" element={<Layout />}>
             <Route index element={<DashboardPage />} />
             <Route path="students" element={<StudentsPage />} />
-            {/* Aquí añadiremos más rutas en el futuro */}
-            <Route path="students/new" element={<AddStudentPage />} />
+            <Route path="matricula" element={<MatriculaPage />} />
             <Route path="students/edit/:id" element={<EditStudentPage />} />
             <Route path="students/:id" element={<StudentDetailPage />} />
             <Route path="students/:id/assign-plan" element={<AssignPlanPage />} />

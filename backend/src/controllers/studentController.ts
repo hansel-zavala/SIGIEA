@@ -8,19 +8,34 @@ const prisma = new PrismaClient();
 // --- CREATE (Sin cambios) ---
 export const createStudent = async (req: Request, res: Response) => {
   try {
-    const { fullName, dateOfBirth, diagnosis, supportLevel } = req.body;
-    const student = await prisma.student.create({
+    // 1. Separamos la lista de guardianes del resto de los datos del estudiante
+    const { guardians, ...studentData } = req.body;
+
+    // 2. Convertimos la fecha de nacimiento a un objeto Date si viene como texto
+    if (studentData.dateOfBirth) {
+      studentData.dateOfBirth = new Date(studentData.dateOfBirth);
+    }
+
+    const newStudent = await prisma.student.create({
       data: {
-        fullName,
-        dateOfBirth: new Date(dateOfBirth),
-        diagnosis,
-        supportLevel,
+        // 3. Pasamos todos los datos del estudiante
+        ...studentData,
+        // 4. Aquí ocurre la magia: le decimos a Prisma que cree
+        // los guardianes que vienen en la lista y los conecte a este estudiante.
+        guardians: {
+          create: guardians, // 'guardians' debe ser un array de objetos
+        },
+      },
+      // 5. Incluimos los guardianes creados en la respuesta para confirmar
+      include: {
+        guardians: true,
       },
     });
-    res.status(201).json(student);
+
+    res.status(201).json(newStudent);
   } catch (error) {
-    console.error("Error al crear el estudiante:", error);
-    res.status(500).json({ error: 'No se pudo crear el estudiante.' });
+    console.error("Error al crear la matrícula:", error);
+    res.status(500).json({ error: 'No se pudo procesar la matrícula.' });
   }
 };
 
@@ -74,25 +89,31 @@ export const updateStudent = async (req: Request, res: Response) => {
     const { id } = req.params;
     const dataToUpdate = req.body;
 
+    // ✅ LA SOLUCIÓN:
+    // Antes de actualizar, eliminamos los campos de relación que el frontend
+    // nos envía pero que no deben ser parte de la actualización del estudiante.
+    delete dataToUpdate.id; // Nunca se debe intentar actualizar el ID
+    delete dataToUpdate.therapyPlans;
+    delete dataToUpdate.sessionLogs;
+    delete dataToUpdate.guardians; // Por si lo añadimos en el futuro
+
+    // Convertimos la fecha si viene en el cuerpo de la petición
     if (dataToUpdate.dateOfBirth) {
       dataToUpdate.dateOfBirth = new Date(dataToUpdate.dateOfBirth);
     }
-    // ✅ CAMBIO: Usamos 'updateMany' para asegurar que solo actualizamos si está activo
-    const result = await prisma.student.updateMany({
+
+    // Usamos 'update' que encuentra y actualiza en un solo paso y devuelve el registro
+    const updatedStudent = await prisma.student.update({
       where: { 
         id: parseInt(id),
-        isActive: true,
+        isActive: true, // Aseguramos que solo se pueda editar un estudiante activo
       },
       data: dataToUpdate,
     });
 
-    if (result.count === 0) {
-      return res.status(404).json({ error: 'Estudiante no encontrado o inactivo.' });
-    }
-    // Devolvemos el registro actualizado
-    const updatedStudent = await prisma.student.findUnique({ where: { id: parseInt(id) }});
     res.json(updatedStudent);
   } catch (error) {
+    console.error("Error al actualizar estudiante:", error);
     res.status(500).json({ error: 'No se pudo actualizar el estudiante.' });
   }
 };

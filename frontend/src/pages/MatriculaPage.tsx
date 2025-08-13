@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import studentService from "../services/studentService";
+import uploadService from "../services/uploadService";
 import Label from "../components/ui/Label";
 import Input from "../components/ui/Input";
 import Select from "../components/ui/Select";
@@ -63,6 +64,9 @@ function MatriculaPage() {
   ]);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const [partidaFile, setPartidaFile] = useState<File | null>(null);
+  const [evaluacionFile, setEvaluacionFile] = useState<File | null>(null);
+  const [guardianIdFiles, setGuardianIdFiles] = useState<(File | null)[]>([]);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -106,18 +110,56 @@ function MatriculaPage() {
     setGuardians(newGuardians);
   };
 
-  // ✅ ASEGÚRATE DE QUE ESTA FUNCIÓN ESTÉ PRESENTE
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    try {
-      const fullMatriculaData = { ...studentData, guardians };
-      await studentService.createStudent(fullMatriculaData);
-      navigate("/students");
-    } catch (err) {
-      setError("No se pudo matricular al estudiante. Revisa los datos.");
+  const handleGuardianFileChange = (
+    index: number,
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    if (e.target.files && e.target.files[0]) {
+      const newFiles = [...guardianIdFiles];
+      newFiles[index] = e.target.files[0];
+      setGuardianIdFiles(newFiles);
     }
   };
+
+  // ✅ ASEGÚRATE DE QUE ESTA FUNCIÓN ESTÉ PRESENTE
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError('');
+  try {
+    let partidaUrl = '';
+    if (partidaFile) {
+      const response = await uploadService.uploadFile(partidaFile);
+      partidaUrl = response.filePath;
+    }
+
+    let evaluacionUrl = '';
+    if (evaluacionFile && studentData.recibioEvaluacion) {
+      const response = await uploadService.uploadFile(evaluacionFile);
+      evaluacionUrl = response.filePath;
+    }
+
+    const guardianIdUrls = await Promise.all(
+      guardianIdFiles.map(file => file ? uploadService.uploadFile(file) : Promise.resolve(null))
+    );
+
+    const finalGuardians = guardians.map((guardian, index) => ({
+      ...guardian,
+      copiaIdentidadUrl: guardianIdUrls[index]?.filePath || '',
+    }));
+
+    const fullMatriculaData = {
+      ...studentData,
+      partidaNacimientoUrl: partidaUrl,
+      resultadoEvaluacionUrl: evaluacionUrl,
+      guardians: finalGuardians,
+    };
+
+    await studentService.createStudent(fullMatriculaData);
+    navigate('/students');
+  } catch (err) {
+    setError('Ocurrió un error al matricular. Revisa los datos y los archivos.');
+  }
+};
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -247,6 +289,9 @@ function MatriculaPage() {
                 id="partidaNacimientoUrl"
                 name="partidaNacimientoUrl"
                 type="file"
+                onChange={(e) =>
+                  setPartidaFile(e.target.files ? e.target.files?.[0] : null)
+                }
                 className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
               />
             </div>
@@ -270,6 +315,11 @@ function MatriculaPage() {
                   id="resultadoEvaluacionUrl"
                   name="resultadoEvaluacionUrl"
                   type="file"
+                  onChange={(e) =>
+                    setEvaluacionFile(
+                      e.target.files ? e.target.files?.[0] : null
+                    )
+                  }
                   className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
               </div>
@@ -429,6 +479,18 @@ function MatriculaPage() {
                     type="text"
                     value={guardian.direccionEmergencia}
                     onChange={(e) => handleGuardianChange(index, e)}
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <Label htmlFor={`g-copiaIdentidadUrl-${index}`}>
+                    Subir Copia de Identidad
+                  </Label>
+                  <Input
+                    id={`g-copiaIdentidadUrl-${index}`}
+                    name="copiaIdentidadUrl"
+                    type="file"
+                    onChange={(e) => handleGuardianFileChange(index, e)}
+                    className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                   />
                 </div>
               </div>

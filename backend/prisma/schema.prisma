@@ -66,6 +66,7 @@ model Guardian {
   parentesco              Parentesco
   copiaIdentidadUrl       String?     // Para el archivo
   observaciones           String?     @db.Text
+  isActive                Boolean     @default(true)
   student                 Student     @relation(fields: [studentId], references: [id])
   studentId               Int
   createdAt               DateTime    @default(now())

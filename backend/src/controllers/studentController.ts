@@ -16,6 +16,10 @@ export const createStudent = async (req: Request, res: Response) => {
       studentData.dateOfBirth = new Date(studentData.dateOfBirth);
     }
 
+    if (studentData.anoIngreso) {
+      studentData.anoIngreso = new Date(studentData.anoIngreso);
+    }
+
     const newStudent = await prisma.student.create({
       data: {
         // 3. Pasamos todos los datos del estudiante

@@ -19,6 +19,22 @@ export const getAllGuardians = async (req: Request, res: Response) => {
   }
 };
 
+export const getGuardianById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const guardian = await prisma.guardian.findFirst({
+      where: { id: parseInt(id), isActive: true },
+    });
+    if (!guardian) {
+      return res.status(404).json({ error: 'Guardián no encontrado.' });
+    }
+    res.json(guardian);
+  } catch (error) {
+    res.status(500).json({ error: 'No se pudo obtener el guardián.' });
+  }
+};
+
+
 export const updateGuardian = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;

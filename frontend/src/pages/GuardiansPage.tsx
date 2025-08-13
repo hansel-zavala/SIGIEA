@@ -1,7 +1,9 @@
 // frontend/src/pages/GuardiansPage.tsx
+
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import guardianService from '../services/guardianService';
-import { FaUserCircle } from 'react-icons/fa';
+import { FaUserCircle, FaPencilAlt, FaTrash } from 'react-icons/fa';
 
 interface Guardian {
   id: number;
@@ -32,6 +34,17 @@ function GuardiansPage() {
 
     fetchGuardians();
   }, []);
+
+  const handleDelete = async (guardianId: number) => {
+    if (window.confirm('¿Seguro que quieres desactivar a este guardián?')) {
+      try {
+        await guardianService.deleteGuardian(guardianId);
+        setGuardians(guardians.filter(g => g.id !== guardianId));
+      } catch (err) {
+        setError('No se pudo desactivar al guardián.');
+      }
+    }
+  };
 
   if (loading) return <p>Cargando guardianes...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
@@ -68,7 +81,16 @@ function GuardiansPage() {
                 <td className="px-5 py-4 text-gray-500 font-medium">{guardian.student.fullName}</td>
                 <td className="px-5 py-4 text-gray-500">{guardian.telefono}</td>
                 <td className="px-5 py-4">
-                  {/* Aquí irán los botones de Editar y Desactivar */}
+                  <td className="px-5 py-4">
+                  <div className="flex gap-4">
+                    <Link to={`/guardians/edit/${guardian.id}`} title="Editar Guardián">
+                      <FaPencilAlt className="text-blue-500 hover:text-blue-700" />
+                    </Link>
+                    <button onClick={() => handleDelete(guardian.id)} title="Desactivar Guardián">
+                      <FaTrash className="text-red-500 hover:text-red-700" />
+                    </button>
+                  </div>
+                </td>
                 </td>
               </tr>
             ))}

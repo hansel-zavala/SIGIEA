@@ -16,6 +16,7 @@ import AddLeccionPage from './pages/AddLeccionPage';
 import EditLeccionPage from './pages/EditLeccionPage';
 import LogSessionPage from './pages/LogSessionPage';
 import GuardiansPage from './pages/GuardiansPage';
+import EditGuardianPage from './pages/EditGuardianPage';
 
 
 function App() {
@@ -39,6 +40,7 @@ function App() {
             <Route path="lecciones/new" element={<AddLeccionPage />} />
             <Route path="lecciones/edit/:id" element={<EditLeccionPage />} />
             <Route path="guardians" element={<GuardiansPage />} />
+            <Route path="guardians/edit/:id" element={<EditGuardianPage />} />
             <Route path="/students/:studentId/plans/:planId/log-session" element={<LogSessionPage />} />
           </Route>
         ) : (

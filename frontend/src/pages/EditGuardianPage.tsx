@@ -46,7 +46,7 @@ function EditGuardianPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-8xl mx-auto">
       <h2 className="text-2xl font-bold mb-6">Editar Guardián</h2>
       <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow-md">
         {error && <p className="text-red-500">{error}</p>}

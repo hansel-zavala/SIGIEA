@@ -7,7 +7,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
 
 function Input({ className, ...props }: InputProps) {
   // Aquí definimos las clases de estilo base de Tailwind que todos nuestros inputs tendrán.
-  const baseStyles = "block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 sm:text-sm";
+  const baseStyles = "block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 sm:text-lg";
 
   return (
     <input

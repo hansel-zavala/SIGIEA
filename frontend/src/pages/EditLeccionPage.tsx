@@ -44,7 +44,8 @@ function EditLeccionPage() {
   const textAreaStyles = "block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 sm:text-sm";
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="bg-white rounded-lg shadow-md p-6 h-full">
+    <div className="max-w-8xl mx-auto">
       <h2 className="text-2xl font-bold mb-6">Editar Lección</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && <p className="text-red-500">{error}</p>}
@@ -75,6 +76,7 @@ function EditLeccionPage() {
           Guardar Cambios
         </button>
       </form>
+    </div>
     </div>
   );
 }

@@ -68,7 +68,7 @@ function StudentsPage() {
       {/* Contenedor principal de la tabla, adaptado de tu código */}
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div className="max-w-full overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-lg">
             {/* Cabecera de la tabla */}
             <thead className="border-b border-gray-100 bg-gray-50">
               <tr>

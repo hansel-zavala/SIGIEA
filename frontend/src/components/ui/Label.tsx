@@ -10,7 +10,7 @@ function Label({ children, ...props }: LabelProps) {
   // Aplicamos las clases de Tailwind para darle el estilo deseado
   return (
     <label
-      className="block text-sm font-medium text-gray-700 mb-1"
+      className="block text-lg font-medium text-gray-700 mb-1"
       {...props}
     >
       {children}

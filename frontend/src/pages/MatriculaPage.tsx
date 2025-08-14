@@ -123,46 +123,50 @@ function MatriculaPage() {
 
   // ✅ ASEGÚRATE DE QUE ESTA FUNCIÓN ESTÉ PRESENTE
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setError('');
-  try {
-    let partidaUrl = '';
-    if (partidaFile) {
-      const response = await uploadService.uploadFile(partidaFile);
-      partidaUrl = response.filePath;
+    e.preventDefault();
+    setError("");
+    try {
+      let partidaUrl = "";
+      if (partidaFile) {
+        const response = await uploadService.uploadFile(partidaFile);
+        partidaUrl = response.filePath;
+      }
+
+      let evaluacionUrl = "";
+      if (evaluacionFile && studentData.recibioEvaluacion) {
+        const response = await uploadService.uploadFile(evaluacionFile);
+        evaluacionUrl = response.filePath;
+      }
+
+      const guardianIdUrls = await Promise.all(
+        guardianIdFiles.map((file) =>
+          file ? uploadService.uploadFile(file) : Promise.resolve(null)
+        )
+      );
+
+      const finalGuardians = guardians.map((guardian, index) => ({
+        ...guardian,
+        copiaIdentidadUrl: guardianIdUrls[index]?.filePath || "",
+      }));
+
+      const fullMatriculaData = {
+        ...studentData,
+        partidaNacimientoUrl: partidaUrl,
+        resultadoEvaluacionUrl: evaluacionUrl,
+        guardians: finalGuardians,
+      };
+
+      await studentService.createStudent(fullMatriculaData);
+      navigate("/students");
+    } catch (err) {
+      setError(
+        "Ocurrió un error al matricular. Revisa los datos y los archivos."
+      );
     }
-
-    let evaluacionUrl = '';
-    if (evaluacionFile && studentData.recibioEvaluacion) {
-      const response = await uploadService.uploadFile(evaluacionFile);
-      evaluacionUrl = response.filePath;
-    }
-
-    const guardianIdUrls = await Promise.all(
-      guardianIdFiles.map(file => file ? uploadService.uploadFile(file) : Promise.resolve(null))
-    );
-
-    const finalGuardians = guardians.map((guardian, index) => ({
-      ...guardian,
-      copiaIdentidadUrl: guardianIdUrls[index]?.filePath || '',
-    }));
-
-    const fullMatriculaData = {
-      ...studentData,
-      partidaNacimientoUrl: partidaUrl,
-      resultadoEvaluacionUrl: evaluacionUrl,
-      guardians: finalGuardians,
-    };
-
-    await studentService.createStudent(fullMatriculaData);
-    navigate('/students');
-  } catch (err) {
-    setError('Ocurrió un error al matricular. Revisa los datos y los archivos.');
-  }
-};
+  };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-8xl mx-auto">
       <h2 className="text-3xl font-bold mb-6 text-gray-800">
         Ficha de Matrícula
       </h2>
@@ -271,7 +275,7 @@ function MatriculaPage() {
             </div>
             <div>
               <Label htmlFor="institutoIncluido">
-                Instituto donde está incluido
+                Nombre del instituto u otro centro donde está incluido
               </Label>
               <Input
                 id="institutoIncluido"
@@ -279,6 +283,18 @@ function MatriculaPage() {
                 type="text"
                 value={studentData.institutoIncluido}
                 onChange={handleChange}
+              />
+            </div>
+            <div>
+              <Label htmlFor="anoIngreso">Año de Ingreso a APO-AUTIS</Label>
+              <Input
+                id="anoIngreso"
+                name="anoIngreso"
+                type="date"
+                value={studentData.anoIngreso}
+                readOnly
+                disabled
+                className="bg-gray-100"
               />
             </div>
             <div className="md:col-span-2">

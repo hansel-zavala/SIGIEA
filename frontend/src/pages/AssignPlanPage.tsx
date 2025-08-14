@@ -52,7 +52,8 @@ function AssignPlanPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="bg-white rounded-lg shadow-md p-6 h-full">
+    <div className="max-w-8xl mx-auto">
       <h2 className="text-2xl font-bold mb-6">Asignar Plan Terapéutico</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && <p className="text-red-500">{error}</p>}
@@ -104,6 +105,7 @@ function AssignPlanPage() {
           Asignar Plan
         </button>
       </form>
+    </div>
     </div>
   );
 }

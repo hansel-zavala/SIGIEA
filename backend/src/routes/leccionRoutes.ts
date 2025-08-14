@@ -1,14 +1,18 @@
 // backend/src/routes/leccionRoutes.ts
 import express from 'express';
-import { createLeccion, 
-    deleteLeccion, 
-    getAllLecciones, 
+import { 
+    createLeccion, 
+    getAllLecciones,
     getLeccionById,
-    updateLeccion} from '../controllers/leccionController.js';
+    updateLeccion,
+    deleteLeccion
+} from '../controllers/leccionController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
+// Solo un usuario logueado puede acceder a estas rutas.
+// Podríamos añadir isAdmin si quisiéramos que solo los admins las gestionen.
 router.post('/', protect, createLeccion);
 router.get('/', protect, getAllLecciones);
 router.get('/:id', protect, getLeccionById);

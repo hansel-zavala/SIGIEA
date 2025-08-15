@@ -1,6 +1,6 @@
 // frontend/src/components/Sidebar/Sidebar.tsx
 import { NavLink } from 'react-router-dom';
-import { FaHome, FaUserGraduate, FaBook, FaFileSignature, FaUsers   } from 'react-icons/fa';
+import { FaHome, FaUserGraduate, FaBook, FaFileSignature, FaUsers, FaUserMd   } from 'react-icons/fa';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -12,6 +12,7 @@ function Sidebar({ isOpen }: SidebarProps) {
     { name: 'Matrícula', to: '/matricula', icon: <FaFileSignature size={20} /> },
     { name: 'Estudiantes', to: '/students', icon: <FaUserGraduate size={20} /> },
     { name: 'Padres', to: '/guardians', icon: <FaUsers size={20} /> },
+    { name: 'Terapeutas', to: '/therapists', icon: <FaUserMd size={20} /> },
     { name: 'Lecciones', to: '/lecciones', icon: <FaBook size={20} /> },
   ];
 

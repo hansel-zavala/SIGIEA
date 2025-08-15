@@ -17,7 +17,9 @@ import EditLeccionPage from './pages/EditLeccionPage';
 import LogSessionPage from './pages/LogSessionPage';
 import GuardiansPage from './pages/GuardiansPage';
 import EditGuardianPage from './pages/EditGuardianPage';
-
+import TherapistsPage from './pages/TherapistsPage';
+import AddTherapistPage from './pages/AddTherapistPage';
+import EditTherapistPage from './pages/EditTherapistPage';
 
 function App() {
   const { user } = useAuth();
@@ -42,6 +44,9 @@ function App() {
             <Route path="guardians" element={<GuardiansPage />} />
             <Route path="guardians/edit/:id" element={<EditGuardianPage />} />
             <Route path="/students/:studentId/plans/:planId/log-session" element={<LogSessionPage />} />
+            <Route path="therapists" element={<TherapistsPage />} />
+            <Route path="therapists/new" element={<AddTherapistPage />} />
+            <Route path="therapists/edit/:id" element={<EditTherapistPage />} />
           </Route>
         ) : (
           // Si NO ha iniciado sesión, solo permite el acceso a /login

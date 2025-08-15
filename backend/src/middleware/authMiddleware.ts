@@ -46,3 +46,11 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
     return res.status(401).json({ error: 'No autorizado, no hay token.' });
   }
 };
+
+export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
+  if (req.user && req.user.role === 'admin') {
+    next(); // Si es admin, permite continuar
+  } else {
+    res.status(403).json({ error: 'Acceso denegado. Se requiere rol de administrador.' });
+  }
+};

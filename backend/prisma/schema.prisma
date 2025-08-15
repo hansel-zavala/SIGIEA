@@ -15,6 +15,8 @@ model User {
   password  String
   name      String?
   role      String   @default("admin")
+  therapistProfile TherapistProfile?
+  guardian         Guardian?
   assignedPlans TherapyPlan[]
   createdLecciones Leccion[]
   sessionLogs      SessionLog[]
@@ -50,6 +52,8 @@ model Student {
   cualesMedicamentos      String?
   esAlergico              Boolean @default(false)
   cualesAlergias          String?
+  therapist               TherapistProfile? @relation(fields: [therapistId], references: [id])
+  therapistId             Int?
   therapyPlans            TherapyPlan[]
   sessionLogs             SessionLog[]
   guardians               Guardian[]
@@ -69,8 +73,35 @@ model Guardian {
   isActive                Boolean     @default(true)
   student                 Student     @relation(fields: [studentId], references: [id])
   studentId               Int
+  user                    User?       @relation(fields: [userId], references: [id])
+  userId                  Int?        @unique
   createdAt               DateTime    @default(now())
   updatedAt               DateTime    @updatedAt
+}
+
+model TherapistProfile {
+  id                Int       @id @default(autoincrement())
+  fullName          String
+  identityNumber    String    @unique @map("numero_identidad")
+  dateOfBirth       DateTime? @map("fecha_nacimiento")
+  gender            Genero?
+  phone             String?
+  email             String    @unique
+  specialty         ProfessionalType @map("tipo_profesional") // Usamos el nuevo Enum
+  hireDate          DateTime? @default(now()) @map("fecha_ingreso")
+  identityCardUrl   String?   @map("copia_identidad_url")
+  resumeUrl         String?   @map("curriculum_url")
+  isActive          Boolean   @default(true)
+
+  // Relación uno a uno con la cuenta de usuario
+  user              User      @relation(fields: [userId], references: [id])
+  userId            Int       @unique
+
+  // Relación: Qué estudiantes tiene asignados este terapeuta
+  assignedStudents  Student[]
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 }
 
   model TherapyPlan {
@@ -96,8 +127,8 @@ model Guardian {
 model Leccion {
   id           Int      @id @default(autoincrement())
   title        String
-  objective    String
-  description  String?
+  objective    String   @db.Text
+  description  String?  @db.Text
   category     String?
   keySkill     String?
   isActive     Boolean  @default(true)
@@ -161,4 +192,10 @@ enum Parentesco {
   Madre
   Tutor_Legal
   Otro
+}
+
+enum ProfessionalType {
+  Psicologo
+  Terapeuta
+  Ambos
 }

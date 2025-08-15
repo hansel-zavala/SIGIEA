@@ -9,6 +9,7 @@ import leccionRoutes from './routes/leccionRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import guardianRoutes from './routes/guardianRoutes.js';
 import therapistRoutes from './routes/therapistRoutes.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
 
 const app = express();
 const PORT = 3001;
@@ -21,6 +22,7 @@ app.use('/api/lecciones', leccionRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/guardians', guardianRoutes);
 app.use('/api/therapists', therapistRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 app.use('/public', express.static('public'));
 
 app.listen(PORT, () => {

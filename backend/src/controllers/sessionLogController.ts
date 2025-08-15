@@ -12,7 +12,6 @@ export const createSessionLog = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'No se pudo identificar al terapeuta.' });
     }
     
-    // Validamos que el estado de asistencia sea uno de los valores permitidos por el Enum
     if (!['Presente', 'Ausente', 'Justificado'].includes(attendance)) {
         return res.status(400).json({ error: 'Valor de asistencia no válido.'});
     }

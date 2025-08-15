@@ -3,28 +3,28 @@ import { Request, Response } from 'express';
 import prisma from '../db.js';
 
 export const createTherapyPlan = async (req: Request, res: Response) => {
-  try {
-    const { studentId } = req.params;
-    const { dayOfWeek, time, leccionId } = req.body;
-    const therapistId = req.user?.id;
+    try {
+        const { studentId } = req.params;
+        const { dayOfWeek, time, leccionId } = req.body;
+        const therapistId = req.user?.id;
 
-    if (!therapistId) {
-      return res.status(401).json({ error: 'No se pudo identificar al terapeuta.' });
+        if (!therapistId) {
+            return res.status(401).json({ error: 'Usuario no autenticado.' });
+        }
+
+        const newPlan = await prisma.therapyPlan.create({
+            data: {
+                dayOfWeek,
+                time,
+                studentId: parseInt(studentId),
+                therapistId,
+                leccionId: parseInt(leccionId),
+            },
+        });
+        res.status(201).json(newPlan);
+    } catch (error) {
+        res.status(500).json({ error: 'No se pudo crear el plan.' });
     }
-
-    const newPlan = await prisma.therapyPlan.create({
-      data: {
-        dayOfWeek,
-        time,
-        studentId: parseInt(studentId),
-        therapistId: therapistId,
-        leccionId: parseInt(leccionId),
-      },
-    });
-    res.status(201).json(newPlan);
-  } catch (error) {
-    res.status(500).json({ error: 'No se pudo crear el plan.' });
-  }
 };
 
 export const getTherapyPlanById = async (req: Request, res: Response) => {

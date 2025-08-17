@@ -189,6 +189,7 @@ function MatriculaPage() {
       <h2 className="text-3xl font-bold mb-6 text-gray-800">
         Ficha de Matrícula
       </h2>
+      {error && <p className="text-red-500">{error}</p>}
       <form
         onSubmit={handleSubmit}
         className="space-y-8 bg-white p-8 rounded-lg shadow-md"

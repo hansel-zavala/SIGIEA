@@ -8,6 +8,9 @@ export const getAllGuardians = async (req: Request, res: Response) => {
     const guardians = await prisma.guardian.findMany({
       where: { isActive: true },
       include: { student: true },
+      orderBy: {
+        createdAt: 'desc', // 'desc' significa descendente (del más nuevo al más viejo)
+      },
     });
     res.json(guardians);
   } catch (error) {

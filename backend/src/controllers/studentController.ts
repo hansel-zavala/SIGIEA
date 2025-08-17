@@ -49,6 +49,16 @@ export const getAllStudents = async (req: Request, res: Response) => {
     // ✅ CAMBIO: Añadimos un 'where' para traer solo los activos
     const students = await prisma.student.findMany({
       where: { isActive: true },
+      orderBy: {
+        createdAt: 'desc', // 'desc' significa descendente (del más nuevo al más viejo)
+      },
+      include: {
+        therapist: {
+          select: {
+            fullName: true
+          }
+        }
+      }
     });
     res.json(students);
   } catch (error) {
@@ -91,34 +101,39 @@ export const getStudentById = async (req: Request, res: Response) => {
 export const updateStudent = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const dataToUpdate = req.body;
+    // 1. Extraemos therapistId del resto de los datos
+    const { therapistId, ...studentData } = req.body;
 
-    // ✅ LA SOLUCIÓN:
-    // Antes de actualizar, eliminamos los campos de relación que el frontend
-    // nos envía pero que no deben ser parte de la actualización del estudiante.
-    delete dataToUpdate.id; // Nunca se debe intentar actualizar el ID
-    delete dataToUpdate.therapyPlans;
-    delete dataToUpdate.sessionLogs;
-    delete dataToUpdate.guardians; // Por si lo añadimos en el futuro
+    // 2. Limpiamos los datos que no se deben actualizar
+    delete studentData.id;
+    delete studentData.guardians;
+    delete studentData.therapyPlans;
+    delete studentData.sessionLogs;
+    delete studentData.therapist;
+    delete studentData.createdAt;
+    delete studentData.updatedAt;
 
-    // Convertimos la fecha si viene en el cuerpo de la petición
-    if (dataToUpdate.dateOfBirth) {
-      dataToUpdate.dateOfBirth = new Date(dataToUpdate.dateOfBirth);
+    // 3. Convertimos las fechas
+    if (studentData.dateOfBirth) {
+      studentData.dateOfBirth = new Date(studentData.dateOfBirth);
+    }
+    if (studentData.anoIngreso) {
+      studentData.anoIngreso = new Date(studentData.anoIngreso);
     }
 
-    // Usamos 'update' que encuentra y actualiza en un solo paso y devuelve el registro
+    // 4. Construimos la operación de actualización
     const updatedStudent = await prisma.student.update({
-      where: { 
-        id: parseInt(id),
-        isActive: true, // Aseguramos que solo se pueda editar un estudiante activo
-      },
-      data: dataToUpdate,
+        where: { id: parseInt(id) },
+        data: {
+            ...studentData,
+            // 5. Usamos la sintaxis 'connect' para actualizar la relación del terapeuta
+            therapist: therapistId ? { connect: { id: parseInt(therapistId) } } : { disconnect: true },
+        },
     });
-
     res.json(updatedStudent);
   } catch (error) {
-    console.error("Error al actualizar estudiante:", error);
-    res.status(500).json({ error: 'No se pudo actualizar el estudiante.' });
+      console.error("Error al actualizar estudiante:", error);
+      res.status(500).json({ error: 'No se pudo actualizar el estudiante.' });
   }
 };
 

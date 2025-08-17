@@ -6,6 +6,7 @@ export interface DashboardStats {
   students: number;
   therapists: number;
   parents: number;
+  lecciones: number;
 }
 
 // Función para pedir las estadísticas a la API

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.js';
 import dashboardService, { type  DashboardStats } from '../services/dashboardService.js';
 import StatCard from '../components/ui/StatCard.js';
-import { FaUserGraduate, FaUserMd, FaUsers } from 'react-icons/fa';
+import { FaUserGraduate, FaUserMd, FaUsers, FaBook} from 'react-icons/fa';
 
 function DashboardPage() {
   const { user } = useAuth();
@@ -45,6 +45,12 @@ function DashboardPage() {
             value={stats.parents} 
             icon={<FaUsers size={24} />}
             color="purple"
+          />
+          <StatCard 
+            title="Lecciones Creadas" 
+            value={stats.lecciones} 
+            icon={<FaBook size={24} />}
+            color="yellow"
           />
         </div>
       ) : (

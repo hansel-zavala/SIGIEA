@@ -1,8 +1,9 @@
 // frontend/src/pages/MatriculaPage.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import studentService from "../services/studentService";
 import uploadService from "../services/uploadService";
+import therapistService, { type TherapistProfile } from '../services/therapistService.js';
 import Label from "../components/ui/Label";
 import Input from "../components/ui/Input";
 import Select from "../components/ui/Select";
@@ -53,6 +54,7 @@ function MatriculaPage() {
     esAlergico: false,
     cualesAlergias: "",
   });
+
   const [guardians, setGuardians] = useState<Guardian[]>([
     {
       fullName: "",
@@ -62,11 +64,25 @@ function MatriculaPage() {
       direccionEmergencia: "",
     },
   ]);
+
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const [partidaFile, setPartidaFile] = useState<File | null>(null);
   const [evaluacionFile, setEvaluacionFile] = useState<File | null>(null);
   const [guardianIdFiles, setGuardianIdFiles] = useState<(File | null)[]>([]);
+  const [therapists, setTherapists] = useState<TherapistProfile[]>([]);
+  const [therapistId, setTherapistId] = useState('');
+
+  useEffect(() => {
+    therapistService.getAllTherapists()
+      .then(data => {
+        setTherapists(data);
+      })
+      .catch(err => {
+        console.error("Error al cargar terapeutas", err);
+        setError("No se pudo cargar la lista de terapeutas.");
+      });
+  }, []);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -154,7 +170,10 @@ function MatriculaPage() {
         partidaNacimientoUrl: partidaUrl,
         resultadoEvaluacionUrl: evaluacionUrl,
         guardians: finalGuardians,
+        therapistId: parseInt(therapistId)
       };
+
+      
 
       await studentService.createStudent(fullMatriculaData);
       navigate("/students");
@@ -425,6 +444,26 @@ function MatriculaPage() {
             )}
           </div>
         </div>
+
+        <div className="border-b pb-6">
+          <h3 className="text-xl font-semibold text-gray-700">Asignación de Terapeuta</h3>
+          <div className="mt-4">
+            <Label htmlFor="therapistId">Nombre del Terapeuta</Label>
+            <Select
+              id="therapistId"
+              name="therapistId"
+              value={therapistId}
+              onChange={(e) => setTherapistId(e.target.value)}
+              required
+              placeholder="-- Selecciona un terapeuta --"
+              options={therapists.map(therapist => ({ 
+                value: String(therapist.id), 
+                label: therapist.fullName 
+              }))}
+            />
+          </div>
+        </div>
+
 
         {/* --- SECCIÓN GUARDIANES --- */}
         <div className="border-b pb-6">

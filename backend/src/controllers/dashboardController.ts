@@ -4,20 +4,23 @@ import prisma from '../db.js';
 
 export const getDashboardStats = async (req: Request, res: Response) => {
   try {
-    // Hacemos todas las consultas a la base de datos en paralelo
-    const [studentCount, therapistCount, guardianCount] = await Promise.all([
+    // ✅ 1. Añadimos 'leccionCount' a las consultas en paralelo
+    const [studentCount, therapistCount, parentCount, leccionCount] = await Promise.all([
       prisma.student.count({ where: { isActive: true } }),
       prisma.therapistProfile.count({ where: { isActive: true } }),
-      // ✅ CORRECCIÓN: Contamos los perfiles de Guardianes, que es lo correcto
       prisma.guardian.count({ where: { isActive: true } }),
+      prisma.leccion.count({ where: { isActive: true } }), // Contamos las lecciones activas
     ]);
 
+    // ✅ 2. Añadimos el nuevo conteo a la respuesta JSON
     res.json({
       students: studentCount,
       therapists: therapistCount,
-      parents: guardianCount, // Devolvemos el conteo de guardianes
+      parents: parentCount,
+      lecciones: leccionCount, // El nuevo dato
     });
   } catch (error) {
+    console.error("Error al obtener las estadísticas del dashboard:", error);
     res.status(500).json({ error: 'No se pudieron obtener las estadísticas.' });
   }
 };

@@ -1,5 +1,5 @@
 // frontend/src/pages/StudentsPage.tsx
-// frontend/src/pages/StudentsPage.tsx
+
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import studentService from "../services/studentService";
@@ -134,8 +134,8 @@ function StudentsPage() {
                         <FaTrash className="text-red-500 hover:text-red-700 cursor-pointer" />
                       </button>
                       <Link
-                        to={`/students/${student.id}/assign-plan`}
-                        title="Asignar Plan Terapéutico"
+                        to={`/students/${student.id}/schedule`}
+                        title="Asignar Horario en Calendario"
                       >
                         <FaCalendarPlus className="text-green-500 hover:text-green-700 cursor-pointer" />
                       </Link>

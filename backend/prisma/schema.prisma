@@ -106,8 +106,9 @@ model TherapistProfile {
 
   model TherapyPlan {
   id           Int      @id @default(autoincrement())
-  dayOfWeek    String   // Ej: "Lunes", "Martes", etc.
-  time         String   // Ej: "10:00"
+  daysOfWeek   Json     // Almacenará los días como un array, ej: ["Lunes", "Miercoles"]
+  startTime    String   // Hora de inicio, ej: "14:00"
+  duration     Int      // Duración en minutos, ej: 45
   isActive     Boolean  @default(true)
 
   leccion   Leccion  @relation(fields: [leccionId], references: [id])

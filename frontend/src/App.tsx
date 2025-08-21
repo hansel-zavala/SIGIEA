@@ -8,7 +8,8 @@ import MatriculaPage from './pages/MatriculaPage';
 import DashboardPage from './pages/DashboardPage';
 import StudentsPage from './pages/StudentsPage';
 import EditStudentPage from './pages/EditStudentPage';
-import AssignPlanPage from './pages/AssignPlanPage';
+//import AssignPlanPage from './pages/AssignPlanPage';
+import ScheduleCalendarPage from './pages/ScheduleCalendarPage';
 import StudentDetailPage from './pages/StudentDetailPage';
 import EditPlanPage from './pages/EditPlanPage';
 import LeccionesPage from './pages/LeccionesPage';
@@ -36,7 +37,7 @@ function App() {
             <Route path="matricula" element={<MatriculaPage />} />
             <Route path="students/edit/:id" element={<EditStudentPage />} />
             <Route path="students/:id" element={<StudentDetailPage />} />
-            <Route path="students/:id/assign-plan" element={<AssignPlanPage />} />
+            <Route path="students/:studentId/schedule" element={<ScheduleCalendarPage />} />
             <Route path="/students/:studentId/plans/:planId/edit" element={<EditPlanPage />} />
             <Route path="lecciones/" element={<LeccionesPage />} />
             <Route path="lecciones/new" element={<AddLeccionPage />} />

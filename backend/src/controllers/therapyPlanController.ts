@@ -2,10 +2,30 @@
 import { Request, Response } from 'express';
 import prisma from '../db.js';
 
+// NUEVA FUNCIÓN: Obtener todos los planes de un estudiante
+export const getTherapyPlansForStudent = async (req: Request, res: Response) => {
+    try {
+        const { studentId } = req.params;
+        const plans = await prisma.therapyPlan.findMany({
+            where: {
+                studentId: parseInt(studentId),
+                isActive: true,
+            },
+            include: {
+                leccion: true, // Incluimos la lección para saber el título
+            },
+        });
+        res.json(plans);
+    } catch (error) {
+        res.status(500).json({ error: 'No se pudieron obtener los planes.' });
+    }
+};
+
 export const createTherapyPlan = async (req: Request, res: Response) => {
     try {
         const { studentId } = req.params;
-        const { dayOfWeek, time, leccionId } = req.body;
+        // ✅ CAMBIO: Obtenemos los nuevos campos del body
+        const { daysOfWeek, startTime, duration, leccionId } = req.body;
         const therapistId = req.user?.id;
 
         if (!therapistId) {
@@ -14,8 +34,9 @@ export const createTherapyPlan = async (req: Request, res: Response) => {
 
         const newPlan = await prisma.therapyPlan.create({
             data: {
-                dayOfWeek,
-                time,
+                daysOfWeek,
+                startTime,
+                duration: parseInt(duration),
                 studentId: parseInt(studentId),
                 therapistId,
                 leccionId: parseInt(leccionId),
@@ -23,6 +44,7 @@ export const createTherapyPlan = async (req: Request, res: Response) => {
         });
         res.status(201).json(newPlan);
     } catch (error) {
+        console.error(error)
         res.status(500).json({ error: 'No se pudo crear el plan.' });
     }
 };
@@ -39,10 +61,16 @@ export const getTherapyPlanById = async (req: Request, res: Response) => {
 export const updateTherapyPlan = async (req: Request, res: Response) => {
     try {
         const { planId } = req.params;
-        const { dayOfWeek, time, leccionId } = req.body;
+        // ✅ CAMBIO: Obtenemos los nuevos campos para la actualización
+        const { daysOfWeek, startTime, duration, leccionId } = req.body;
         const updatedPlan = await prisma.therapyPlan.update({
             where: { id: parseInt(planId) },
-            data: { dayOfWeek, time, leccionId: parseInt(leccionId) },
+            data: { 
+                daysOfWeek, 
+                startTime, 
+                duration: parseInt(duration), 
+                leccionId: parseInt(leccionId) 
+            },
         });
         res.json(updatedPlan);
     } catch (error) { res.status(500).json({ error: 'No se pudo actualizar el plan.' }); }

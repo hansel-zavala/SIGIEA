@@ -75,15 +75,20 @@ export const getStudentById = async (req: Request, res: Response) => {
         id: parseInt(id),
         isActive: true 
       },
-      // ✅ CAMBIO: Añadimos un 'include' dentro del 'include'
+      // ✅ CAMBIO CLAVE AQUÍ:
+      // Cambiamos 'therapyPlans' por 'therapySessions' para que coincida con nuestro nuevo schema.prisma
       include: {
-        therapyPlans: {
-          where: { isActive: true },
+        therapySessions: {
+          where: { 
+            // Filtramos para obtener solo las sesiones futuras o del día de hoy
+            startTime: {
+              gte: new Date()
+            }
+          },
           include: {
-            leccion: true, // ¡Incluye la lección para cada plan!
+            leccion: true, 
           }
         },
-        sessionLogs: true,
       }
     });
 

@@ -10,55 +10,58 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  name      String?
-  role      String   @default("admin")
+  id               Int                @id @default(autoincrement())
+  email            String             @unique
+  password         String
+  name             String?
+  role             String             @default("admin")
   therapistProfile TherapistProfile?
   guardian         Guardian?
-  assignedPlans TherapyPlan[]
   createdLecciones Leccion[]
-  sessionLogs      SessionLog[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  // ✅ CAMBIO: Relación eliminada a SessionLog y TherapyPlan
+
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
 }
 
 model Student {
-  id                      Int      @id @default(autoincrement())
-  fullName                String
-  dateOfBirth             DateTime
-  isActive                Boolean  @default(true)
-  lugarNacimiento         String?
-  direccion               String?
-  institucionProcedencia  String?
-  recibioEvaluacion       Boolean  @default(false)
-  resultadoEvaluacionUrl  String?  
-  anoIngreso              DateTime @default(now()) @map("año_ingreso")
-  zona                    Zona?
-  jornada                 Jornada?
-  genero                  Genero?
-  institutoIncluido       String?
-  partidaNacimientoUrl    String? 
-  atencionGrupal          Boolean @default(false)
-  atencionIndividual      Boolean @default(false)
-  atencionPrevocacional   Boolean @default(false)
-  atencionDistancia       Boolean @default(false)
-  terapiaDomicilio        Boolean @default(false)
-  atencionVocacional      Boolean @default(false)
-  inclusionEscolar        Boolean @default(false)
-  educacionFisica         Boolean @default(false)
-  usaMedicamentos         Boolean @default(false)
-  cualesMedicamentos      String?
-  esAlergico              Boolean @default(false)
-  cualesAlergias          String?
-  therapist               TherapistProfile? @relation(fields: [therapistId], references: [id])
-  therapistId             Int?
-  therapyPlans            TherapyPlan[]
-  sessionLogs             SessionLog[]
-  guardians               Guardian[]
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+  id                     Int       @id @default(autoincrement())
+  fullName               String
+  dateOfBirth            DateTime
+  isActive               Boolean   @default(true)
+  lugarNacimiento        String?
+  direccion              String?
+  institucionProcedencia String?
+  recibioEvaluacion      Boolean   @default(false)
+  resultadoEvaluacionUrl String?
+  anoIngreso             DateTime  @default(now()) @map("año_ingreso")
+  zona                   Zona?
+  jornada                Jornada?
+  genero                 Genero?
+  institutoIncluido      String?
+  partidaNacimientoUrl   String?
+  atencionGrupal         Boolean   @default(false)
+  atencionIndividual     Boolean   @default(false)
+  atencionPrevocacional  Boolean   @default(false)
+  atencionDistancia      Boolean   @default(false)
+  terapiaDomicilio       Boolean   @default(false)
+  atencionVocacional     Boolean   @default(false)
+  inclusionEscolar       Boolean   @default(false)
+  educacionFisica        Boolean   @default(false)
+  usaMedicamentos        Boolean   @default(false)
+  cualesMedicamentos     String?
+  esAlergico             Boolean   @default(false)
+  cualesAlergias         String?
+  
+  therapist              TherapistProfile? @relation(fields: [therapistId], references: [id])
+  therapistId            Int?
+  
+  // ✅ CAMBIO: Apuntamos al nuevo modelo TherapySession
+  therapySessions        TherapySession[]
+  
+  guardians              Guardian[]
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
 }
 
 model Guardian {
@@ -68,7 +71,7 @@ model Guardian {
   numeroIdentidad         String      @unique
   telefono                String
   parentesco              Parentesco
-  copiaIdentidadUrl       String?     // Para el archivo
+  copiaIdentidadUrl       String?
   observaciones           String?     @db.Text
   isActive                Boolean     @default(true)
   student                 Student     @relation(fields: [studentId], references: [id])
@@ -87,43 +90,50 @@ model TherapistProfile {
   gender            Genero?
   phone             String?
   email             String    @unique
-  specialty         ProfessionalType @map("tipo_profesional") // Usamos el nuevo Enum
+  specialty         ProfessionalType @map("tipo_profesional")
   hireDate          DateTime? @default(now()) @map("fecha_ingreso")
   identityCardUrl   String?   @map("copia_identidad_url")
   resumeUrl         String?   @map("curriculum_url")
   isActive          Boolean   @default(true)
 
-  // Relación uno a uno con la cuenta de usuario
+  workStartTime     String    @default("08:00")
+  workEndTime       String    @default("17:00")
+  lunchStartTime    String    @default("12:00")
+  lunchEndTime      String    @default("13:00")
+  workDays          Json      @default("[1,2,3,4,5]")
+
   user              User      @relation(fields: [userId], references: [id])
   userId            Int       @unique
 
-  // Relación: Qué estudiantes tiene asignados este terapeuta
   assignedStudents  Student[]
+  // ✅ CAMBIO: Apuntamos al nuevo modelo TherapySession
+  therapySessions   TherapySession[]
   
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 }
 
-  model TherapyPlan {
-  id           Int      @id @default(autoincrement())
-  daysOfWeek   Json     // Almacenará los días como un array, ej: ["Lunes", "Miercoles"]
-  startTime    String   // Hora de inicio, ej: "14:00"
-  duration     Int      // Duración en minutos, ej: 45
-  isActive     Boolean  @default(true)
+model TherapySession {
+  id          Int      @id @default(autoincrement())
+  startTime   DateTime
+  endTime     DateTime
+  status      SessionStatus @default(Programada)
+  notes       String?  @db.Text
+  behavior    String?  @db.Text
+  progress    String?  @db.Text
+  duration    Int      @default(45)
+  student     Student  @relation(fields: [studentId], references: [id])
+  studentId   Int
+  
+  therapist   TherapistProfile @relation(fields: [therapistId], references: [id])
+  therapistId Int
 
-  leccion   Leccion  @relation(fields: [leccionId], references: [id])
-  leccionId Int
+  leccion     Leccion  @relation(fields: [leccionId], references: [id])
+  leccionId   Int
 
-  // --- Aquí ocurre la magia de las relaciones ---
-  student      Student  @relation(fields: [studentId], references: [id])
-  studentId    Int      // Clave foránea para Student
-
-  therapist    User     @relation(fields: [therapistId], references: [id])
-  therapistId  Int      // Clave foránea para User
-  sessionLogs  SessionLog[]
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  }
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
 
 model Leccion {
   id           Int      @id @default(autoincrement())
@@ -134,43 +144,21 @@ model Leccion {
   keySkill     String?
   isActive     Boolean  @default(true)
   
-  // Relación: Quién creó esta lección
   createdBy    User     @relation(fields: [createdById], references: [id])
   createdById  Int
 
-  // Relación: Qué planes terapéuticos usan esta lección
-  therapyPlans TherapyPlan[]
+  // ✅ CAMBIO: Apuntamos al nuevo modelo TherapySession
+  therapySessions TherapySession[]
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  }
-
-  model SessionLog {
-  id           Int      @id @default(autoincrement())
-  date         DateTime // La fecha específica en que ocurrió la sesión
-  attendance   AttendanceStatus // Usa nuestro nuevo tipo Enum
-  notes        String   @db.Text // @db.Text permite textos muy largos
-  behavior     String?  @db.Text
-  progress     String?  @db.Text
-
-  // --- Relaciones ---
-  student      Student     @relation(fields: [studentId], references: [id])
-  studentId    Int
-
-  therapist    User        @relation(fields: [therapistId], references: [id])
-  therapistId  Int
-
-  therapyPlan  TherapyPlan @relation(fields: [therapyPlanId], references: [id])
-  therapyPlanId Int
-
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
 }
 
-  enum AttendanceStatus {
-  Presente
+enum SessionStatus {
+  Programada
+  Completada
+  Cancelada
   Ausente
-  Justificado
 }
 
 enum Zona {

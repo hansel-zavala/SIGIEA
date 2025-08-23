@@ -10,24 +10,38 @@ import Modal from 'react-modal';
 import therapySessionService from '../services/therapySessionService';
 import leccionService from '../services/leccionService';
 import therapistService, { type TherapistProfile } from '../services/therapistService';
+import studentService from '../services/studentService';
 import Label from '../components/ui/Label';
 import Select from '../components/ui/Select';
 import Input from '../components/ui/Input';
 import { FaTrash, FaEdit } from 'react-icons/fa';
+import Badge from '../components/ui/Badge';
 
 // --- Interfaces y helpers ---
 interface Leccion { id: number; title: string; }
 interface TherapySession { id: number; startTime: string; endTime: string; leccion: Leccion; leccionId: number; duration?: number; }
-
 const modalStyles = { content: { top: '50%', left: '50%', right: 'auto', bottom: 'auto', marginRight: '-50%', transform: 'translate(-50%, -50%)', width: '450px', borderRadius: '8px', padding: '25px', boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)' }, overlay: { backgroundColor: 'rgba(0, 0, 0, 0.6)', zIndex: 10 }};
 Modal.setAppElement('#root');
 
+const calculateAge = (birthDate: string) => {
+    const birthday = new Date(birthDate);
+    const today = new Date();
+    let age = today.getFullYear() - birthday.getFullYear();
+    const m = today.getMonth() - birthday.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthday.getDate())) {
+        age--;
+    }
+    return age;
+};
+
 function ScheduleCalendarPage() {
     const { studentId } = useParams<{ studentId: string }>();
+    const [student, setStudent] = useState<any>(null);
     const navigate = useNavigate();
     const [events, setEvents] = useState<EventInput[]>([]);
     const [lecciones, setLecciones] = useState<Leccion[]>([]);
     const [therapists, setTherapists] = useState<TherapistProfile[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [selectedDays, setSelectedDays] = useState<string[]>([]);
     const [startTime, setStartTime] = useState('08:00');
     const [duration, setDuration] = useState(45);
@@ -42,6 +56,33 @@ function ScheduleCalendarPage() {
     const [editFormData, setEditFormData] = useState({ leccionId: '', startTime: '', duration: 45 });
 
     const sessionToEvent = (session: TherapySession): EventInput => ({ id: String(session.id), title: session.leccion.title, start: session.startTime, end: session.endTime });
+
+    useEffect(() => {
+        if (!studentId) return;
+
+        const fetchData = async () => {
+            setIsLoading(true);
+            try {
+                const [studentData, leccionesData, therapistsData, sessionsData] = await Promise.all([
+                    studentService.getStudentById(parseInt(studentId)), // <- Se añade esta llamada
+                    leccionService.getAllLecciones(),
+                    therapistService.getAllTherapists(),
+                    therapySessionService.getSessionsByStudent(parseInt(studentId))
+                ]);
+                setStudent(studentData); // <- Se guarda el estado del estudiante
+                setLecciones(leccionesData);
+                setTherapists(therapistsData);
+                setEvents(sessionsData.map(sessionToEvent));
+            } catch (error) {
+                console.error("Error al cargar los datos de la página:", error);
+                alert("No se pudieron cargar los datos necesarios para la página.");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [studentId]);
 
     // ✅ CORRECCIÓN: Se separa la carga de datos en dos useEffect
     useEffect(() => {
@@ -149,8 +190,32 @@ function ScheduleCalendarPage() {
         setSelectedSession(null);
     };
 
+    const father = student?.guardians?.find((g: any) => g.parentesco === 'Padre');
+    const studentAge = student ? calculateAge(student.dateOfBirth) : null;
+    const admissionDate = student ? new Date(student.anoIngreso).toLocaleDateString() : null;
+
+    if (isLoading) {
+        return <div className="text-center p-10">Cargando datos del horario...</div>;
+    }
+
     return (
         <>
+
+        {/* ✅ NUEVA SECCIÓN: Tarjeta de Perfil del Estudiante */}
+            {student && (
+                <div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Gestionando Horario para: {student.fullName}</h2>
+                    <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                        <div><h3 className="font-semibold text-gray-600">Terapeuta Asignado</h3><p>{student.therapist?.fullName || 'No especificado'}</p></div>
+                        <div><h3 className="font-semibold text-gray-600">Edad</h3><p>{studentAge !== null ? `${studentAge} años` : 'N/A'}</p></div>
+                        <div><h3 className="font-semibold text-gray-400">Género</h3><p>{student?.genero ? '' : 'warning'}{student?.genero || 'No asignado'}</p></div>
+                        <div><h3 className="font-semibold text-gray-600">Padre de Familia</h3><p>{father?.fullName || 'No especificado'}</p></div>
+                        <div><h3 className="font-semibold text-gray-600">Fecha de Ingreso</h3><p>{admissionDate || 'N/A'}</p></div>
+                    </div>
+                    <div className=" p-2"></div>
+                </div>
+            )}
+
             <div className="grid grid-cols-12 gap-6">
                 <div className="col-span-12 lg:col-span-4 bg-white p-6 rounded-lg shadow-md">
                     <h3 className="text-xl font-bold mb-4">Añadir Horario Recurrente</h3>

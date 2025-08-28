@@ -5,23 +5,22 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// --- CREATE (Con Validación de DNI Único) ---
+// --- CREATE (Conexión de catálogos) ---
 export const createStudent = async (req: Request, res: Response) => {
   try {
-    const { guardians, ...studentData } = req.body;
+    // ✅ CAMBIO: Extraemos los IDs de los catálogos del body
+    const { guardians, medicamentos, alergias, ...studentData } = req.body;
 
-    // Validaciones básicas (que ya teníamos)
+    // ... (Validaciones existentes se mantienen) ...
     if (!studentData.fullName || !studentData.dateOfBirth) {
         return res.status(400).json({ error: 'El nombre completo y la fecha de nacimiento son obligatorios.' });
     }
-    if (!studentData.therapistId) {
+     if (!studentData.therapistId) {
         return res.status(400).json({ error: 'Debe asignar un terapeuta al estudiante.' });
     }
     if (!guardians || !Array.isArray(guardians) || guardians.length === 0) {
         return res.status(400).json({ error: 'Se requiere al menos un padre o tutor.' });
     }
-
-    // ✅ NUEVA VALIDACIÓN: VERIFICAR DNI ÚNICO
     for (const guardian of guardians) {
         if (!guardian.fullName || !guardian.numeroIdentidad || !guardian.telefono) {
             return res.status(400).json({ error: 'El nombre, DNI y teléfono son obligatorios para cada guardián.' });
@@ -34,7 +33,7 @@ export const createStudent = async (req: Request, res: Response) => {
         }
     }
 
-    // Conversión de fechas
+
     if (studentData.dateOfBirth) {
       studentData.dateOfBirth = new Date(studentData.dateOfBirth);
     }
@@ -48,9 +47,18 @@ export const createStudent = async (req: Request, res: Response) => {
         guardians: {
           create: guardians,
         },
+        // ✅ CAMBIO: Conectamos el estudiante con los catálogos usando los IDs
+        medicamentos: {
+          connect: medicamentos?.map((id: number) => ({ id })) || [],
+        },
+        alergias: {
+          connect: alergias?.map((id: number) => ({ id })) || [],
+        },
       },
       include: {
         guardians: true,
+        medicamentos: true,
+        alergias: true,
       },
     });
 
@@ -61,7 +69,7 @@ export const createStudent = async (req: Request, res: Response) => {
   }
 };
 
-// --- (El resto de las funciones: getAllStudents, getStudentById, etc. se mantienen igual) ---
+// --- (El resto de las funciones no cambian) ---
 
 // --- GET ALL (Modificado) ---
 export const getAllStudents = async (req: Request, res: Response) => {
@@ -102,8 +110,10 @@ export const getStudentById = async (req: Request, res: Response) => {
           },
           include: { leccion: true }
         },
-        therapist: true, // Asegúrate de que esto también esté para obtener el nombre del terapeuta
-        guardians: true, // ✅ AÑADE ESTA LÍNEA PARA INCLUIR LOS TUTORES
+        therapist: true,
+        guardians: true, 
+        medicamentos: true,
+        alergias: true
       }
     });
 
@@ -122,11 +132,12 @@ export const updateStudent = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     // 1. Extraemos therapistId del resto de los datos
-    const { therapistId, ...studentData } = req.body;
+    const { therapistId, medicamentos, alergias, ...studentData } = req.body;
 
     // 2. Limpiamos los datos que no se deben actualizar
     delete studentData.id;
     delete studentData.guardians;
+    delete studentData.therapySessions; 
     delete studentData.therapyPlans;
     delete studentData.sessionLogs;
     delete studentData.therapist;
@@ -146,7 +157,12 @@ export const updateStudent = async (req: Request, res: Response) => {
         where: { id: parseInt(id) },
         data: {
             ...studentData,
-            // 5. Usamos la sintaxis 'connect' para actualizar la relación del terapeuta
+            medicamentos: {
+              set: medicamentos?.map((medId: number) => ({ id: medId })) || [],
+            },
+            alergias: {
+              set: alergias?.map((alergiaId: number) => ({ id: alergiaId })) || [],
+            },
             therapist: therapistId ? { connect: { id: parseInt(therapistId) } } : { disconnect: true },
         },
     });

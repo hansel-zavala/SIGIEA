@@ -4,13 +4,16 @@ import { useNavigate } from "react-router-dom";
 import studentService from "../services/studentService";
 import uploadService from "../services/uploadService";
 import therapistService, { type TherapistProfile } from '../services/therapistService.js';
+import medicamentoService, { type Medicamento } from "../services/medicamentoService";
+import alergiaService, { type Alergia } from "../services/alergiaService";
 import Label from "../components/ui/Label";
 import Input from "../components/ui/Input";
 import Select from "../components/ui/Select";
-import ComboBox from "../components/ui/ComboBox"; // ✅ PASO 8.1: Importamos el nuevo componente
+import ComboBox from "../components/ui/ComboBox";
+import MultiSelectWithCatalog from "../components/ui/MultiSelectWithCatalog";
 import { departamentos, municipiosPorDepartamento } from '../data/honduras-data';
 
-// ... (El resto de las interfaces y constantes se mantienen igual)
+// ... (interfaces y constantes se mantienen igual) ...
 interface Guardian {
   fullName: string;
   numeroIdentidad: string;
@@ -29,6 +32,7 @@ const tiposDeAtencion = [
   { id: "inclusionEscolar", label: "Inclusión Escolar" },
   { id: "educacionFisica", label: "Educación Física" },
 ];
+
 
 function MatriculaPage() {
     const [departamento, setDepartamento] = useState('');
@@ -55,10 +59,11 @@ function MatriculaPage() {
     atencionVocacional: false,
     inclusionEscolar: false,
     educacionFisica: false,
-    usaMedicamentos: false,
-    cualesMedicamentos: "",
-    esAlergico: false,
-    cualesAlergias: "",
+    // ✅ CAMBIO: Ya no necesitamos estos campos de texto
+    // usaMedicamentos: false,
+    // cualesMedicamentos: "",
+    // esAlergico: false,
+    // cualesAlergias: "",
   });
 
   const [guardians, setGuardians] = useState<Guardian[]>([
@@ -70,6 +75,12 @@ function MatriculaPage() {
       direccionEmergencia: "",
     },
   ]);
+
+  // ✅ NUEVOS ESTADOS para los catálogos
+  const [allMedicamentos, setAllMedicamentos] = useState<Medicamento[]>([]);
+  const [selectedMedicamentos, setSelectedMedicamentos] = useState<Medicamento[]>([]);
+  const [allAlergias, setAllAlergias] = useState<Alergia[]>([]);
+  const [selectedAlergias, setSelectedAlergias] = useState<Alergia[]>([]);
 
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -102,13 +113,11 @@ function MatriculaPage() {
         }
     }, [departamento]);
 
+  // ✅ Cargar todos los catálogos al iniciar
   useEffect(() => {
-    therapistService.getAllTherapists()
-      .then(data => setTherapists(data))
-      .catch(err => {
-        console.error("Error al cargar terapeutas", err);
-        setError("No se pudo cargar la lista de terapeutas.");
-      });
+    therapistService.getAllTherapists().then(setTherapists).catch(() => setError("No se pudo cargar la lista de terapeutas."));
+    medicamentoService.getAll().then(setAllMedicamentos).catch(() => setError("No se pudo cargar el catálogo de medicamentos."));
+    alergiaService.getAll().then(setAllAlergias).catch(() => setError("No se pudo cargar el catálogo de alergias."));
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -141,7 +150,42 @@ function MatriculaPage() {
     }
   };
 
+  // ✅ FUNCIONES PARA GESTIONAR CATÁLOGOS
+  const handleAddMedicamento = async (name: string) => {
+    await medicamentoService.create(name);
+    const updatedList = await medicamentoService.getAll();
+    setAllMedicamentos(updatedList);
+  };
+  const handleUpdateMedicamento = async (id: number, name: string) => {
+    await medicamentoService.update(id, name);
+    const updatedList = await medicamentoService.getAll();
+    setAllMedicamentos(updatedList);
+  };
+  const handleDeleteMedicamento = async (id: number) => {
+    await medicamentoService.remove(id);
+    const updatedList = await medicamentoService.getAll();
+    setAllMedicamentos(updatedList);
+  };
+
+  const handleAddAlergia = async (name: string) => {
+    await alergiaService.create(name);
+    const updatedList = await alergiaService.getAll();
+    setAllAlergias(updatedList);
+  };
+  const handleUpdateAlergia = async (id: number, name: string) => {
+    await alergiaService.update(id, name);
+    const updatedList = await alergiaService.getAll();
+    setAllAlergias(updatedList);
+  };
+  const handleDeleteAlergia = async (id: number) => {
+    await alergiaService.remove(id);
+    const updatedList = await alergiaService.getAll();
+    setAllAlergias(updatedList);
+  };
+
+
   const validateForm = () => {
+    // ... (la función de validación se mantiene igual) ...
     const errors: Record<string, string> = {};
     const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
     const dniRegex = /^\d{13}$/;
@@ -160,12 +204,7 @@ function MatriculaPage() {
 
     if (!therapistId) errors.therapistId = "Debe seleccionar un terapeuta.";
     
-    if (studentData.usaMedicamentos && !studentData.cualesMedicamentos.trim()) {
-        errors.cualesMedicamentos = "Debe especificar qué medicamentos usa.";
-    }
-    if (studentData.esAlergico && !studentData.cualesAlergias.trim()) {
-        errors.cualesAlergias = "Debe especificar a qué es alérgico.";
-    }
+    // Ya no necesitamos las validaciones condicionales de texto aquí
 
     errors.partidaFileError = validateFile(partidaFile);
     errors.evaluacionFileError = validateFile(evaluacionFile);
@@ -194,18 +233,15 @@ function MatriculaPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-
     if (!validateForm()) {
         setError("Por favor, corrige los errores marcados en el formulario.");
         return;
     }
+    setError("");
 
     try {
       let partidaUrl = "";
-      if (partidaFile) {
-        partidaUrl = (await uploadService.uploadFile(partidaFile)).filePath;
-      }
+      if (partidaFile) partidaUrl = (await uploadService.uploadFile(partidaFile)).filePath;
 
       let evaluacionUrl = "";
       if (evaluacionFile && studentData.recibioEvaluacion) {
@@ -229,13 +265,18 @@ function MatriculaPage() {
         partidaNacimientoUrl: partidaUrl,
         resultadoEvaluacionUrl: evaluacionUrl,
         guardians: finalGuardians,
-        therapistId: parseInt(therapistId)
+        therapistId: parseInt(therapistId),
+        // ✅ ENVIAMOS LOS IDs DE LOS ÍTEMS SELECCIONADOS
+        medicamentos: selectedMedicamentos.map(m => m.id),
+        alergias: selectedAlergias.map(a => a.id),
+        // ✅ El estado de usaMedicamentos/esAlergico se infiere si la lista tiene ítems
+        usaMedicamentos: selectedMedicamentos.length > 0,
+        esAlergico: selectedAlergias.length > 0,
       };
 
       await studentService.createStudent(fullMatriculaData);
       navigate("/students");
     } catch (err: any) {
-        // Mostramos el error específico del backend si existe
         const errorMessage = err.response?.data?.error || "Ocurrió un error al matricular.";
         setError(errorMessage);
     }
@@ -246,7 +287,8 @@ function MatriculaPage() {
       <h2 className="text-3xl font-bold mb-6 text-gray-800">Ficha de Matrícula</h2>
       {error && <p className="text-red-500 bg-red-100 p-3 rounded-md mb-6">{error}</p>}
       <form onSubmit={handleSubmit} className="space-y-8 bg-white p-8 rounded-lg shadow-md" noValidate>
-        {/* --- SECCIÓN DATOS DEL ALUMNO --- */}
+        {/* ... (Sección Datos del Alumno y otras se mantienen igual) ... */}
+         {/* --- SECCIÓN DATOS DEL ALUMNO --- */}
         <div className="border-b pb-6">
           <h3 className="text-xl font-semibold text-gray-700">Datos del Alumno</h3>
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -402,8 +444,8 @@ function MatriculaPage() {
           </div>
         </div>
 
-        {/* --- (El resto del formulario se mantiene igual) --- */}
-         <div className="border-b pb-6">
+        {/* --- SECCIÓN TIPOS DE ATENCIÓN --- */}
+        <div className="border-b pb-6">
           <h3 className="text-xl font-semibold text-gray-700">Tipos de Atención</h3>
           <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
             {tiposDeAtencion.map((atencion) => (
@@ -421,36 +463,40 @@ function MatriculaPage() {
             ))}
           </div>
         </div>
-        
+
+        {/* ✅ PASO FINAL: Reemplazamos la sección médica */}
         <div className="border-b pb-6">
           <h3 className="text-xl font-semibold text-gray-700">Información Médica</h3>
-          <div className="mt-4 space-y-4">
-            <div className="flex items-center gap-2">
-              <input id="usaMedicamentos" name="usaMedicamentos" type="checkbox" checked={studentData.usaMedicamentos} onChange={handleChange} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"/>
-              <Label htmlFor="usaMedicamentos">¿Usa Medicamentos?</Label>
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <Label>Medicamentos</Label>
+              <MultiSelectWithCatalog
+                catalogTitle="Gestionar Medicamentos"
+                allItems={allMedicamentos}
+                selectedItems={selectedMedicamentos}
+                onSelectionChange={setSelectedMedicamentos}
+                onAddItem={handleAddMedicamento}
+                onUpdateItem={handleUpdateMedicamento}
+                onDeleteItem={handleDeleteMedicamento}
+              />
             </div>
-            {studentData.usaMedicamentos && (
-              <div>
-                <Label htmlFor="cualesMedicamentos">¿Cuáles?</Label>
-                <Input id="cualesMedicamentos" name="cualesMedicamentos" type="text" value={studentData.cualesMedicamentos} onChange={handleChange} />
-                {formErrors.cualesMedicamentos && <p className="text-red-500 text-sm mt-1">{formErrors.cualesMedicamentos}</p>}
-              </div>
-            )}
-            <div className="flex items-center gap-2">
-              <input id="esAlergico" name="esAlergico" type="checkbox" checked={studentData.esAlergico} onChange={handleChange} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"/>
-              <Label htmlFor="esAlergico">¿Es Alérgico?</Label>
+            <div>
+              <Label>Alergias</Label>
+              <MultiSelectWithCatalog
+                catalogTitle="Gestionar Alergias"
+                allItems={allAlergias}
+                selectedItems={selectedAlergias}
+                onSelectionChange={setSelectedAlergias}
+                onAddItem={handleAddAlergia}
+                onUpdateItem={handleUpdateAlergia}
+                onDeleteItem={handleDeleteAlergia}
+              />
             </div>
-            {studentData.esAlergico && (
-              <div>
-                <Label htmlFor="cualesAlergias">¿A qué es alérgico?</Label>
-                <Input id="cualesAlergias" name="cualesAlergias" type="text" value={studentData.cualesAlergias} onChange={handleChange} />
-                {formErrors.cualesAlergias && <p className="text-red-500 text-sm mt-1">{formErrors.cualesAlergias}</p>}
-              </div>
-            )}
           </div>
         </div>
-        
-        <div className="border-b pb-6">
+
+        {/* ... (El resto del formulario se mantiene igual) ... */}
+         <div className="border-b pb-6">
           <h3 className="text-xl font-semibold text-gray-700">Asignación de Terapeuta</h3>
           <div className="mt-4">
             <Label htmlFor="therapistId">Nombre del Terapeuta</Label>
@@ -512,7 +558,6 @@ function MatriculaPage() {
             Añadir Otra Ficha
           </button>
         </div>
-
         <div className="pt-6 text-right">
           <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">
             Matricular Estudiante

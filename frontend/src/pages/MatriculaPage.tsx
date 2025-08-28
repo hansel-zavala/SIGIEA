@@ -7,7 +7,10 @@ import therapistService, { type TherapistProfile } from '../services/therapistSe
 import Label from "../components/ui/Label";
 import Input from "../components/ui/Input";
 import Select from "../components/ui/Select";
+import ComboBox from "../components/ui/ComboBox"; // ✅ PASO 8.1: Importamos el nuevo componente
+import { departamentos, municipiosPorDepartamento } from '../data/honduras-data';
 
+// ... (El resto de las interfaces y constantes se mantienen igual)
 interface Guardian {
   fullName: string;
   numeroIdentidad: string;
@@ -16,7 +19,6 @@ interface Guardian {
   direccionEmergencia: string;
 }
 
-// ✅ CORRECCIÓN: Definimos los tipos de atención en un array para evitar errores.
 const tiposDeAtencion = [
   { id: "atencionGrupal", label: "Atención Grupal" },
   { id: "atencionIndividual", label: "Atención Individual" },
@@ -29,10 +31,14 @@ const tiposDeAtencion = [
 ];
 
 function MatriculaPage() {
+    const [departamento, setDepartamento] = useState('');
+    const [municipio, setMunicipio] = useState('');
+    const [municipios, setMunicipios] = useState<{ id: string; nombre: string }[]>([]);
+
   const [studentData, setStudentData] = useState({
     fullName: "",
     dateOfBirth: "",
-    lugarNacimiento: "",
+    lugarNacimiento: "", 
     direccion: "",
     institucionProcedencia: "",
     recibioEvaluacion: false,
@@ -72,64 +78,62 @@ function MatriculaPage() {
   const [guardianIdFiles, setGuardianIdFiles] = useState<(File | null)[]>([]);
   const [therapists, setTherapists] = useState<TherapistProfile[]>([]);
   const [therapistId, setTherapistId] = useState('');
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const allowedFileTypes = [
+    "image/jpeg", "image/png", "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  ];
+
+  const validateFile = (file: File | null) => {
+    if (file && !allowedFileTypes.includes(file.type)) {
+      return "Archivo no válido. Solo se permiten imágenes, PDF o Word.";
+    }
+    return "";
+  };
+  
+    useEffect(() => {
+        if (departamento) {
+            setMunicipios(municipiosPorDepartamento[departamento] || []);
+            setMunicipio(''); 
+        } else {
+            setMunicipios([]);
+        }
+    }, [departamento]);
 
   useEffect(() => {
     therapistService.getAllTherapists()
-      .then(data => {
-        setTherapists(data);
-      })
+      .then(data => setTherapists(data))
       .catch(err => {
         console.error("Error al cargar terapeutas", err);
         setError("No se pudo cargar la lista de terapeutas.");
       });
   }, []);
 
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
-    if (type === "checkbox") {
-      const { checked } = e.target as HTMLInputElement;
-      setStudentData((prev) => ({ ...prev, [name]: checked }));
-    } else {
-      setStudentData((prev) => ({ ...prev, [name]: value }));
-    }
+    const isCheckbox = type === "checkbox";
+    const checked = isCheckbox ? (e.target as HTMLInputElement).checked : false;
+    
+    setStudentData(prev => ({ ...prev, [name]: isCheckbox ? checked : value }));
   };
 
-  const handleGuardianChange = (
-    index: number,
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  const handleGuardianChange = (index: number, e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const newGuardians = [...guardians];
-    newGuardians[index][e.target.name as keyof Guardian] = e.target
-      .value as any;
+    newGuardians[index][e.target.name as keyof Guardian] = e.target.value as any;
     setGuardians(newGuardians);
   };
 
   const addGuardian = () => {
-    setGuardians([
-      ...guardians,
-      {
-        fullName: "",
-        numeroIdentidad: "",
-        telefono: "",
-        parentesco: "Padre",
-        direccionEmergencia: "",
-      },
-    ]);
+    setGuardians([...guardians, { fullName: "", numeroIdentidad: "", telefono: "", parentesco: "Padre", direccionEmergencia: "" }]);
   };
-
+  
   const removeGuardian = (index: number) => {
-    const newGuardians = guardians.filter((_, i) => i !== index);
-    setGuardians(newGuardians);
+    setGuardians(guardians.filter((_, i) => i !== index));
   };
 
-  const handleGuardianFileChange = (
-    index: number,
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleGuardianFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const newFiles = [...guardianIdFiles];
       newFiles[index] = e.target.files[0];
@@ -137,27 +141,79 @@ function MatriculaPage() {
     }
   };
 
-  // ✅ ASEGÚRATE DE QUE ESTA FUNCIÓN ESTÉ PRESENTE
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+    const dniRegex = /^\d{13}$/;
+    const phoneRegex = /^\d{8}$/;
+
+    if (!studentData.fullName.trim()) errors.fullName = "El nombre es obligatorio.";
+    else if (studentData.fullName.trim().length < 5) errors.fullName = "El nombre parece demasiado corto.";
+    else if (!studentData.fullName.trim().includes(' ')) errors.fullName = "Por favor, ingresa al menos un nombre y un apellido.";
+    else if (!nameRegex.test(studentData.fullName)) errors.fullName = "El nombre solo debe contener letras y espacios.";
+
+    if (!studentData.dateOfBirth) errors.dateOfBirth = "La fecha de nacimiento es obligatoria.";
+    else if (new Date(studentData.dateOfBirth) > new Date()) errors.dateOfBirth = "La fecha no puede ser futura.";
+    
+    if (!departamento) errors.departamento = "Debe seleccionar un departamento.";
+    if (!municipio) errors.municipio = "Debe seleccionar un municipio.";
+
+    if (!therapistId) errors.therapistId = "Debe seleccionar un terapeuta.";
+    
+    if (studentData.usaMedicamentos && !studentData.cualesMedicamentos.trim()) {
+        errors.cualesMedicamentos = "Debe especificar qué medicamentos usa.";
+    }
+    if (studentData.esAlergico && !studentData.cualesAlergias.trim()) {
+        errors.cualesAlergias = "Debe especificar a qué es alérgico.";
+    }
+
+    errors.partidaFileError = validateFile(partidaFile);
+    errors.evaluacionFileError = validateFile(evaluacionFile);
+    guardianIdFiles.forEach((file, index) => {
+        errors[`guardianIdFile_${index}`] = validateFile(file);
+    });
+
+    guardians.forEach((guardian, index) => {
+        if (!guardian.fullName.trim()) errors[`guardian_fullName_${index}`] = "El nombre es obligatorio.";
+        else if (guardian.fullName.trim().length < 5) errors[`guardian_fullName_${index}`] = "El nombre parece demasiado corto.";
+        else if (!guardian.fullName.trim().includes(' ')) errors[`guardian_fullName_${index}`] = "Ingresa al menos un nombre y un apellido.";
+        else if (!nameRegex.test(guardian.fullName)) errors[`guardian_fullName_${index}`] = "El nombre solo debe contener letras y espacios.";
+
+        if (!guardian.numeroIdentidad.trim()) errors[`guardian_numeroIdentidad_${index}`] = "El DNI es obligatorio.";
+        else if (!dniRegex.test(guardian.numeroIdentidad)) errors[`guardian_numeroIdentidad_${index}`] = "El DNI debe tener 13 dígitos, sin guiones.";
+
+        if (!guardian.telefono.trim()) errors[`guardian_telefono_${index}`] = "El teléfono es obligatorio.";
+        else if (!phoneRegex.test(guardian.telefono)) errors[`guardian_telefono_${index}`] = "El teléfono debe tener 8 dígitos.";
+    });
+    
+    const finalErrors = Object.fromEntries(Object.entries(errors).filter(([_, value]) => value));
+    
+    setFormErrors(finalErrors);
+    return Object.keys(finalErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (!validateForm()) {
+        setError("Por favor, corrige los errores marcados en el formulario.");
+        return;
+    }
+
     try {
       let partidaUrl = "";
       if (partidaFile) {
-        const response = await uploadService.uploadFile(partidaFile);
-        partidaUrl = response.filePath;
+        partidaUrl = (await uploadService.uploadFile(partidaFile)).filePath;
       }
 
       let evaluacionUrl = "";
       if (evaluacionFile && studentData.recibioEvaluacion) {
-        const response = await uploadService.uploadFile(evaluacionFile);
-        evaluacionUrl = response.filePath;
+        evaluacionUrl = (await uploadService.uploadFile(evaluacionFile)).filePath;
       }
 
       const guardianIdUrls = await Promise.all(
-        guardianIdFiles.map((file) =>
-          file ? uploadService.uploadFile(file) : Promise.resolve(null)
-        )
+        guardianIdFiles.map(file => file ? uploadService.uploadFile(file) : Promise.resolve(null))
       );
 
       const finalGuardians = guardians.map((guardian, index) => ({
@@ -165,83 +221,74 @@ function MatriculaPage() {
         copiaIdentidadUrl: guardianIdUrls[index]?.filePath || "",
       }));
 
+      const lugarNacimiento = `${municipios.find(m => m.id === municipio)?.nombre}, ${departamentos.find(d => d.id === departamento)?.nombre}`;
+
       const fullMatriculaData = {
         ...studentData,
+        lugarNacimiento,
         partidaNacimientoUrl: partidaUrl,
         resultadoEvaluacionUrl: evaluacionUrl,
         guardians: finalGuardians,
         therapistId: parseInt(therapistId)
       };
 
-      
-
       await studentService.createStudent(fullMatriculaData);
       navigate("/students");
-    } catch (err) {
-      setError(
-        "Ocurrió un error al matricular. Revisa los datos y los archivos."
-      );
+    } catch (err: any) {
+        // Mostramos el error específico del backend si existe
+        const errorMessage = err.response?.data?.error || "Ocurrió un error al matricular.";
+        setError(errorMessage);
     }
   };
 
   return (
     <div className="max-w-8xl mx-auto">
-      <h2 className="text-3xl font-bold mb-6 text-gray-800">
-        Ficha de Matrícula
-      </h2>
-      {error && <p className="text-red-500">{error}</p>}
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-8 bg-white p-8 rounded-lg shadow-md"
-      >
+      <h2 className="text-3xl font-bold mb-6 text-gray-800">Ficha de Matrícula</h2>
+      {error && <p className="text-red-500 bg-red-100 p-3 rounded-md mb-6">{error}</p>}
+      <form onSubmit={handleSubmit} className="space-y-8 bg-white p-8 rounded-lg shadow-md" noValidate>
         {/* --- SECCIÓN DATOS DEL ALUMNO --- */}
         <div className="border-b pb-6">
-          <h3 className="text-xl font-semibold text-gray-700">
-            Datos del Alumno
-          </h3>
+          <h3 className="text-xl font-semibold text-gray-700">Datos del Alumno</h3>
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <Label htmlFor="fullName">Nombre Completo del Alumno(a)</Label>
-              <Input
-                id="fullName"
-                name="fullName"
-                type="text"
-                value={studentData.fullName}
-                onChange={handleChange}
-                required
-              />
+              <Input id="fullName" name="fullName" type="text" value={studentData.fullName} onChange={handleChange} />
+              {formErrors.fullName && <p className="text-red-500 text-sm mt-1">{formErrors.fullName}</p>}
             </div>
             <div>
               <Label htmlFor="dateOfBirth">Fecha de Nacimiento</Label>
-              <Input
-                id="dateOfBirth"
-                name="dateOfBirth"
-                type="date"
-                value={studentData.dateOfBirth}
-                onChange={handleChange}
-                required
+              <Input id="dateOfBirth" name="dateOfBirth" type="date" value={studentData.dateOfBirth} onChange={handleChange} />
+              {formErrors.dateOfBirth && <p className="text-red-500 text-sm mt-1">{formErrors.dateOfBirth}</p>}
+            </div>
+            
+            {/* ✅ PASO 8.2: Usamos el ComboBox en lugar de Select */}
+            <div>
+              <Label htmlFor="departamento">Departamento de Nacimiento</Label>
+              <ComboBox
+                value={departamento}
+                onChange={setDepartamento}
+                options={departamentos.map(d => ({ value: d.id, label: d.nombre }))}
+                placeholder="Busca o selecciona un departamento"
               />
+              {formErrors.departamento && <p className="text-red-500 text-sm mt-1">{formErrors.departamento}</p>}
             </div>
             <div>
-              <Label htmlFor="lugarNacimiento">Lugar de Nacimiento</Label>
-              <Input
-                id="lugarNacimiento"
-                name="lugarNacimiento"
-                type="text"
-                value={studentData.lugarNacimiento}
-                onChange={handleChange}
+              <Label htmlFor="municipio">Municipio de Nacimiento</Label>
+              <ComboBox
+                value={municipio}
+                onChange={setMunicipio}
+                options={municipios.map(m => ({ value: m.id, label: m.nombre }))}
+                placeholder="Busca o selecciona un municipio"
+                disabled={!departamento}
               />
+              {formErrors.municipio && <p className="text-red-500 text-sm mt-1">{formErrors.municipio}</p>}
             </div>
+
             <div>
               <Label htmlFor="direccion">Dirección</Label>
-              <Input
-                id="direccion"
-                name="direccion"
-                type="text"
-                value={studentData.direccion}
-                onChange={handleChange}
-              />
+              <Input id="direccion" name="direccion" type="text" value={studentData.direccion} onChange={handleChange}/>
             </div>
+            {/* ... (resto de campos del alumno) ... */}
             <div>
               <Label htmlFor="genero">Género</Label>
               <Select
@@ -318,18 +365,15 @@ function MatriculaPage() {
               />
             </div>
             <div className="md:col-span-2">
-              <Label htmlFor="partidaNacimientoUrl">
-                Subir Partida de Nacimiento
-              </Label>
+              <Label htmlFor="partidaNacimientoUrl">Subir Partida de Nacimiento</Label>
               <Input
                 id="partidaNacimientoUrl"
                 name="partidaNacimientoUrl"
                 type="file"
-                onChange={(e) =>
-                  setPartidaFile(e.target.files ? e.target.files?.[0] : null)
-                }
+                onChange={(e) => setPartidaFile(e.target.files ? e.target.files[0] : null)}
                 className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
               />
+              {formErrors.partidaFileError && <p className="text-red-500 text-sm mt-1">{formErrors.partidaFileError}</p>}
             </div>
             <div className="flex items-center gap-2">
               <input
@@ -344,30 +388,23 @@ function MatriculaPage() {
             </div>
             {studentData.recibioEvaluacion && (
               <div>
-                <Label htmlFor="resultadoEvaluacionUrl">
-                  Subir Resultado de Evaluación
-                </Label>
+                <Label htmlFor="resultadoEvaluacionUrl">Subir Resultado de Evaluación</Label>
                 <Input
                   id="resultadoEvaluacionUrl"
                   name="resultadoEvaluacionUrl"
                   type="file"
-                  onChange={(e) =>
-                    setEvaluacionFile(
-                      e.target.files ? e.target.files?.[0] : null
-                    )
-                  }
+                  onChange={(e) => setEvaluacionFile(e.target.files ? e.target.files[0] : null)}
                   className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
+                {formErrors.evaluacionFileError && <p className="text-red-500 text-sm mt-1">{formErrors.evaluacionFileError}</p>}
               </div>
             )}
           </div>
         </div>
 
-        {/* --- SECCIÓN TIPOS DE ATENCIÓN --- */}
-        <div className="border-b pb-6">
-          <h3 className="text-xl font-semibold text-gray-700">
-            Tipos de Atención
-          </h3>
+        {/* --- (El resto del formulario se mantiene igual) --- */}
+         <div className="border-b pb-6">
+          <h3 className="text-xl font-semibold text-gray-700">Tipos de Atención</h3>
           <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
             {tiposDeAtencion.map((atencion) => (
               <div key={atencion.id} className="flex items-center">
@@ -375,77 +412,44 @@ function MatriculaPage() {
                   id={atencion.id}
                   name={atencion.id}
                   type="checkbox"
-                  checked={
-                    studentData[
-                      atencion.id as keyof typeof studentData
-                    ] as boolean
-                  }
+                  checked={studentData[atencion.id as keyof typeof studentData] as boolean}
                   onChange={handleChange}
                   className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
                 />
-                <Label htmlFor={atencion.id} className="ml-2">
-                  {atencion.label}
-                </Label>
+                <Label htmlFor={atencion.id} className="ml-2">{atencion.label}</Label>
               </div>
             ))}
           </div>
         </div>
-
-        {/* --- SECCIÓN INFORMACIÓN MÉDICA --- */}
+        
         <div className="border-b pb-6">
-          <h3 className="text-xl font-semibold text-gray-700">
-            Información Médica
-          </h3>
+          <h3 className="text-xl font-semibold text-gray-700">Información Médica</h3>
           <div className="mt-4 space-y-4">
             <div className="flex items-center gap-2">
-              <input
-                id="usaMedicamentos"
-                name="usaMedicamentos"
-                type="checkbox"
-                checked={studentData.usaMedicamentos}
-                onChange={handleChange}
-                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
-              />
+              <input id="usaMedicamentos" name="usaMedicamentos" type="checkbox" checked={studentData.usaMedicamentos} onChange={handleChange} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"/>
               <Label htmlFor="usaMedicamentos">¿Usa Medicamentos?</Label>
             </div>
             {studentData.usaMedicamentos && (
               <div>
                 <Label htmlFor="cualesMedicamentos">¿Cuáles?</Label>
-                <Input
-                  id="cualesMedicamentos"
-                  name="cualesMedicamentos"
-                  type="text"
-                  value={studentData.cualesMedicamentos}
-                  onChange={handleChange}
-                />
+                <Input id="cualesMedicamentos" name="cualesMedicamentos" type="text" value={studentData.cualesMedicamentos} onChange={handleChange} />
+                {formErrors.cualesMedicamentos && <p className="text-red-500 text-sm mt-1">{formErrors.cualesMedicamentos}</p>}
               </div>
             )}
             <div className="flex items-center gap-2">
-              <input
-                id="esAlergico"
-                name="esAlergico"
-                type="checkbox"
-                checked={studentData.esAlergico}
-                onChange={handleChange}
-                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
-              />
+              <input id="esAlergico" name="esAlergico" type="checkbox" checked={studentData.esAlergico} onChange={handleChange} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"/>
               <Label htmlFor="esAlergico">¿Es Alérgico?</Label>
             </div>
             {studentData.esAlergico && (
               <div>
                 <Label htmlFor="cualesAlergias">¿A qué es alérgico?</Label>
-                <Input
-                  id="cualesAlergias"
-                  name="cualesAlergias"
-                  type="text"
-                  value={studentData.cualesAlergias}
-                  onChange={handleChange}
-                />
+                <Input id="cualesAlergias" name="cualesAlergias" type="text" value={studentData.cualesAlergias} onChange={handleChange} />
+                {formErrors.cualesAlergias && <p className="text-red-500 text-sm mt-1">{formErrors.cualesAlergias}</p>}
               </div>
             )}
           </div>
         </div>
-
+        
         <div className="border-b pb-6">
           <h3 className="text-xl font-semibold text-gray-700">Asignación de Terapeuta</h3>
           <div className="mt-4">
@@ -455,126 +459,62 @@ function MatriculaPage() {
               name="therapistId"
               value={therapistId}
               onChange={(e) => setTherapistId(e.target.value)}
-              required
               placeholder="-- Selecciona un terapeuta --"
-              options={therapists.map(therapist => ({ 
-                value: String(therapist.id), 
-                label: therapist.fullName 
-              }))}
+              options={therapists.map(therapist => ({ value: String(therapist.id), label: therapist.fullName }))}
             />
+            {formErrors.therapistId && <p className="text-red-500 text-sm mt-1">{formErrors.therapistId}</p>}
           </div>
         </div>
-
-
-        {/* --- SECCIÓN GUARDIANES --- */}
+        
         <div className="border-b pb-6">
-          <h3 className="text-xl font-semibold text-gray-700">
-            Información de los Padres o Tutores
-          </h3>
+          <h3 className="text-xl font-semibold text-gray-700">Información de los Padres o Tutores</h3>
           {guardians.map((guardian, index) => (
             <div key={index} className="mt-4 p-4 border rounded-md relative">
               <h4 className="font-medium mb-2">Ficha {index + 1}</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <Label htmlFor={`g-fullName-${index}`}>Nombre Completo</Label>
-                  <Input
-                    id={`g-fullName-${index}`}
-                    name="fullName"
-                    type="text"
-                    value={guardian.fullName}
-                    onChange={(e) => handleGuardianChange(index, e)}
-                    required
-                  />
+                  <Input id={`g-fullName-${index}`} name="fullName" type="text" value={guardian.fullName} onChange={(e) => handleGuardianChange(index, e)} />
+                  {formErrors[`guardian_fullName_${index}`] && <p className="text-red-500 text-sm mt-1">{formErrors[`guardian_fullName_${index}`]}</p>}
                 </div>
                 <div>
                   <Label htmlFor={`g-parentesco-${index}`}>Parentesco</Label>
-                  <Select
-                    id={`g-parentesco-${index}`}
-                    name="parentesco"
-                    value={guardian.parentesco}
-                    onChange={(e) => handleGuardianChange(index, e)}
-                    options={[
-                      { value: "Padre", label: "Padre" },
-                      { value: "Madre", label: "Madre" },
-                      { value: "Tutor_Legal", label: "Tutor Legal" },
-                      { value: "Otro", label: "Otro" },
-                    ]}
-                  />
+                  <Select id={`g-parentesco-${index}`} name="parentesco" value={guardian.parentesco} onChange={(e) => handleGuardianChange(index, e)} options={[{ value: "Padre", label: "Padre" }, { value: "Madre", label: "Madre" }, { value: "Tutor_Legal", label: "Tutor Legal" }, { value: "Otro", label: "Otro" }]} />
                 </div>
                 <div>
-                  <Label htmlFor={`g-numeroIdentidad-${index}`}>
-                    Número de Identidad
-                  </Label>
-                  <Input
-                    id={`g-numeroIdentidad-${index}`}
-                    name="numeroIdentidad"
-                    type="text"
-                    value={guardian.numeroIdentidad}
-                    onChange={(e) => handleGuardianChange(index, e)}
-                    required
-                  />
+                  <Label htmlFor={`g-numeroIdentidad-${index}`}>Número de Identidad</Label>
+                  <Input id={`g-numeroIdentidad-${index}`} name="numeroIdentidad" type="text" value={guardian.numeroIdentidad} onChange={(e) => handleGuardianChange(index, e)} />
+                  {formErrors[`guardian_numeroIdentidad_${index}`] && <p className="text-red-500 text-sm mt-1">{formErrors[`guardian_numeroIdentidad_${index}`]}</p>}
                 </div>
                 <div>
                   <Label htmlFor={`g-telefono-${index}`}>Teléfono</Label>
-                  <Input
-                    id={`g-telefono-${index}`}
-                    name="telefono"
-                    type="text"
-                    value={guardian.telefono}
-                    onChange={(e) => handleGuardianChange(index, e)}
-                    required
-                  />
+                  <Input id={`g-telefono-${index}`} name="telefono" type="text" value={guardian.telefono} onChange={(e) => handleGuardianChange(index, e)} />
+                  {formErrors[`guardian_telefono_${index}`] && <p className="text-red-500 text-sm mt-1">{formErrors[`guardian_telefono_${index}`]}</p>}
                 </div>
                 <div className="md:col-span-2">
-                  <Label htmlFor={`g-direccionEmergencia-${index}`}>
-                    Dirección de Emergencia
-                  </Label>
-                  <Input
-                    id={`g-direccionEmergencia-${index}`}
-                    name="direccionEmergencia"
-                    type="text"
-                    value={guardian.direccionEmergencia}
-                    onChange={(e) => handleGuardianChange(index, e)}
-                  />
+                  <Label htmlFor={`g-direccionEmergencia-${index}`}>Dirección de Emergencia</Label>
+                  <Input id={`g-direccionEmergencia-${index}`} name="direccionEmergencia" type="text" value={guardian.direccionEmergencia} onChange={(e) => handleGuardianChange(index, e)} />
                 </div>
                 <div className="md:col-span-2">
-                  <Label htmlFor={`g-copiaIdentidadUrl-${index}`}>
-                    Subir Copia de Identidad
-                  </Label>
-                  <Input
-                    id={`g-copiaIdentidadUrl-${index}`}
-                    name="copiaIdentidadUrl"
-                    type="file"
-                    onChange={(e) => handleGuardianFileChange(index, e)}
-                    className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                  />
+                  <Label htmlFor={`g-copiaIdentidadUrl-${index}`}>Subir Copia de Identidad</Label>
+                  <Input id={`g-copiaIdentidadUrl-${index}`} name="copiaIdentidadUrl" type="file" onChange={(e) => handleGuardianFileChange(index, e)} className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                  {formErrors[`guardianIdFile_${index}`] && <p className="text-red-500 text-sm mt-1">{formErrors[`guardianIdFile_${index}`]}</p>}
                 </div>
               </div>
               {guardians.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => removeGuardian(index)}
-                  className="absolute top-2 right-2 text-red-500 hover:text-red-700 font-semibold"
-                >
+                <button type="button" onClick={() => removeGuardian(index)} className="absolute top-2 right-2 text-red-500 hover:text-red-700 font-semibold">
                   Eliminar
                 </button>
               )}
             </div>
           ))}
-          <button
-            type="button"
-            onClick={addGuardian}
-            className="mt-4 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded"
-          >
+          <button type="button" onClick={addGuardian} className="mt-4 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">
             Añadir Otra Ficha
           </button>
         </div>
 
         <div className="pt-6 text-right">
-          <button
-            type="submit"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg"
-          >
+          <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">
             Matricular Estudiante
           </button>
         </div>

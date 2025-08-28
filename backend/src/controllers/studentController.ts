@@ -5,32 +5,50 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// --- CREATE (Sin cambios) ---
+// --- CREATE (Con Validación de DNI Único) ---
 export const createStudent = async (req: Request, res: Response) => {
   try {
-    // 1. Separamos la lista de guardianes del resto de los datos del estudiante
     const { guardians, ...studentData } = req.body;
 
-    // 2. Convertimos la fecha de nacimiento a un objeto Date si viene como texto
+    // Validaciones básicas (que ya teníamos)
+    if (!studentData.fullName || !studentData.dateOfBirth) {
+        return res.status(400).json({ error: 'El nombre completo y la fecha de nacimiento son obligatorios.' });
+    }
+    if (!studentData.therapistId) {
+        return res.status(400).json({ error: 'Debe asignar un terapeuta al estudiante.' });
+    }
+    if (!guardians || !Array.isArray(guardians) || guardians.length === 0) {
+        return res.status(400).json({ error: 'Se requiere al menos un padre o tutor.' });
+    }
+
+    // ✅ NUEVA VALIDACIÓN: VERIFICAR DNI ÚNICO
+    for (const guardian of guardians) {
+        if (!guardian.fullName || !guardian.numeroIdentidad || !guardian.telefono) {
+            return res.status(400).json({ error: 'El nombre, DNI y teléfono son obligatorios para cada guardián.' });
+        }
+        const existingGuardian = await prisma.guardian.findUnique({
+            where: { numeroIdentidad: guardian.numeroIdentidad }
+        });
+        if (existingGuardian) {
+            return res.status(409).json({ error: `El número de identidad ${guardian.numeroIdentidad} ya está registrado en el sistema.` });
+        }
+    }
+
+    // Conversión de fechas
     if (studentData.dateOfBirth) {
       studentData.dateOfBirth = new Date(studentData.dateOfBirth);
     }
-
     if (studentData.anoIngreso) {
       studentData.anoIngreso = new Date(studentData.anoIngreso);
     }
 
     const newStudent = await prisma.student.create({
       data: {
-        // 3. Pasamos todos los datos del estudiante
         ...studentData,
-        // 4. Aquí ocurre la magia: le decimos a Prisma que cree
-        // los guardianes que vienen en la lista y los conecte a este estudiante.
         guardians: {
-          create: guardians, // 'guardians' debe ser un array de objetos
+          create: guardians,
         },
       },
-      // 5. Incluimos los guardianes creados en la respuesta para confirmar
       include: {
         guardians: true,
       },
@@ -42,6 +60,8 @@ export const createStudent = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'No se pudo procesar la matrícula.' });
   }
 };
+
+// --- (El resto de las funciones: getAllStudents, getStudentById, etc. se mantienen igual) ---
 
 // --- GET ALL (Modificado) ---
 export const getAllStudents = async (req: Request, res: Response) => {
@@ -71,13 +91,13 @@ export const getStudentById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const student = await prisma.student.findFirst({
-      where: { 
+      where: {
         id: parseInt(id),
-        isActive: true 
+        isActive: true
       },
       include: {
         therapySessions: {
-          where: { 
+          where: {
             startTime: { gte: new Date() }
           },
           include: { leccion: true }

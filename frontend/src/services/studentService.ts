@@ -10,15 +10,17 @@ type StudentInput = {
 };
 
 // --- Función para obtener todos los estudiantes (sin cambios) ---
-const getAllStudents = async () => {
+const getAllStudents = async (searchTerm?: string) => {
   try {
-    const response = await api.get('/students');
+    const params = searchTerm ? { search: searchTerm } : {};
+    const response = await api.get('/students', { params });
     return response.data;
   } catch (error) {
     console.error("Error al obtener los estudiantes:", error);
     throw error;
   }
 };
+
 
 // --- Función para crear un estudiante (Modificada) ---
 // ✅ PASO 2: Aplicamos el nuevo tipo al parámetro de la función

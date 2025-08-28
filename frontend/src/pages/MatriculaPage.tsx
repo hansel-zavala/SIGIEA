@@ -13,7 +13,7 @@ import ComboBox from "../components/ui/ComboBox";
 import MultiSelectWithCatalog from "../components/ui/MultiSelectWithCatalog";
 import { departamentos, municipiosPorDepartamento } from '../data/honduras-data';
 
-// ... (interfaces y constantes se mantienen igual) ...
+// ... (interfaces y constantes existentes) ...
 interface Guardian {
   fullName: string;
   numeroIdentidad: string;
@@ -34,6 +34,19 @@ const tiposDeAtencion = [
 ];
 
 
+// ✅ Constante para los tipos de sangre
+const tiposDeSangre = [
+    { value: 'A_POSITIVO', label: 'A+' },
+    { value: 'A_NEGATIVO', label: 'A-' },
+    { value: 'B_POSITIVO', label: 'B+' },
+    { value: 'B_NEGATIVO', label: 'B-' },
+    { value: 'AB_POSITIVO', label: 'AB+' },
+    { value: 'AB_NEGATIVO', label: 'AB-' },
+    { value: 'O_POSITIVO', label: 'O+' },
+    { value: 'O_NEGATIVO', label: 'O-' },
+];
+
+
 function MatriculaPage() {
     const [departamento, setDepartamento] = useState('');
     const [municipio, setMunicipio] = useState('');
@@ -42,7 +55,7 @@ function MatriculaPage() {
   const [studentData, setStudentData] = useState({
     fullName: "",
     dateOfBirth: "",
-    lugarNacimiento: "", 
+    lugarNacimiento: "",
     direccion: "",
     institucionProcedencia: "",
     recibioEvaluacion: false,
@@ -59,11 +72,7 @@ function MatriculaPage() {
     atencionVocacional: false,
     inclusionEscolar: false,
     educacionFisica: false,
-    // ✅ CAMBIO: Ya no necesitamos estos campos de texto
-    // usaMedicamentos: false,
-    // cualesMedicamentos: "",
-    // esAlergico: false,
-    // cualesAlergias: "",
+    tipoSangre: "",
   });
 
   const [guardians, setGuardians] = useState<Guardian[]>([
@@ -76,7 +85,6 @@ function MatriculaPage() {
     },
   ]);
 
-  // ✅ NUEVOS ESTADOS para los catálogos
   const [allMedicamentos, setAllMedicamentos] = useState<Medicamento[]>([]);
   const [selectedMedicamentos, setSelectedMedicamentos] = useState<Medicamento[]>([]);
   const [allAlergias, setAllAlergias] = useState<Alergia[]>([]);
@@ -113,7 +121,6 @@ function MatriculaPage() {
         }
     }, [departamento]);
 
-  // ✅ Cargar todos los catálogos al iniciar
   useEffect(() => {
     therapistService.getAllTherapists().then(setTherapists).catch(() => setError("No se pudo cargar la lista de terapeutas."));
     medicamentoService.getAll().then(setAllMedicamentos).catch(() => setError("No se pudo cargar el catálogo de medicamentos."));
@@ -150,7 +157,6 @@ function MatriculaPage() {
     }
   };
 
-  // ✅ FUNCIONES PARA GESTIONAR CATÁLOGOS
   const handleAddMedicamento = async (name: string) => {
     await medicamentoService.create(name);
     const updatedList = await medicamentoService.getAll();
@@ -183,9 +189,7 @@ function MatriculaPage() {
     setAllAlergias(updatedList);
   };
 
-
   const validateForm = () => {
-    // ... (la función de validación se mantiene igual) ...
     const errors: Record<string, string> = {};
     const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
     const dniRegex = /^\d{13}$/;
@@ -203,8 +207,6 @@ function MatriculaPage() {
     if (!municipio) errors.municipio = "Debe seleccionar un municipio.";
 
     if (!therapistId) errors.therapistId = "Debe seleccionar un terapeuta.";
-    
-    // Ya no necesitamos las validaciones condicionales de texto aquí
 
     errors.partidaFileError = validateFile(partidaFile);
     errors.evaluacionFileError = validateFile(evaluacionFile);
@@ -244,7 +246,7 @@ function MatriculaPage() {
       if (partidaFile) partidaUrl = (await uploadService.uploadFile(partidaFile)).filePath;
 
       let evaluacionUrl = "";
-      if (evaluacionFile && studentData.recibioEvaluacion) {
+      if (evaluacionFile) {
         evaluacionUrl = (await uploadService.uploadFile(evaluacionFile)).filePath;
       }
 
@@ -266,10 +268,8 @@ function MatriculaPage() {
         resultadoEvaluacionUrl: evaluacionUrl,
         guardians: finalGuardians,
         therapistId: parseInt(therapistId),
-        // ✅ ENVIAMOS LOS IDs DE LOS ÍTEMS SELECCIONADOS
         medicamentos: selectedMedicamentos.map(m => m.id),
         alergias: selectedAlergias.map(a => a.id),
-        // ✅ El estado de usaMedicamentos/esAlergico se infiere si la lista tiene ítems
         usaMedicamentos: selectedMedicamentos.length > 0,
         esAlergico: selectedAlergias.length > 0,
       };
@@ -287,8 +287,7 @@ function MatriculaPage() {
       <h2 className="text-3xl font-bold mb-6 text-gray-800">Ficha de Matrícula</h2>
       {error && <p className="text-red-500 bg-red-100 p-3 rounded-md mb-6">{error}</p>}
       <form onSubmit={handleSubmit} className="space-y-8 bg-white p-8 rounded-lg shadow-md" noValidate>
-        {/* ... (Sección Datos del Alumno y otras se mantienen igual) ... */}
-         {/* --- SECCIÓN DATOS DEL ALUMNO --- */}
+        {/* --- SECCIÓN DATOS DEL ALUMNO --- */}
         <div className="border-b pb-6">
           <h3 className="text-xl font-semibold text-gray-700">Datos del Alumno</h3>
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -303,7 +302,6 @@ function MatriculaPage() {
               {formErrors.dateOfBirth && <p className="text-red-500 text-sm mt-1">{formErrors.dateOfBirth}</p>}
             </div>
             
-            {/* ✅ PASO 8.2: Usamos el ComboBox en lugar de Select */}
             <div>
               <Label htmlFor="departamento">Departamento de Nacimiento</Label>
               <ComboBox
@@ -330,7 +328,6 @@ function MatriculaPage() {
               <Label htmlFor="direccion">Dirección</Label>
               <Input id="direccion" name="direccion" type="text" value={studentData.direccion} onChange={handleChange}/>
             </div>
-            {/* ... (resto de campos del alumno) ... */}
             <div>
               <Label htmlFor="genero">Género</Label>
               <Select
@@ -344,6 +341,20 @@ function MatriculaPage() {
                 ]}
               />
             </div>
+            
+            {/* ✅ NUEVO CAMPO: Tipo de Sangre */}
+            <div>
+              <Label htmlFor="tipoSangre">Tipo de Sangre</Label>
+              <Select
+                id="tipoSangre"
+                name="tipoSangre"
+                value={studentData.tipoSangre}
+                onChange={handleChange}
+                placeholder="-- Selecciona el tipo de sangre --"
+                options={tiposDeSangre}
+              />
+            </div>
+
             <div>
               <Label htmlFor="zona">Zona</Label>
               <Select
@@ -444,7 +455,7 @@ function MatriculaPage() {
           </div>
         </div>
 
-        {/* --- SECCIÓN TIPOS DE ATENCIÓN --- */}
+        {/* --- (El resto del formulario se mantiene igual) --- */}
         <div className="border-b pb-6">
           <h3 className="text-xl font-semibold text-gray-700">Tipos de Atención</h3>
           <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -463,8 +474,7 @@ function MatriculaPage() {
             ))}
           </div>
         </div>
-
-        {/* ✅ PASO FINAL: Reemplazamos la sección médica */}
+        
         <div className="border-b pb-6">
           <h3 className="text-xl font-semibold text-gray-700">Información Médica</h3>
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -494,9 +504,8 @@ function MatriculaPage() {
             </div>
           </div>
         </div>
-
-        {/* ... (El resto del formulario se mantiene igual) ... */}
-         <div className="border-b pb-6">
+        
+        <div className="border-b pb-6">
           <h3 className="text-xl font-semibold text-gray-700">Asignación de Terapeuta</h3>
           <div className="mt-4">
             <Label htmlFor="therapistId">Nombre del Terapeuta</Label>
@@ -558,6 +567,7 @@ function MatriculaPage() {
             Añadir Otra Ficha
           </button>
         </div>
+
         <div className="pt-6 text-right">
           <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">
             Matricular Estudiante

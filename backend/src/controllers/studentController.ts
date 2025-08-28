@@ -74,11 +74,20 @@ export const createStudent = async (req: Request, res: Response) => {
 // --- GET ALL (Modificado) ---
 export const getAllStudents = async (req: Request, res: Response) => {
   try {
-    // ✅ CAMBIO: Añadimos un 'where' para traer solo los activos
+    const { search } = req.query;
+    const whereCondition = {
+      isActive: true,
+      ...(search && {
+        fullName: {
+          contains: search as string,
+        },
+      }),
+    };
+
     const students = await prisma.student.findMany({
-      where: { isActive: true },
+      where: whereCondition, // Usamos la nueva condición
       orderBy: {
-        createdAt: 'desc', // 'desc' significa descendente (del más nuevo al más viejo)
+        createdAt: 'desc',
       },
       include: {
         therapist: {
@@ -143,6 +152,8 @@ export const updateStudent = async (req: Request, res: Response) => {
     delete studentData.therapist;
     delete studentData.createdAt;
     delete studentData.updatedAt;
+    delete studentData.usaMedicamentos;
+    delete studentData.esAlergico;
 
     // 3. Convertimos las fechas
     if (studentData.dateOfBirth) {

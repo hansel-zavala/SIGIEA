@@ -2,7 +2,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { jwtDecode } from 'jwt-decode';
 
-// Definimos la forma de los datos del usuario y del contexto
 interface User {
   id: number;
   role: string;
@@ -14,28 +13,34 @@ interface AuthContextType {
   token: string | null;
   login: (token: string) => void;
   logout: () => void;
-  
 }
 
-// Creamos el contexto
 const AuthContext = createContext<AuthContextType | null>(null);
 
-// Creamos el Proveedor del contexto
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  const [token, setToken] = useState<string | null>(null);
+  // ✅ PASO 1.1: Añadimos un estado de carga
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Al cargar la app, revisamos si ya hay un token en el localStorage
-    const storedToken = localStorage.getItem('token');
-    if (storedToken) {
-      const decodedUser: User = jwtDecode(storedToken);
-      setUser(decodedUser);
-      setToken(storedToken);
+    try {
+        const storedToken = localStorage.getItem('token');
+        if (storedToken) {
+          const decodedUser: User = jwtDecode(storedToken);
+          setUser(decodedUser);
+          setToken(storedToken);
+        }
+    } catch (error) {
+        console.error("Failed to decode token", error);
+        // Si el token es inválido, lo limpiamos
+        localStorage.removeItem('token');
+    } finally {
+        // ✅ PASO 1.2: Marcamos la carga como completada, haya o no token
+        setLoading(false);
     }
   }, []);
 
-  // Función para iniciar sesión
   const login = (newToken: string) => {
     localStorage.setItem('token', newToken);
     const decodedUser: User = jwtDecode(newToken);
@@ -43,12 +48,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setToken(newToken);
   };
 
-  // Función para cerrar sesión
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
     setToken(null);
   };
+
+  // ✅ PASO 1.3: No renderizamos la aplicación hasta que la comprobación haya terminado
+  if (loading) {
+    return <div className="flex h-screen items-center justify-center">Cargando...</div>;
+  }
 
   return (
     <AuthContext.Provider value={{ user, token, login, logout }}>
@@ -57,7 +66,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-// Hook personalizado para usar el contexto fácilmente
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

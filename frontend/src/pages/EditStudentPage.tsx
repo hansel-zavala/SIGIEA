@@ -14,11 +14,20 @@ import MultiSelectWithCatalog from '../components/ui/MultiSelectWithCatalog';
 import { departamentos, municipiosPorDepartamento } from '../data/honduras-data';
 import { FaExternalLinkAlt, FaTrash } from 'react-icons/fa';
 
+// ✅ Añadimos la misma constante de tipos de sangre
+const tiposDeSangre = [
+    { value: 'A_POSITIVO', label: 'A+' }, { value: 'A_NEGATIVO', label: 'A-' },
+    { value: 'B_POSITIVO', label: 'B+' }, { value: 'B_NEGATIVO', label: 'B-' },
+    { value: 'AB_POSITIVO', label: 'AB+' }, { value: 'AB_NEGATIVO', label: 'AB-' },
+    { value: 'O_POSITIVO', label: 'O+' }, { value: 'O_NEGATIVO', label: 'O-' },
+];
+
 type StudentFormData = {
     fullName: string; dateOfBirth: string; lugarNacimiento: string; direccion: string; institucionProcedencia: string;
     recibioEvaluacion: boolean; institutoIncluido: string; anoIngreso: string;
     zona: 'Urbano' | 'Rural'; jornada: 'Matutina' | 'Vespertina';
     genero: 'Masculino' | 'Femenino';
+    tipoSangre?: string; // ✅ Añadido como opcional
     therapistId?: number | string;
     atencionGrupal: boolean; atencionIndividual: boolean; atencionPrevocacional: boolean; atencionDistancia: boolean;
     terapiaDomicilio: boolean; atencionVocacional: boolean; inclusionEscolar: boolean; educacionFisica: boolean;
@@ -46,21 +55,16 @@ function EditStudentPage() {
   const [newPartidaFile, setNewPartidaFile] = useState<File | null>(null);
   const [newEvaluacionFile, setNewEvaluacionFile] = useState<File | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-
   const [departamento, setDepartamento] = useState('');
   const [municipio, setMunicipio] = useState('');
   const [municipios, setMunicipios] = useState<{ id: string; nombre: string }[]>([]);
-
-  // Estados para catálogos médicos
   const [allMedicamentos, setAllMedicamentos] = useState<Medicamento[]>([]);
   const [selectedMedicamentos, setSelectedMedicamentos] = useState<Medicamento[]>([]);
   const [allAlergias, setAllAlergias] = useState<Alergia[]>([]);
   const [selectedAlergias, setSelectedAlergias] = useState<Alergia[]>([]);
 
-  // Carga inicial de datos
   useEffect(() => {
     if (id) {
-      // Cargar catálogos
       therapistService.getAllTherapists().then(setTherapists);
       medicamentoService.getAll().then(setAllMedicamentos);
       alergiaService.getAll().then(setAllAlergias);
@@ -74,8 +78,6 @@ function EditStudentPage() {
             anoIngreso: new Date(student.anoIngreso).toISOString().split('T')[0],
           };
           setFormData(formattedStudent);
-          
-          // Pre-seleccionar catálogos médicos
           setSelectedMedicamentos(student.medicamentos || []);
           setSelectedAlergias(student.alergias || []);
 
@@ -99,12 +101,10 @@ function EditStudentPage() {
     if (departamento) setMunicipios(municipiosPorDepartamento[departamento] || []);
   }, [departamento]);
 
-  // ... (Las funciones handleChange, validateForm, handleFileDelete se mantienen igual, pero las incluimos para que el código esté completo)
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     if (type === 'checkbox') {
-        const { checked } = e.target as HTMLInputElement;
-        setFormData(prev => ({ ...prev, [name]: checked }));
+        setFormData(prev => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }));
     } else {
         setFormData(prev => ({ ...prev, [name]: value }));
     }
@@ -131,11 +131,9 @@ function EditStudentPage() {
     }
   };
 
-  // Funciones de gestión de catálogos
   const handleAddMedicamento = async (name: string) => { await medicamentoService.create(name); setAllMedicamentos(await medicamentoService.getAll()); };
   const handleUpdateMedicamento = async (id: number, name: string) => { await medicamentoService.update(id, name); setAllMedicamentos(await medicamentoService.getAll()); };
   const handleDeleteMedicamento = async (id: number) => { await medicamentoService.remove(id); setAllMedicamentos(await medicamentoService.getAll()); };
-
   const handleAddAlergia = async (name: string) => { await alergiaService.create(name); setAllAlergias(await alergiaService.getAll()); };
   const handleUpdateAlergia = async (id: number, name: string) => { await alergiaService.update(id, name); setAllAlergias(await alergiaService.getAll()); };
   const handleDeleteAlergia = async (id: number) => { await alergiaService.remove(id); setAllAlergias(await alergiaService.getAll()); };
@@ -179,7 +177,6 @@ function EditStudentPage() {
       <form onSubmit={handleSubmit} className="space-y-8 bg-white p-8 rounded-lg shadow-md" noValidate>
         {error && <p className="text-red-500 bg-red-100 p-3 rounded-md mb-6">{error}</p>}
         
-        {/* ... (Sección Datos del Alumno igual, con ComboBox) ... */}
         <div className="border-b pb-6">
           <h3 className="text-xl font-semibold text-gray-700">Datos del Alumno</h3>
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -215,6 +212,20 @@ function EditStudentPage() {
             </div>
             <div><Label htmlFor="direccion">Dirección</Label><Input id="direccion" name="direccion" type="text" value={formData.direccion || ''} onChange={handleChange} /></div>
             <div><Label htmlFor="genero">Género</Label><Select id="genero" name="genero" value={formData.genero || ''} onChange={handleChange} options={[{ value: 'Masculino', label: 'Masculino' }, { value: 'Femenino', label: 'Femenino' }]}/></div>
+            
+            {/* ✅ NUEVO CAMPO: Tipo de Sangre */}
+            <div>
+              <Label htmlFor="tipoSangre">Tipo de Sangre</Label>
+              <Select
+                id="tipoSangre"
+                name="tipoSangre"
+                value={formData.tipoSangre || ''}
+                onChange={handleChange}
+                placeholder="-- Opcional --"
+                options={tiposDeSangre}
+              />
+            </div>
+
             <div><Label htmlFor="zona">Zona</Label><Select id="zona" name="zona" value={formData.zona || ''} onChange={handleChange} options={[{ value: 'Urbano', label: 'Urbano' }, { value: 'Rural', label: 'Rural' }]}/></div>
             <div><Label htmlFor="jornada">Jornada</Label><Select id="jornada" name="jornada" value={formData.jornada || ''} onChange={handleChange} options={[{ value: 'Matutina', label: 'Matutina' }, { value: 'Vespertina', label: 'Vespertina' }]}/></div>
             <div><Label htmlFor="institucionProcedencia">Institución de Procedencia</Label><Input id="institucionProcedencia" name="institucionProcedencia" type="text" value={formData.institucionProcedencia || ''} onChange={handleChange} /></div>
@@ -250,7 +261,6 @@ function EditStudentPage() {
           </div>
         </div>
 
-        {/* ... (Sección Tipos de Atención se mantiene igual) ... */}
         <div className="border-b pb-6">
           <h3 className="text-xl font-semibold text-gray-700">Tipos de Atención</h3>
           <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -270,7 +280,6 @@ function EditStudentPage() {
           </div>
         </div>
         
-        {/* ✅ Sección de Información Médica actualizada */}
         <div className="border-b pb-6">
           <h3 className="text-xl font-semibold text-gray-700">Información Médica</h3>
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -301,7 +310,6 @@ function EditStudentPage() {
           </div>
         </div>
 
-        {/* ... (Resto del formulario se mantiene igual) ... */}
         <div className="border-b pb-6">
           <h3 className="text-xl font-semibold text-gray-700">Asignación de Terapeuta</h3>
           <div className="mt-4">

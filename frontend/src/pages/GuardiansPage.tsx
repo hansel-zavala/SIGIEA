@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import guardianService from '../services/guardianService';
+import Input from '../components/ui/Input';
+import Pagination from '../components/ui/Pagination';
 import { FaUserCircle, FaPencilAlt, FaTrash } from 'react-icons/fa';
 
 interface Guardian {
@@ -10,7 +12,7 @@ interface Guardian {
   fullName: string;
   telefono: string;
   direccionEmergencia: string | null;
-  student: { // Objeto anidado del estudiante
+  student: {
     fullName: string;
   }
 }
@@ -19,41 +21,62 @@ function GuardiansPage() {
   const [guardians, setGuardians] = useState<Guardian[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [itemsPerPage] = useState(5);
 
   useEffect(() => {
-    const fetchGuardians = async () => {
-      try {
-        const data = await guardianService.getAllGuardians();
-        setGuardians(data);
-      } catch (err) {
-        setError('No se pudo cargar la lista de guardianes.');
-      } finally {
-        setLoading(false);
-      }
+    const fetchGuardians = () => {
+        setLoading(true);
+        guardianService.getAllGuardians(searchTerm, currentPage, itemsPerPage)
+            .then(response => {
+                setGuardians(response.data);
+                setTotalItems(response.total);
+            })
+            .catch(() => {
+                setError('No se pudo cargar la lista de guardianes.');
+            })
+            .finally(() => {
+                setLoading(false);
+            });
     };
 
-    fetchGuardians();
-  }, []);
+    const timerId = setTimeout(fetchGuardians, 500);
+    return () => clearTimeout(timerId);
+  }, [searchTerm, currentPage, itemsPerPage]);
 
   const handleDelete = async (guardianId: number) => {
     if (window.confirm('¿Seguro que quieres desactivar a este guardián?')) {
       try {
         await guardianService.deleteGuardian(guardianId);
         setGuardians(guardians.filter(g => g.id !== guardianId));
+        setTotalItems(prev => prev - 1);
       } catch (err) {
         setError('No se pudo desactivar al guardián.');
       }
     }
   };
 
-  if (loading) return <p>Cargando guardianes...</p>;
-  if (error) return <p className="text-red-500">{error}</p>;
+  const handlePageChange = (pageNumber: number) => {
+      setCurrentPage(pageNumber);
+  };
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
+    <div className="bg-white p-6 rounded-lg shadow-md">
+      <div className="flex justify-between items-center mb-6 gap-4">
         <h2 className="text-2xl font-bold text-gray-800">Gestión de Guardianes</h2>
-        {/* Aquí podría ir un botón para añadir guardianes si fuera necesario */}
+        <div className="flex-grow max-w-md">
+            <Input
+                type="text"
+                placeholder="Buscar por nombre..."
+                value={searchTerm}
+                onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                }}
+            />
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
@@ -67,35 +90,45 @@ function GuardiansPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {guardians.map((guardian) => (
-              <tr key={guardian.id}>
-                <td className="px-5 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="text-gray-400"><FaUserCircle size={40} /></div>
-                    <div>
-                      <span className="block font-medium text-gray-800">{guardian.fullName}</span>
-                      <span className="block text-gray-500 text-xs">ID: {guardian.id}</span>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-5 py-4 text-gray-500 font-medium">{guardian.student.fullName}</td>
-                <td className="px-5 py-4 text-gray-500">{guardian.telefono}</td>
-                <td className="px-5 py-4">
-                  <td className="px-5 py-4">
-                  <div className="flex gap-4">
-                    <Link to={`/guardians/edit/${guardian.id}`} title="Editar Guardián">
-                      <FaPencilAlt className="text-blue-500 hover:text-blue-700" />
-                    </Link>
-                    <button onClick={() => handleDelete(guardian.id)} title="Desactivar Guardián">
-                      <FaTrash className="text-red-500 hover:text-red-700" />
-                    </button>
-                  </div>
-                </td>
-                </td>
-              </tr>
-            ))}
+            {loading ? (
+                <tr><td colSpan={4} className="text-center p-8 text-gray-500">Cargando...</td></tr>
+            ) : guardians.length > 0 ? (
+                guardians.map((guardian) => (
+                  <tr key={guardian.id}>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="text-gray-400"><FaUserCircle size={40} /></div>
+                        <div>
+                          <span className="block font-medium text-gray-800">{guardian.fullName}</span>
+                          <span className="block text-gray-500 text-xs">ID: {guardian.id}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 text-gray-500 font-medium">{guardian.student.fullName}</td>
+                    <td className="px-5 py-4 text-gray-500">{guardian.telefono}</td>
+                    <td className="px-5 py-4">
+                      <div className="flex gap-4">
+                        <Link to={`/guardians/edit/${guardian.id}`} title="Editar Guardián">
+                          <FaPencilAlt className="text-blue-500 hover:text-blue-700" />
+                        </Link>
+                        <button onClick={() => handleDelete(guardian.id)} title="Desactivar Guardián">
+                          <FaTrash className="text-red-500 hover:text-red-700" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+            ) : (
+                <tr><td colSpan={4} className="text-center p-8 text-gray-500">No se encontraron guardianes.</td></tr>
+            )}
           </tbody>
         </table>
+        <Pagination
+            itemsPerPage={itemsPerPage}
+            totalItems={totalItems}
+            currentPage={currentPage}
+            onPageChange={handlePageChange}
+        />
       </div>
     </div>
   );

@@ -5,14 +5,37 @@ import prisma from '../db.js';
 // Obtener todos los guardianes activos
 export const getAllGuardians = async (req: Request, res: Response) => {
   try {
-    const guardians = await prisma.guardian.findMany({
-      where: { isActive: true },
-      include: { student: true },
-      orderBy: {
-        createdAt: 'desc', // 'desc' significa descendente (del más nuevo al más viejo)
-      },
+    const { search, page = '1', limit = '10' } = req.query;
+    const pageNum = parseInt(page as string, 10);
+    const limitNum = parseInt(limit as string, 10);
+    const skip = (pageNum - 1) * limitNum;
+
+    const whereCondition = {
+      isActive: true,
+      ...(search && {
+        fullName: {
+          contains: search as string,
+        },
+      }),
+    };
+
+    const [guardians, totalGuardians] = await prisma.$transaction([
+      prisma.guardian.findMany({
+        where: whereCondition,
+        include: { student: true },
+        orderBy: { createdAt: 'desc' },
+        skip: skip,
+        take: limitNum,
+      }),
+      prisma.guardian.count({ where: whereCondition }),
+    ]);
+
+    res.json({
+      data: guardians,
+      total: totalGuardians,
+      page: pageNum,
+      totalPages: Math.ceil(totalGuardians / limitNum),
     });
-    res.json(guardians);
   } catch (error) {
     res.status(500).json({ error: 'No se pudieron obtener los guardianes.' });
   }
@@ -47,7 +70,6 @@ export const updateGuardian = async (req: Request, res: Response) => {
   }
 };
 
-// ✅ NUEVA FUNCIÓN: DESACTIVAR UN GUARDIÁN
 export const deleteGuardian = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;

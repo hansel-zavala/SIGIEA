@@ -41,9 +41,9 @@ function TherapistsPage() {
           </button>
         </Link>
       </div>
-      <div className="overflow-x-auto">
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <table className="w-full text-sm">
-          <thead className="border-b bg-gray-50">
+          <thead className="border-b border-gray-100 bg-gray-50">
             <tr>
               <th className="px-5 py-3 font-medium text-gray-500 text-left">Nombre</th>
               <th className="px-5 py-3 font-medium text-gray-500 text-left">Contacto</th>
@@ -51,7 +51,7 @@ function TherapistsPage() {
               <th className="px-5 py-3 font-medium text-gray-500 text-left">Acciones</th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="divide-y divide-gray-100">
             {therapists.map((therapist) => (
               <tr key={therapist.id}>
                 <td className="px-5 py-4">

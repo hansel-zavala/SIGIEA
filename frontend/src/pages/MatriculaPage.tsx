@@ -13,7 +13,6 @@ import ComboBox from "../components/ui/ComboBox";
 import MultiSelectWithCatalog from "../components/ui/MultiSelectWithCatalog";
 import { departamentos, municipiosPorDepartamento } from '../data/honduras-data';
 
-// ... (interfaces y constantes existentes) ...
 interface Guardian {
   fullName: string;
   numeroIdentidad: string;
@@ -33,8 +32,6 @@ const tiposDeAtencion = [
   { id: "educacionFisica", label: "Educación Física" },
 ];
 
-
-// ✅ Constante para los tipos de sangre
 const tiposDeSangre = [
     { value: 'A_POSITIVO', label: 'A+' },
     { value: 'A_NEGATIVO', label: 'A-' },
@@ -283,7 +280,7 @@ function MatriculaPage() {
   };
 
   return (
-    <div className="max-w-8xl mx-auto">
+    <div className="max-w-8xl mx-auto bg-white p-6 rounded-lg shadow-md">
       <h2 className="text-3xl font-bold mb-6 text-gray-800">Ficha de Matrícula</h2>
       {error && <p className="text-red-500 bg-red-100 p-3 rounded-md mb-6">{error}</p>}
       <form onSubmit={handleSubmit} className="space-y-8 bg-white p-8 rounded-lg shadow-md" noValidate>
@@ -342,7 +339,7 @@ function MatriculaPage() {
               />
             </div>
             
-            {/* ✅ NUEVO CAMPO: Tipo de Sangre */}
+            {/* Tipo de Sangre */}
             <div>
               <Label htmlFor="tipoSangre">Tipo de Sangre</Label>
               <Select
@@ -455,7 +452,6 @@ function MatriculaPage() {
           </div>
         </div>
 
-        {/* --- (El resto del formulario se mantiene igual) --- */}
         <div className="border-b pb-6">
           <h3 className="text-xl font-semibold text-gray-700">Tipos de Atención</h3>
           <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">

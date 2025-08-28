@@ -20,7 +20,6 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  // ✅ PASO 1.1: Añadimos un estado de carga
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,10 +32,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     } catch (error) {
         console.error("Failed to decode token", error);
-        // Si el token es inválido, lo limpiamos
         localStorage.removeItem('token');
     } finally {
-        // ✅ PASO 1.2: Marcamos la carga como completada, haya o no token
         setLoading(false);
     }
   }, []);
@@ -54,7 +51,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setToken(null);
   };
 
-  // ✅ PASO 1.3: No renderizamos la aplicación hasta que la comprobación haya terminado
   if (loading) {
     return <div className="flex h-screen items-center justify-center">Cargando...</div>;
   }

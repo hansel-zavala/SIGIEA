@@ -76,7 +76,7 @@ function StudentDetailModal({ isOpen, onRequestClose, student }: ModalProps) {
       <div className="space-y-6">
         <h2 className="text-2xl font-bold text-gray-800">Ficha Completa de: {student.fullName}</h2>
 
-        {/* --- Datos Personales --- */}
+        {/*  Datos Personales  */}
         <div className="border-t pt-4">
           <h3 className="text-lg font-semibold text-blue-700 mb-3">Información Personal</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -91,7 +91,7 @@ function StudentDetailModal({ isOpen, onRequestClose, student }: ModalProps) {
           </div>
         </div>
         
-        {/* --- Datos Médicos --- */}
+        {/*  Datos Médicos  */}
         <div className="border-t pt-4">
           <h3 className="text-lg font-semibold text-blue-700 mb-3">Información Médica</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -107,7 +107,7 @@ function StudentDetailModal({ isOpen, onRequestClose, student }: ModalProps) {
           </div>
         </div>
 
-        {/* --- Tipos de Atención --- */}
+        {/*  Tipos de Atención  */}
         <div className="border-t pt-4">
           <h3 className="text-lg font-semibold text-blue-700 mb-3">Tipos de Atención Recibida</h3>
           <div className="flex flex-wrap gap-2">

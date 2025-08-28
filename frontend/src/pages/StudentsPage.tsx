@@ -4,15 +4,13 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import studentService from "../services/studentService";
 import Badge from "../components/ui/Badge";
-import Input from "../components/ui/Input"; // ✅ Importamos el Input
+import Input from "../components/ui/Input";
+import Pagination from "../components/ui/Pagination";
 import { FaUserCircle, FaPencilAlt, FaTrash, FaCalendarPlus } from "react-icons/fa";
 
 interface Student {
   id: number;
   fullName: string;
-  diagnosis: string | null;
-  supportLevel: string | null;
-  // Añadimos la propiedad therapist para que TypeScript la reconozca
   therapist: { fullName: string } | null;
 }
 
@@ -20,58 +18,65 @@ function StudentsPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  // ✅ PASO 3.1: Estado para el término de búsqueda
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [itemsPerPage] = useState(5);
 
-  // ✅ PASO 3.2: Modificamos useEffect para que reaccione a los cambios en la búsqueda
   useEffect(() => {
-    // Usamos un temporizador (debounce) para no hacer una llamada a la API en cada tecla presionada
-    const timerId = setTimeout(() => {
-      setLoading(true);
-      studentService.getAllStudents(searchTerm)
-        .then(data => {
-          setStudents(data);
-        })
-        .catch(() => {
-          setError("No se pudo cargar la lista de estudiantes.");
-        })
-        .finally(() => {
-          setLoading(false);
-        });
-    }, 500); // Espera 500ms después de que el usuario deja de escribir
-
-    // Limpiamos el temporizador si el componente se desmonta o el término de búsqueda cambia
+    const fetchStudents = () => {
+        setLoading(true);
+        studentService.getAllStudents(searchTerm, currentPage, itemsPerPage)
+            .then(response => {
+                setStudents(response.data);
+                setTotalItems(response.total);
+            })
+            .catch(() => {
+                setError("No se pudo cargar la lista de estudiantes.");
+            })
+            .finally(() => {
+                setLoading(false);
+            });
+    };
+    
+    const timerId = setTimeout(fetchStudents, 500);
     return () => clearTimeout(timerId);
-  }, [searchTerm]); // Este efecto se ejecutará cada vez que `searchTerm` cambie
+
+  }, [searchTerm, currentPage, itemsPerPage]);
 
   const handleDelete = async (studentId: number) => {
     if (window.confirm("¿Estás seguro de que quieres desactivar a este estudiante?")) {
       try {
         await studentService.deleteStudent(studentId);
         setStudents(students.filter((student) => student.id !== studentId));
+        setTotalItems(prev => prev -1);
       } catch (err) {
         setError("No se pudo desactivar el estudiante.");
       }
     }
   };
+  
+  const handlePageChange = (pageNumber: number) => {
+      setCurrentPage(pageNumber);
+  };
 
   return (
-    <div>
+    <div className="bg-white p-6 rounded-lg shadow-md">
       <div className="flex justify-between items-center mb-6 gap-4">
         <h2 className="text-2xl font-bold text-gray-800">
           Gestión de Estudiantes
         </h2>
-        
-        {/* ✅ PASO 3.3: Añadimos el campo de búsqueda */}
         <div className="bg-white flex-grow max-w-md  py-2 px-2 rounded">
             <Input
                 type="text"
                 placeholder="Buscar por nombre..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                }}
             />
         </div>
-
         <Link to="/matricula">
           <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
             Añadir Estudiante
@@ -132,6 +137,12 @@ function StudentsPage() {
             </tbody>
           </table>
         </div>
+        <Pagination
+            itemsPerPage={itemsPerPage}
+            totalItems={totalItems}
+            currentPage={currentPage}
+            onPageChange={handlePageChange}
+        />
       </div>
     </div>
   );

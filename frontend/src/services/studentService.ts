@@ -1,18 +1,20 @@
 // frontend/src/services/studentService.ts
 import api from './api';
 
-// ✅ PASO 1: Definimos un tipo para los datos de entrada de un nuevo estudiante
 type StudentInput = {
   fullName: string;
   dateOfBirth: string;
-  diagnosis?: string; // El '?' hace que estos campos sean opcionales
+  diagnosis?: string;
   supportLevel?: string;
 };
 
-// --- Función para obtener todos los estudiantes (sin cambios) ---
-const getAllStudents = async (searchTerm?: string) => {
+const getAllStudents = async (searchTerm?: string, page: number = 1, limit: number = 10) => {
   try {
-    const params = searchTerm ? { search: searchTerm } : {};
+    const params = {
+        search: searchTerm,
+        page,
+        limit,
+    };
     const response = await api.get('/students', { params });
     return response.data;
   } catch (error) {
@@ -21,9 +23,6 @@ const getAllStudents = async (searchTerm?: string) => {
   }
 };
 
-
-// --- Función para crear un estudiante (Modificada) ---
-// ✅ PASO 2: Aplicamos el nuevo tipo al parámetro de la función
 const createStudent = async (studentData: StudentInput) => {
   try {
     const response = await api.post('/students', studentData);
@@ -34,7 +33,6 @@ const createStudent = async (studentData: StudentInput) => {
   }
 };
 
-// ✅ NUEVA FUNCIÓN PARA ELIMINAR UN ESTUDIANTE
 const deleteStudent = async (id: number) => {
   try {
     const response = await api.delete(`/students/${id}`);

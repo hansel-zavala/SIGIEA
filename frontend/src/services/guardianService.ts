@@ -1,10 +1,15 @@
 // frontend/src/services/guardianService.ts
 import api from './api';
 
-const getAllGuardians = async () => {
+const getAllGuardians = async (searchTerm?: string, page: number = 1, limit: number = 10) => {
   try {
-    const response = await api.get('/guardians');
-    return response.data;
+    const params = {
+        search: searchTerm,
+        page,
+        limit,
+    };
+    const response = await api.get('/guardians', { params });
+    return response.data; // Devolverá { data: [], total: X, ... }
   } catch (error) {
     console.error("Error al obtener los guardianes:", error);
     throw error;

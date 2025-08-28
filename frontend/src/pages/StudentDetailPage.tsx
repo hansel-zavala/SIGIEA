@@ -3,18 +3,17 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import studentService from '../services/studentService';
 import therapySessionService from '../services/therapySessionService';
-import { FaCalendarAlt, FaFileAlt, FaPrint } from 'react-icons/fa'; // ✅ Icono añadido
+import { FaCalendarAlt, FaFileAlt, FaPrint, FaPencilAlt } from 'react-icons/fa';
 import Badge from '../components/ui/Badge';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
-import type { EventInput } from '@fullcalendar/core';
+//import type { EventInput } from '@fullcalendar/core';
 import Modal from 'react-modal';
 import Label from '../components/ui/Label';
 import Select from '../components/ui/Select';
 import Pagination from '../components/ui/Pagination';
 import StudentDetailModal from './StudentDetailModal';
 
-// ... (El resto del código inicial se mantiene igual) ...
 interface Leccion { id: number; title: string; }
 interface TherapySession { id: number; startTime: string; endTime: string; leccion: Leccion; leccionId: number; status: string; notes?: string; behavior?: string; progress?: string; }
 const modalStyles = { content: { top: '50%', left: '50%', right: 'auto', bottom: 'auto', marginRight: '-50%', transform: 'translate(-50%, -50%)', width: '500px', borderRadius: '8px', padding: '25px', boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)' }, overlay: { backgroundColor: 'rgba(0, 0, 0, 0.6)', zIndex: 10 }};
@@ -57,23 +56,17 @@ function StudentDetailPage() {
         }
     }, [studentId]);
     
-    // ✅ PASO 2.1: Función para manejar la impresión
     const handlePrint = () => {
         if (studentId) {
             window.open(`/students/${studentId}/print`, '_blank');
         }
     };
 
-    // ... (El resto de las funciones: handleEventClick, handleLogSubmit, etc. se mantienen igual) ...
      const handleEventClick = (clickInfo: any) => {
         const sessionId = parseInt(clickInfo.event.id);
         const session = sessions.find(s => s.id === sessionId);
         if (session) {
             setSessionToLog(session);
-            
-            // ✅ LA CORRECCIÓN ESTÁ AQUÍ
-            // Si la sesión está 'Programada', el estado por defecto del formulario será 'Completada'.
-            // Si ya tiene otro estado (ej: ya fue completada antes), se mantiene ese estado.
             const initialStatus = session.status === 'Programada' ? 'Completada' : session.status;
 
             setLogFormData({
@@ -94,16 +87,9 @@ function StudentDetailPage() {
         e.preventDefault();
         if (!sessionToLog || !studentId) return;
         try {
-            // 1. Guardamos el registro en la base de datos (esto no cambia)
             await therapySessionService.updateSession(parseInt(studentId), sessionToLog.id, logFormData);
-            
-            // 2. ✅ ¡EL CAMBIO CLAVE! Le pedimos al servidor la lista FRESCA de sesiones
             const updatedSessions = await therapySessionService.getSessionsByStudent(parseInt(studentId));
-            
-            // 3. Actualizamos la "memoria" de la página con los nuevos datos
             setSessions(updatedSessions);
-
-            // 4. Cerramos el modal
             closeLogModal();
         } catch (error) {
             alert("Error al guardar el registro.");
@@ -115,12 +101,12 @@ function StudentDetailPage() {
     
 
     const calendarEvents = sessions
-        .filter(s => s.status === 'Programada') // Solo mostrar sesiones programadas en el calendario
+        .filter(s => s.status === 'Programada') 
         .map(s => ({ id: String(s.id), title: s.leccion.title, start: s.startTime, end: s.endTime }));
 
     const sessionHistory = sessions
-        .filter(s => s.status !== 'Programada') // El historial son las sesiones ya registradas
-        .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()); // Ordenar por fecha descendente
+        .filter(s => s.status !== 'Programada')
+        .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
 
         const indexOfLastSession = currentPage * sessionsPerPage;
     const indexOfFirstSession = indexOfLastSession - sessionsPerPage;
@@ -141,8 +127,13 @@ function StudentDetailPage() {
                 <div>
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-2xl font-bold text-gray-800">Perfil de: {student?.fullName}</h2>
-                        {/* ✅ PASO 2.2: Grupo de botones */}
+                        {/* Grupo de botones */}
                         <div className="flex gap-2">
+                            <Link to={`/students/edit/${studentId}`}>
+                                <button className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 border border-yellow-600 rounded shadow-sm flex items-center gap-2">
+                                    <FaPencilAlt /> Editar
+                                </button>
+                           </Link>
                            <button 
                                 onClick={() => setIsDetailModalOpen(true)}
                                 className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-300 rounded shadow-sm flex items-center gap-2"
@@ -166,7 +157,6 @@ function StudentDetailPage() {
                     </div>
                 </div>
 
-                {/* --- El resto del componente se mantiene igual --- */}
                 <div>
                     <h3 className="text-xl font-bold text-gray-800 mb-4">Historial de Sesiones</h3>
                     <div className="overflow-hidden rounded-xl bg-white shadow-md">

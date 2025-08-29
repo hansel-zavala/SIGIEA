@@ -9,9 +9,10 @@ import { FaUserCircle, FaPencilAlt, FaTrash } from 'react-icons/fa';
 
 interface Guardian {
   id: number;
+  nombres: string;
+  apellidos: string;
   fullName: string;
   telefono: string;
-  direccionEmergencia: string | null;
   student: {
     fullName: string;
   }
@@ -24,7 +25,7 @@ function GuardiansPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [itemsPerPage] = useState(5);
+  const [itemsPerPage] = useState(10);
 
   useEffect(() => {
     const fetchGuardians = () => {
@@ -63,13 +64,13 @@ function GuardiansPage() {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
+    <div>
       <div className="flex justify-between items-center mb-6 gap-4">
         <h2 className="text-2xl font-bold text-gray-800">Gestión de Guardianes</h2>
         <div className="flex-grow max-w-md">
             <Input
                 type="text"
-                placeholder="Buscar por nombre..."
+                placeholder="Buscar por nombre o apellido..."
                 value={searchTerm}
                 onChange={(e) => {
                     setSearchTerm(e.target.value);

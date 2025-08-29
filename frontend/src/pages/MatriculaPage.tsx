@@ -14,7 +14,8 @@ import MultiSelectWithCatalog from "../components/ui/MultiSelectWithCatalog";
 import { departamentos, municipiosPorDepartamento } from '../data/honduras-data';
 
 interface Guardian {
-  fullName: string;
+  nombres: string;
+  apellidos: string;
   numeroIdentidad: string;
   telefono: string;
   parentesco: "Padre" | "Madre" | "Tutor_Legal" | "Otro";
@@ -33,16 +34,11 @@ const tiposDeAtencion = [
 ];
 
 const tiposDeSangre = [
-    { value: 'A_POSITIVO', label: 'A+' },
-    { value: 'A_NEGATIVO', label: 'A-' },
-    { value: 'B_POSITIVO', label: 'B+' },
-    { value: 'B_NEGATIVO', label: 'B-' },
-    { value: 'AB_POSITIVO', label: 'AB+' },
-    { value: 'AB_NEGATIVO', label: 'AB-' },
-    { value: 'O_POSITIVO', label: 'O+' },
-    { value: 'O_NEGATIVO', label: 'O-' },
+    { value: 'A_POSITIVO', label: 'A+' }, { value: 'A_NEGATIVO', label: 'A-' },
+    { value: 'B_POSITIVO', label: 'B+' }, { value: 'B_NEGATIVO', label: 'B-' },
+    { value: 'AB_POSITIVO', label: 'AB+' }, { value: 'AB_NEGATIVO', label: 'AB-' },
+    { value: 'O_POSITIVO', label: 'O+' }, { value: 'O_NEGATIVO', label: 'O-' },
 ];
-
 
 function MatriculaPage() {
     const [departamento, setDepartamento] = useState('');
@@ -50,7 +46,8 @@ function MatriculaPage() {
     const [municipios, setMunicipios] = useState<{ id: string; nombre: string }[]>([]);
 
   const [studentData, setStudentData] = useState({
-    fullName: "",
+    nombres: "",
+    apellidos: "",
     dateOfBirth: "",
     lugarNacimiento: "",
     direccion: "",
@@ -61,6 +58,7 @@ function MatriculaPage() {
     zona: "Urbano" as "Urbano" | "Rural",
     jornada: "Matutina" as "Matutina" | "Vespertina",
     genero: "Masculino" as "Masculino" | "Femenino",
+    tipoSangre: "",
     atencionGrupal: false,
     atencionIndividual: false,
     atencionPrevocacional: false,
@@ -69,12 +67,12 @@ function MatriculaPage() {
     atencionVocacional: false,
     inclusionEscolar: false,
     educacionFisica: false,
-    tipoSangre: "",
   });
 
   const [guardians, setGuardians] = useState<Guardian[]>([
     {
-      fullName: "",
+      nombres: "",
+      apellidos: "",
       numeroIdentidad: "",
       telefono: "",
       parentesco: "Padre",
@@ -86,7 +84,6 @@ function MatriculaPage() {
   const [selectedMedicamentos, setSelectedMedicamentos] = useState<Medicamento[]>([]);
   const [allAlergias, setAllAlergias] = useState<Alergia[]>([]);
   const [selectedAlergias, setSelectedAlergias] = useState<Alergia[]>([]);
-
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const [partidaFile, setPartidaFile] = useState<File | null>(null);
@@ -119,7 +116,12 @@ function MatriculaPage() {
     }, [departamento]);
 
   useEffect(() => {
-    therapistService.getAllTherapists().then(setTherapists).catch(() => setError("No se pudo cargar la lista de terapeutas."));
+    therapistService.getAllTherapists("", 1, 999)
+      .then(response => {
+        setTherapists(response.data);
+      })
+      .catch(() => setError("No se pudo cargar la lista de terapeutas."));
+
     medicamentoService.getAll().then(setAllMedicamentos).catch(() => setError("No se pudo cargar el catálogo de medicamentos."));
     alergiaService.getAll().then(setAllAlergias).catch(() => setError("No se pudo cargar el catálogo de alergias."));
   }, []);
@@ -132,19 +134,16 @@ function MatriculaPage() {
     const tiposDeAtencionIds = tiposDeAtencion.map(atencion => atencion.id);
 
     if (isCheckbox && tiposDeAtencionIds.includes(name)) {
-        // Creamos un objeto que "resetea" todos los tipos de atención a false
         const resetAttentionTypes = Object.fromEntries(
             tiposDeAtencionIds.map(id => [id, false])
         );
 
-        // Actualizamos el estado: aplicamos el reseteo y luego ponemos en `true` solo el seleccionado
         setStudentData(prev => ({
             ...prev,
             ...resetAttentionTypes,
             [name]: checked,
         }));
     } else {
-        // Comportamiento normal para el resto de los campos
         setStudentData(prev => ({ ...prev, [name]: isCheckbox ? checked : value }));
     }
   };
@@ -156,16 +155,11 @@ function MatriculaPage() {
     const { name, value } = e.target;
     const newGuardians = [...guardians];
 
-    // ✅ LÓGICA DE VALIDACIÓN EN TIEMPO REAL
     if (name === 'numeroIdentidad' || name === 'telefono') {
-      // 1. Elimina cualquier carácter que no sea un número
       const numericValue = value.replace(/[^0-9]/g, '');
-      // 2. Define la longitud máxima según el campo
       const maxLength = name === 'numeroIdentidad' ? 13 : 8;
-      // 3. Corta el string para no exceder el límite
       newGuardians[index][name as keyof Guardian] = numericValue.slice(0, maxLength) as any;
     } else {
-      // Comportamiento normal para otros campos como nombre o parentesco
       newGuardians[index][name as keyof Guardian] = value as any;
     }
 
@@ -173,7 +167,7 @@ function MatriculaPage() {
   };
 
   const addGuardian = () => {
-    setGuardians([...guardians, { fullName: "", numeroIdentidad: "", telefono: "", parentesco: "Padre", direccionEmergencia: "" }]);
+    setGuardians([...guardians, { nombres: "", apellidos: "", numeroIdentidad: "", telefono: "", parentesco: "Padre", direccionEmergencia: "" }]);
   };
   
   const removeGuardian = (index: number) => {
@@ -188,37 +182,13 @@ function MatriculaPage() {
     }
   };
 
-  const handleAddMedicamento = async (name: string) => {
-    await medicamentoService.create(name);
-    const updatedList = await medicamentoService.getAll();
-    setAllMedicamentos(updatedList);
-  };
-  const handleUpdateMedicamento = async (id: number, name: string) => {
-    await medicamentoService.update(id, name);
-    const updatedList = await medicamentoService.getAll();
-    setAllMedicamentos(updatedList);
-  };
-  const handleDeleteMedicamento = async (id: number) => {
-    await medicamentoService.remove(id);
-    const updatedList = await medicamentoService.getAll();
-    setAllMedicamentos(updatedList);
-  };
+  const handleAddMedicamento = async (name: string) => { await medicamentoService.create(name); setAllMedicamentos(await medicamentoService.getAll()); };
+  const handleUpdateMedicamento = async (id: number, name: string) => { await medicamentoService.update(id, name); setAllMedicamentos(await medicamentoService.getAll()); };
+  const handleDeleteMedicamento = async (id: number) => { await medicamentoService.remove(id); setAllMedicamentos(await medicamentoService.getAll()); };
 
-  const handleAddAlergia = async (name: string) => {
-    await alergiaService.create(name);
-    const updatedList = await alergiaService.getAll();
-    setAllAlergias(updatedList);
-  };
-  const handleUpdateAlergia = async (id: number, name: string) => {
-    await alergiaService.update(id, name);
-    const updatedList = await alergiaService.getAll();
-    setAllAlergias(updatedList);
-  };
-  const handleDeleteAlergia = async (id: number) => {
-    await alergiaService.remove(id);
-    const updatedList = await alergiaService.getAll();
-    setAllAlergias(updatedList);
-  };
+  const handleAddAlergia = async (name: string) => { await alergiaService.create(name); setAllAlergias(await alergiaService.getAll()); };
+  const handleUpdateAlergia = async (id: number, name: string) => { await alergiaService.update(id, name); setAllAlergias(await alergiaService.getAll()); };
+  const handleDeleteAlergia = async (id: number) => { await alergiaService.remove(id); setAllAlergias(await alergiaService.getAll()); };
 
   const validateForm = () => {
     const errors: Record<string, string> = {};
@@ -226,33 +196,34 @@ function MatriculaPage() {
     const dniRegex = /^\d{13}$/;
     const phoneRegex = /^\d{8}$/;
 
-    if (!studentData.fullName.trim()) errors.fullName = "El nombre es obligatorio.";
-    else if (studentData.fullName.trim().length < 5) errors.fullName = "El nombre parece demasiado corto.";
-    else if (!studentData.fullName.trim().includes(' ')) errors.fullName = "Por favor, ingresa al menos un nombre y un apellido.";
-    else if (!nameRegex.test(studentData.fullName)) errors.fullName = "El nombre solo debe contener letras y espacios.";
+    if (!studentData.nombres.trim()) errors.nombres = "Los nombres son obligatorios.";
+    else if (!nameRegex.test(studentData.nombres)) errors.nombres = "Los nombres solo deben contener letras.";
+    
+    if (!studentData.apellidos.trim()) errors.apellidos = "Los apellidos son obligatorios.";
+    else if (!nameRegex.test(studentData.apellidos)) errors.apellidos = "Los apellidos solo deben contener letras.";
 
     if (!studentData.dateOfBirth) errors.dateOfBirth = "La fecha de nacimiento es obligatoria.";
-    else if (new Date(studentData.dateOfBirth) > new Date()) errors.dateOfBirth = "La fecha no puede ser futura.";
-    
     if (!departamento) errors.departamento = "Debe seleccionar un departamento.";
     if (!municipio) errors.municipio = "Debe seleccionar un municipio.";
 
     if (!therapistId) errors.therapistId = "Debe seleccionar un terapeuta.";
-
+    
     errors.partidaFileError = validateFile(partidaFile);
     errors.evaluacionFileError = validateFile(evaluacionFile);
     guardianIdFiles.forEach((file, index) => {
         errors[`guardianIdFile_${index}`] = validateFile(file);
     });
 
+
     guardians.forEach((guardian, index) => {
-        if (!guardian.fullName.trim()) errors[`guardian_fullName_${index}`] = "El nombre es obligatorio.";
-        else if (guardian.fullName.trim().length < 5) errors[`guardian_fullName_${index}`] = "El nombre parece demasiado corto.";
-        else if (!guardian.fullName.trim().includes(' ')) errors[`guardian_fullName_${index}`] = "Ingresa al menos un nombre y un apellido.";
-        else if (!nameRegex.test(guardian.fullName)) errors[`guardian_fullName_${index}`] = "El nombre solo debe contener letras y espacios.";
+        if (!guardian.nombres.trim()) errors[`guardian_nombres_${index}`] = "Los nombres son obligatorios.";
+        else if (!nameRegex.test(guardian.nombres)) errors[`guardian_nombres_${index}`] = "Solo debe contener letras.";
+        
+        if (!guardian.apellidos.trim()) errors[`guardian_apellidos_${index}`] = "Los apellidos son obligatorios.";
+        else if (!nameRegex.test(guardian.apellidos)) errors[`guardian_apellidos_${index}`] = "Solo debe contener letras.";
 
         if (!guardian.numeroIdentidad.trim()) errors[`guardian_numeroIdentidad_${index}`] = "El DNI es obligatorio.";
-        else if (!dniRegex.test(guardian.numeroIdentidad)) errors[`guardian_numeroIdentidad_${index}`] = "El DNI debe tener 13 dígitos, sin guiones.";
+        else if (!dniRegex.test(guardian.numeroIdentidad)) errors[`guardian_numeroIdentidad_${index}`] = "El DNI debe tener 13 dígitos.";
 
         if (!guardian.telefono.trim()) errors[`guardian_telefono_${index}`] = "El teléfono es obligatorio.";
         else if (!phoneRegex.test(guardian.telefono)) errors[`guardian_telefono_${index}`] = "El teléfono debe tener 8 dígitos.";
@@ -263,11 +234,11 @@ function MatriculaPage() {
     setFormErrors(finalErrors);
     return Object.keys(finalErrors).length === 0;
   };
-
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) {
-        setError("Por favor, corrige los errores marcados en el formulario.");
+        setError("Por favor, corrige los errores marcados.");
         return;
     }
     setError("");
@@ -301,8 +272,6 @@ function MatriculaPage() {
         therapistId: parseInt(therapistId),
         medicamentos: selectedMedicamentos.map(m => m.id),
         alergias: selectedAlergias.map(a => a.id),
-        usaMedicamentos: selectedMedicamentos.length > 0,
-        esAlergico: selectedAlergias.length > 0,
       };
 
       await studentService.createStudent(fullMatriculaData);
@@ -313,24 +282,30 @@ function MatriculaPage() {
     }
   };
 
+
   return (
-    <div className="max-w-8xl mx-auto bg-white p-6 rounded-lg shadow-md">
+    <div className="max-w-8xl mx-auto">
       <h2 className="text-3xl font-bold mb-6 text-gray-800">Ficha de Matrícula</h2>
       {error && <p className="text-red-500 bg-red-100 p-3 rounded-md mb-6">{error}</p>}
       <form onSubmit={handleSubmit} className="space-y-8 bg-white p-8 rounded-lg shadow-md" noValidate>
-        {/* --- SECCIÓN DATOS DEL ALUMNO --- */}
         <div className="border-b pb-6">
           <h3 className="text-xl font-semibold text-gray-700">Datos del Alumno</h3>
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <Label htmlFor="fullName">Nombre Completo del Alumno(a)</Label>
-              <Input id="fullName" name="fullName" type="text" value={studentData.fullName} onChange={handleChange} />
-              {formErrors.fullName && <p className="text-red-500 text-sm mt-1">{formErrors.fullName}</p>}
+              <Label htmlFor="nombres">Nombres del Alumno(a)</Label>
+              <Input id="nombres" name="nombres" type="text" value={studentData.nombres} onChange={handleChange} />
+              {formErrors.nombres && <p className="text-red-500 text-sm mt-1">{formErrors.nombres}</p>}
             </div>
+            <div>
+              <Label htmlFor="apellidos">Apellidos del Alumno(a)</Label>
+              <Input id="apellidos" name="apellidos" type="text" value={studentData.apellidos} onChange={handleChange} />
+              {formErrors.apellidos && <p className="text-red-500 text-sm mt-1">{formErrors.apellidos}</p>}
+            </div>
+            
             <div>
               <Label htmlFor="dateOfBirth">Fecha de Nacimiento</Label>
               <Input id="dateOfBirth" name="dateOfBirth" type="date" value={studentData.dateOfBirth} onChange={handleChange} />
-              <p className="text-xs text-gray-500 mt-1">  Mes / Día / Año</p>
+              <p className="text-xs text-gray-500 mt-1">Mes / Día / Año</p>
               {formErrors.dateOfBirth && <p className="text-red-500 text-sm mt-1">{formErrors.dateOfBirth}</p>}
             </div>
             
@@ -374,7 +349,6 @@ function MatriculaPage() {
               />
             </div>
             
-            {/* Tipo de Sangre */}
             <div>
               <Label htmlFor="tipoSangre">Tipo de Sangre</Label>
               <Select
@@ -382,7 +356,7 @@ function MatriculaPage() {
                 name="tipoSangre"
                 value={studentData.tipoSangre}
                 onChange={handleChange}
-                placeholder="Selecciona el tipo de sangre"
+                placeholder="-- Opcional --"
                 options={tiposDeSangre}
               />
             </div>
@@ -553,17 +527,24 @@ function MatriculaPage() {
         </div>
         
         <div className="border-b pb-6">
-          <h3 className="text-xl font-semibold text-gray-700">Información de los Padres o Tutores</h3>
+          <h3 className="text-xl font-semibold text-gray-700">
+            Información de los Padres o Tutores
+          </h3>
           {guardians.map((guardian, index) => (
             <div key={index} className="mt-4 p-4 border rounded-md relative">
               <h4 className="font-medium mb-2">Ficha {index + 1}</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor={`g-fullName-${index}`}>Nombre Completo</Label>
-                  <Input id={`g-fullName-${index}`} name="fullName" type="text" value={guardian.fullName} onChange={(e) => handleGuardianChange(index, e)} />
-                  {formErrors[`guardian_fullName_${index}`] && <p className="text-red-500 text-sm mt-1">{formErrors[`guardian_fullName_${index}`]}</p>}
+                  <Label htmlFor={`g-nombres-${index}`}>Nombres</Label>
+                  <Input id={`g-nombres-${index}`} name="nombres" type="text" value={guardian.nombres} onChange={(e) => handleGuardianChange(index, e)} />
+                  {formErrors[`guardian_nombres_${index}`] && <p className="text-red-500 text-sm mt-1">{formErrors[`guardian_nombres_${index}`]}</p>}
                 </div>
                 <div>
+                  <Label htmlFor={`g-apellidos-${index}`}>Apellidos</Label>
+                  <Input id={`g-apellidos-${index}`} name="apellidos" type="text" value={guardian.apellidos} onChange={(e) => handleGuardianChange(index, e)} />
+                  {formErrors[`guardian_apellidos_${index}`] && <p className="text-red-500 text-sm mt-1">{formErrors[`guardian_apellidos_${index}`]}</p>}
+                </div>
+                 <div>
                   <Label htmlFor={`g-parentesco-${index}`}>Parentesco</Label>
                   <Select id={`g-parentesco-${index}`} name="parentesco" value={guardian.parentesco} onChange={(e) => handleGuardianChange(index, e)} options={[{ value: "Padre", label: "Padre" }, { value: "Madre", label: "Madre" }, { value: "Tutor_Legal", label: "Tutor Legal" }, { value: "Otro", label: "Otro" }]} />
                 </div>

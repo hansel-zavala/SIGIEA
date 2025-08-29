@@ -3,16 +3,17 @@ import api from './api.js';
 
 export interface TherapistProfile {
   id: number;
+  nombres: string;
+  apellidos: string;
   fullName: string;
   email: string;
-  identityNumber: string;
-  phone: string | null;
   specialty: 'Psicologo' | 'Terapeuta' | 'Ambos';
+  phone: string | null;
+  identityNumber: string;
   gender: 'Masculino' | 'Femenino' | null;
   dateOfBirth: string | null;
 }
 
-// CREATE
 const createTherapist = async (therapistData: any) => {
   try {
     const response = await api.post('/therapists', therapistData);
@@ -20,15 +21,18 @@ const createTherapist = async (therapistData: any) => {
   } catch (error) { throw error; }
 };
 
-// READ (All)
-const getAllTherapists = async (): Promise<TherapistProfile[]> => {
+const getAllTherapists = async (searchTerm?: string, page: number = 1, limit: number = 10): Promise<{ data: TherapistProfile[], total: number }> => {
   try {
-    const response = await api.get('/therapists');
+    const params = {
+        search: searchTerm,
+        page,
+        limit,
+    };
+    const response = await api.get('/therapists', { params });
     return response.data;
   } catch (error) { throw error; }
 };
 
-// READ (One)
 const getTherapistById = async (id: number): Promise<TherapistProfile> => {
   try {
     const response = await api.get(`/therapists/${id}`);
@@ -36,7 +40,6 @@ const getTherapistById = async (id: number): Promise<TherapistProfile> => {
   } catch (error) { throw error; }
 };
 
-// UPDATE
 const updateTherapist = async (id: number, therapistData: any) => {
   try {
     const response = await api.put(`/therapists/${id}`, therapistData);
@@ -44,7 +47,6 @@ const updateTherapist = async (id: number, therapistData: any) => {
   } catch (error) { throw error; }
 };
 
-// DELETE (Soft Delete)
 const deleteTherapist = async (id: number) => {
   try {
     const response = await api.delete(`/therapists/${id}`);

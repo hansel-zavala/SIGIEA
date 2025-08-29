@@ -2,7 +2,8 @@
 import api from './api';
 
 type StudentInput = {
-  fullName: string;
+  nombres: string;
+  apellidos: string;
   dateOfBirth: string;
   diagnosis?: string;
   supportLevel?: string;
@@ -16,14 +17,14 @@ const getAllStudents = async (searchTerm?: string, page: number = 1, limit: numb
         limit,
     };
     const response = await api.get('/students', { params });
-    return response.data;
+    return response.data; 
   } catch (error) {
     console.error("Error al obtener los estudiantes:", error);
     throw error;
   }
 };
 
-const createStudent = async (studentData: StudentInput) => {
+const createStudent = async (studentData: any) => {
   try {
     const response = await api.post('/students', studentData);
     return response.data;
@@ -65,7 +66,6 @@ const updateStudent = async (id: number, studentData: Partial<StudentInput>) => 
 
 const assignTherapyPlan = async (studentId: number, planData: any) => {
     try {
-        // Usamos la ruta anidada que creamos en el backend
         const response = await api.post(`/students/${studentId}/plans`, planData);
         return response.data;
     } catch (error) {
@@ -73,6 +73,7 @@ const assignTherapyPlan = async (studentId: number, planData: any) => {
         throw error;
     }
 };
+
 
 export default {
   getAllStudents,

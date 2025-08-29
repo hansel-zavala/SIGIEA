@@ -1,4 +1,5 @@
 // frontend/src/pages/AddTherapistPage.tsx
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import therapistService from '../services/therapistService';
@@ -8,7 +9,8 @@ import Select from '../components/ui/Select';
 
 function AddTherapistPage() {
   const [formData, setFormData] = useState({
-    fullName: '',
+    nombres: '',
+    apellidos: '',
     email: '',
     password: '',
     identityNumber: '',
@@ -23,17 +25,12 @@ function AddTherapistPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-
     if (name === 'identityNumber' || name === 'phone') {
-      // Solo permite números
       const numericValue = value.replace(/[^0-9]/g, '');
-      // Define la longitud máxima
       const maxLength = name === 'identityNumber' ? 13 : 8;
-      // Actualiza el estado cortando el valor si excede el límite
       setFormData(prev => ({ ...prev, [name]: numericValue.slice(0, maxLength) }));
     } else {
-      // Comportamiento normal para los otros campos
-      setFormData({ ...formData, [name]: value });
+      setFormData(prev => ({ ...prev, [name]: value }));
     }
   };
 
@@ -44,8 +41,11 @@ function AddTherapistPage() {
     const phoneRegex = /^\d{8}$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!formData.fullName.trim()) errors.fullName = "El nombre es obligatorio.";
-    else if (!nameRegex.test(formData.fullName)) errors.fullName = "El nombre solo debe contener letras.";
+    if (!formData.nombres.trim()) errors.nombres = "Los nombres son obligatorios.";
+    else if (!nameRegex.test(formData.nombres)) errors.nombres = "Los nombres solo deben contener letras.";
+
+    if (!formData.apellidos.trim()) errors.apellidos = "Los apellidos son obligatorios.";
+    else if (!nameRegex.test(formData.apellidos)) errors.apellidos = "Los apellidos solo deben contener letras.";
 
     if (!formData.email.trim()) errors.email = "El email es obligatorio.";
     else if (!emailRegex.test(formData.email)) errors.email = "El formato del email no es válido.";
@@ -79,17 +79,23 @@ function AddTherapistPage() {
   };
 
   return (
-    <div className=" mx-auto bg-white p-8 rounded-lg shadow-md">
+    <div className="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-6 text-gray-800">Añadir Nuevo Terapeuta</h2>
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         {error && <p className="text-red-500 bg-red-100 p-3 rounded-md">{error}</p>}
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="fullName">Nombre Completo</Label>
-              <Input id="fullName" name="fullName" type="text" value={formData.fullName} onChange={handleChange} />
-              {formErrors.fullName && <p className="text-red-500 text-sm mt-1">{formErrors.fullName}</p>}
+              <Label htmlFor="nombres">Nombres</Label>
+              <Input id="nombres" name="nombres" type="text" value={formData.nombres} onChange={handleChange} />
+              {formErrors.nombres && <p className="text-red-500 text-sm mt-1">{formErrors.nombres}</p>}
             </div>
+            <div>
+              <Label htmlFor="apellidos">Apellidos</Label>
+              <Input id="apellidos" name="apellidos" type="text" value={formData.apellidos} onChange={handleChange} />
+              {formErrors.apellidos && <p className="text-red-500 text-sm mt-1">{formErrors.apellidos}</p>}
+            </div>
+
             <div>
               <Label htmlFor="identityNumber">Número de Identidad</Label>
               <Input id="identityNumber" name="identityNumber" type="text" value={formData.identityNumber} onChange={handleChange} />

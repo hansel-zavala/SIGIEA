@@ -24,7 +24,8 @@ model User {
 
 model Student {
   id                     Int       @id @default(autoincrement())
-  fullName               String
+  nombres                String
+  apellidos              String
   dateOfBirth            DateTime
   isActive               Boolean   @default(true)
   lugarNacimiento        String?
@@ -59,7 +60,8 @@ model Student {
 
 model Guardian {
   id                      Int         @id @default(autoincrement())
-  fullName                String
+  nombres                 String
+  apellidos               String
   direccionEmergencia     String?
   numeroIdentidad         String      @unique
   telefono                String
@@ -77,7 +79,8 @@ model Guardian {
 
 model TherapistProfile {
   id                Int       @id @default(autoincrement())
-  fullName          String
+  nombres           String
+  apellidos         String
   identityNumber    String    @unique @map("numero_identidad")
   dateOfBirth       DateTime? @map("fecha_nacimiento")
   gender            Genero?

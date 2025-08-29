@@ -1,7 +1,6 @@
 // backend/src/routes/userRoutes.ts
 
 import express from 'express';
-// ✅ Añadir .js aquí
 import { registerUser, loginUser, getUserProfile  } from '../controllers/userController.js'; 
 import { protect } from '../middleware/authMiddleware.js';
 

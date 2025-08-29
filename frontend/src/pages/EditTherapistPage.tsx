@@ -8,7 +8,8 @@ import Select from '../components/ui/Select.js';
 
 function EditTherapistPage() {
   const [formData, setFormData] = useState({
-    fullName: '',
+    nombres: '',
+    apellidos: '',
     email: '',
     identityNumber: '',
     phone: '',
@@ -26,7 +27,8 @@ function EditTherapistPage() {
       therapistService.getTherapistById(Number(id))
         .then(data => {
           setFormData({
-            fullName: data.fullName || '',
+            nombres: data.nombres || '',
+            apellidos: data.apellidos || '',
             email: data.email || '',
             identityNumber: data.identityNumber || '',
             phone: data.phone || '',
@@ -41,16 +43,15 @@ function EditTherapistPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-
     if (name === 'identityNumber' || name === 'phone') {
       const numericValue = value.replace(/[^0-9]/g, '');
       const maxLength = name === 'identityNumber' ? 13 : 8;
       setFormData(prev => ({ ...prev, [name]: numericValue.slice(0, maxLength) }));
     } else {
-      setFormData({ ...formData, [name]: value });
+      setFormData(prev => ({ ...prev, [name]: value }));
     }
   };
-
+  
   const validateForm = () => {
     const errors: Record<string, string> = {};
     const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
@@ -58,14 +59,17 @@ function EditTherapistPage() {
     const phoneRegex = /^\d{8}$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!formData.fullName.trim()) errors.fullName = "El nombre es obligatorio.";
-    else if (!nameRegex.test(formData.fullName)) errors.fullName = "El nombre solo debe contener letras.";
+    if (!formData.nombres.trim()) errors.nombres = "Los nombres son obligatorios.";
+    else if (!nameRegex.test(formData.nombres)) errors.nombres = "Solo debe contener letras.";
+
+    if (!formData.apellidos.trim()) errors.apellidos = "Los apellidos son obligatorios.";
+    else if (!nameRegex.test(formData.apellidos)) errors.apellidos = "Solo debe contener letras.";
 
     if (!formData.email.trim()) errors.email = "El email es obligatorio.";
     else if (!emailRegex.test(formData.email)) errors.email = "El formato del email no es válido.";
     
     if (!formData.identityNumber.trim()) errors.identityNumber = "El DNI es obligatorio.";
-    else if (!dniRegex.test(formData.identityNumber)) errors.identityNumber = "El DNI debe tener 13 dígitos, sin guiones.";
+    else if (!dniRegex.test(formData.identityNumber)) errors.identityNumber = "El DNI debe tener 13 dígitos.";
     
     if (formData.phone && !phoneRegex.test(formData.phone)) errors.phone = "El teléfono debe tener 8 dígitos.";
 
@@ -83,7 +87,11 @@ function EditTherapistPage() {
 
     if (id) {
       try {
-        await therapistService.updateTherapist(Number(id), formData);
+        const dataToUpdate = {
+            ...formData,
+            fullName: `${formData.nombres} ${formData.apellidos}`
+        }
+        await therapistService.updateTherapist(Number(id), dataToUpdate);
         navigate('/therapists');
       } catch (err: any) {
         setError(err.response?.data?.error || 'No se pudo actualizar el terapeuta.');
@@ -92,17 +100,23 @@ function EditTherapistPage() {
   };
 
   return (
-    <div className=" mx-auto bg-white p-8 rounded-lg shadow-md">
+    <div className="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-6 text-gray-800">Editar Perfil del Terapeuta</h2>
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         {error && <p className="text-red-500 bg-red-100 p-3 rounded-md">{error}</p>}
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="fullName">Nombre Completo</Label>
-              <Input id="fullName" name="fullName" type="text" value={formData.fullName} onChange={handleChange} />
-              {formErrors.fullName && <p className="text-red-500 text-sm mt-1">{formErrors.fullName}</p>}
+              <Label htmlFor="nombres">Nombres</Label>
+              <Input id="nombres" name="nombres" type="text" value={formData.nombres} onChange={handleChange} />
+              {formErrors.nombres && <p className="text-red-500 text-sm mt-1">{formErrors.nombres}</p>}
             </div>
+            <div>
+              <Label htmlFor="apellidos">Apellidos</Label>
+              <Input id="apellidos" name="apellidos" type="text" value={formData.apellidos} onChange={handleChange} />
+              {formErrors.apellidos && <p className="text-red-500 text-sm mt-1">{formErrors.apellidos}</p>}
+            </div>
+
             <div>
               <Label htmlFor="identityNumber">Número de Identidad</Label>
               <Input id="identityNumber" name="identityNumber" type="text" value={formData.identityNumber} onChange={handleChange} />

@@ -9,55 +9,38 @@ export const createStudent = async (req: Request, res: Response) => {
   try {
     const { guardians, medicamentos, alergias, ...studentData } = req.body;
 
-    if (!studentData.fullName || !studentData.dateOfBirth) {
-        return res.status(400).json({ error: 'El nombre completo y la fecha de nacimiento son obligatorios.' });
+    if (!studentData.nombres || !studentData.apellidos || !studentData.dateOfBirth) {
+        return res.status(400).json({ error: 'Nombres, apellidos y fecha de nacimiento son obligatorios.' });
     }
-    if (!studentData.therapistId) {
+     if (!studentData.therapistId) {
         return res.status(400).json({ error: 'Debe asignar un terapeuta al estudiante.' });
     }
     if (!guardians || !Array.isArray(guardians) || guardians.length === 0) {
         return res.status(400).json({ error: 'Se requiere al menos un padre o tutor.' });
     }
     for (const guardian of guardians) {
-        if (!guardian.fullName || !guardian.numeroIdentidad || !guardian.telefono) {
-            return res.status(400).json({ error: 'El nombre, DNI y teléfono son obligatorios para cada guardián.' });
+        if (!guardian.nombres || !guardian.apellidos || !guardian.numeroIdentidad || !guardian.telefono) {
+            return res.status(400).json({ error: 'Nombres, apellidos, DNI y teléfono son obligatorios para cada guardián.' });
         }
         const existingGuardian = await prisma.guardian.findUnique({
             where: { numeroIdentidad: guardian.numeroIdentidad }
         });
         if (existingGuardian) {
-            return res.status(409).json({ error: `El número de identidad ${guardian.numeroIdentidad} ya está registrado en el sistema.` });
+            return res.status(409).json({ error: `El número de identidad ${guardian.numeroIdentidad} ya está registrado.` });
         }
     }
 
-    delete studentData.usaMedicamentos;
-    delete studentData.esAlergico;
-
-    if (studentData.dateOfBirth) {
-      studentData.dateOfBirth = new Date(studentData.dateOfBirth);
-    }
-    if (studentData.anoIngreso) {
-      studentData.anoIngreso = new Date(studentData.anoIngreso);
-    }
+    if (studentData.dateOfBirth) studentData.dateOfBirth = new Date(studentData.dateOfBirth);
+    if (studentData.anoIngreso) studentData.anoIngreso = new Date(studentData.anoIngreso);
 
     const newStudent = await prisma.student.create({
       data: {
         ...studentData,
-        guardians: {
-          create: guardians,
-        },
-        medicamentos: {
-          connect: medicamentos?.map((id: number) => ({ id })) || [],
-        },
-        alergias: {
-          connect: alergias?.map((id: number) => ({ id })) || [],
-        },
+        guardians: { create: guardians },
+        medicamentos: { connect: medicamentos?.map((id: number) => ({ id })) || [] },
+        alergias: { connect: alergias?.map((id: number) => ({ id })) || [] },
       },
-      include: {
-        guardians: true,
-        medicamentos: true,
-        alergias: true,
-      },
+      include: { guardians: true, medicamentos: true, alergias: true },
     });
 
     res.status(201).json(newStudent);
@@ -77,9 +60,10 @@ export const getAllStudents = async (req: Request, res: Response) => {
     const whereCondition = {
       isActive: true,
       ...(search && {
-        fullName: {
-          contains: search as string,
-        },
+        OR: [
+          { nombres: { contains: search as string } },
+          { apellidos: { contains: search as string } },
+        ],
       }),
     };
 
@@ -91,15 +75,24 @@ export const getAllStudents = async (req: Request, res: Response) => {
         take: limitNum,
         include: {
           therapist: {
-            select: { fullName: true },
+            select: { nombres: true, apellidos: true },
           },
         },
       }),
       prisma.student.count({ where: whereCondition }),
     ]);
 
+    const studentsWithFullName = students.map(s => ({
+        ...s,
+        fullName: `${s.nombres} ${s.apellidos}`,
+        therapist: s.therapist ? {
+            ...s.therapist,
+            fullName: `${s.therapist.nombres} ${s.therapist.apellidos}`
+        } : null
+    }));
+
     res.json({
-      data: students,
+      data: studentsWithFullName,
       total: totalStudents,
       page: pageNum,
       totalPages: Math.ceil(totalStudents / limitNum),
@@ -110,79 +103,74 @@ export const getAllStudents = async (req: Request, res: Response) => {
   }
 };
 
+
 export const getStudentById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const student = await prisma.student.findFirst({
-      where: {
-        id: parseInt(id),
-        isActive: true
-      },
+      where: { id: parseInt(id), isActive: true },
       include: {
-        therapySessions: {
-          where: {
-            startTime: { gte: new Date() }
-          },
-          include: { leccion: true }
-        },
+        therapySessions: { include: { leccion: true } },
         therapist: true,
-        guardians: true, 
+        guardians: true,
         medicamentos: true,
-        alergias: true
+        alergias: true,
       }
     });
 
     if (!student) {
-      return res.status(404).json({ error: 'Estudiante no encontrado o inactivo.' });
+      return res.status(404).json({ error: 'Estudiante no encontrado.' });
     }
+    
+    const studentWithFullName = {
+        ...student,
+        fullName: `${student.nombres} ${student.apellidos}`,
+        therapist: student.therapist ? {
+            ...student.therapist,
+            fullName: `${student.therapist.nombres} ${student.therapist.apellidos}`
+        } : null,
+        guardians: student.guardians.map(g => ({
+            ...g,
+            fullName: `${g.nombres} ${g.apellidos}`
+        }))
+    };
 
-    res.json(student);
+    res.json(studentWithFullName);
   } catch (error) {
     res.status(500).json({ error: 'No se pudo obtener el estudiante.' });
   }
 };
 
 export const updateStudent = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { therapistId, medicamentos, alergias, ...studentData } = req.body;
+    try {
+        const { id } = req.params;
+        const { therapistId, medicamentos, alergias, ...studentData } = req.body;
 
-    delete studentData.id;
-    delete studentData.guardians;
-    delete studentData.therapySessions; 
-    delete studentData.therapyPlans;
-    delete studentData.sessionLogs;
-    delete studentData.therapist;
-    delete studentData.createdAt;
-    delete studentData.updatedAt;
-    delete studentData.usaMedicamentos;
-    delete studentData.esAlergico;
+        delete studentData.id;
+        delete studentData.guardians;
+        delete studentData.therapySessions;
+        delete studentData.therapist;
+        delete studentData.createdAt;
+        delete studentData.updatedAt;
+        delete studentData.fullName;
 
-    if (studentData.dateOfBirth) {
-      studentData.dateOfBirth = new Date(studentData.dateOfBirth);
-    }
-    if (studentData.anoIngreso) {
-      studentData.anoIngreso = new Date(studentData.anoIngreso);
-    }
+        if (studentData.dateOfBirth) studentData.dateOfBirth = new Date(studentData.dateOfBirth);
+        if (studentData.anoIngreso) studentData.anoIngreso = new Date(studentData.anoIngreso);
 
-    const updatedStudent = await prisma.student.update({
-        where: { id: parseInt(id) },
-        data: {
-            ...studentData,
-            medicamentos: {
-              set: medicamentos?.map((medId: number) => ({ id: medId })) || [],
+        const updatedStudent = await prisma.student.update({
+            where: { id: parseInt(id) },
+            data: {
+                ...studentData,
+                medicamentos: { set: medicamentos?.map((medId: number) => ({ id: medId })) || [] },
+                alergias: { set: alergias?.map((alergiaId: number) => ({ id: alergiaId })) || [] },
+                therapist: therapistId ? { connect: { id: parseInt(therapistId) } } : { disconnect: true },
             },
-            alergias: {
-              set: alergias?.map((alergiaId: number) => ({ id: alergiaId })) || [],
-            },
-            therapist: therapistId ? { connect: { id: parseInt(therapistId) } } : { disconnect: true },
-        },
-    });
-    res.json(updatedStudent);
-  } catch (error) {
-      console.error("Error al actualizar estudiante:", error);
-      res.status(500).json({ error: 'No se pudo actualizar el estudiante.' });
-  }
+        });
+        res.json(updatedStudent);
+    } catch (error) {
+        console.error("Error al actualizar estudiante:", error);
+        res.status(500).json({ error: 'No se pudo actualizar el estudiante.' });
+    }
 };
 
 export const deleteStudent = async (req: Request, res: Response) => {
@@ -192,7 +180,6 @@ export const deleteStudent = async (req: Request, res: Response) => {
       where: { id: parseInt(id) },
       data: { isActive: false },
     });
-
     res.json({ message: 'Estudiante desactivado correctamente.', student });
   } catch (error) {
     res.status(500).json({ error: 'No se pudo desactivar el estudiante.' });

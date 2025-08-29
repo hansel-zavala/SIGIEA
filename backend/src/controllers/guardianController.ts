@@ -2,7 +2,6 @@
 import { Request, Response } from 'express';
 import prisma from '../db.js';
 
-// Obtener todos los guardianes activos
 export const getAllGuardians = async (req: Request, res: Response) => {
   try {
     const { search, page = '1', limit = '10' } = req.query;
@@ -13,9 +12,10 @@ export const getAllGuardians = async (req: Request, res: Response) => {
     const whereCondition = {
       isActive: true,
       ...(search && {
-        fullName: {
-          contains: search as string,
-        },
+        OR: [
+          { nombres: { contains: search as string } },
+          { apellidos: { contains: search as string } },
+        ],
       }),
     };
 
@@ -30,8 +30,17 @@ export const getAllGuardians = async (req: Request, res: Response) => {
       prisma.guardian.count({ where: whereCondition }),
     ]);
 
+    const guardiansWithFullName = guardians.map(g => ({
+        ...g,
+        fullName: `${g.nombres} ${g.apellidos}`,
+        student: {
+            ...g.student,
+            fullName: `${g.student.nombres} ${g.student.apellidos}`
+        }
+    }));
+
     res.json({
-      data: guardians,
+      data: guardiansWithFullName,
       total: totalGuardians,
       page: pageNum,
       totalPages: Math.ceil(totalGuardians / limitNum),
@@ -56,13 +65,13 @@ export const getGuardianById = async (req: Request, res: Response) => {
   }
 };
 
-
 export const updateGuardian = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const { fullName, ...guardianData } = req.body;
     const updatedGuardian = await prisma.guardian.update({
       where: { id: parseInt(id) },
-      data: req.body,
+      data: guardianData,
     });
     res.json(updatedGuardian);
   } catch (error) {

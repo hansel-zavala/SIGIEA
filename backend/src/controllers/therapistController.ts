@@ -1,23 +1,21 @@
 // backend/src/controllers/therapistController.ts
+
 import { Request, Response } from 'express';
 import prisma from '../db.js';
 import bcrypt from 'bcrypt';
 
-// Crear un nuevo terapeuta
 export const createTherapist = async (req: Request, res: Response) => {
     try {
-        const { fullName, email, password, identityNumber, ...profileData } = req.body;
+        const { nombres, apellidos, email, password, identityNumber, ...profileData } = req.body;
+        const fullName = `${nombres} ${apellidos}`;
 
-        // --- Validaciones ---
-        if (!fullName || !email || !password || !identityNumber) {
-            return res.status(400).json({ error: 'Nombre, email, contraseña e identidad son obligatorios.' });
+        if (!nombres || !apellidos || !email || !password || !identityNumber) {
+            return res.status(400).json({ error: 'Nombres, apellidos, email, contraseña e identidad son obligatorios.' });
         }
-
         const existingUser = await prisma.user.findUnique({ where: { email } });
         if (existingUser) {
             return res.status(409).json({ error: 'El correo electrónico ya está en uso.' });
         }
-        
         const existingProfile = await prisma.therapistProfile.findUnique({ where: { identityNumber } });
         if (existingProfile) {
             return res.status(409).json({ error: 'El número de identidad ya está registrado.' });
@@ -25,22 +23,22 @@ export const createTherapist = async (req: Request, res: Response) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
         
-        // Convertimos la fecha si viene del frontend
         if (profileData.dateOfBirth) {
             profileData.dateOfBirth = new Date(profileData.dateOfBirth);
         }
 
         const newTherapistProfile = await prisma.therapistProfile.create({
             data: {
-                fullName,
+                nombres,
+                apellidos,
                 email,
                 identityNumber,
-                ...profileData, // Resto de datos del perfil (teléfono, especialidad, etc.)
+                ...profileData,
                 user: {
                     create: {
                         email,
                         password: hashedPassword,
-                        role: 'terapeuta', // Rol asignado por defecto
+                        role: 'terapeuta',
                         name: fullName,
                     }
                 }
@@ -54,13 +52,44 @@ export const createTherapist = async (req: Request, res: Response) => {
     }
 };
 
-// Obtener todos los perfiles de terapeutas
 export const getAllTherapists = async (req: Request, res: Response) => {
     try {
-        const therapists = await prisma.therapistProfile.findMany({
-            where: { isActive: true }
+        const { search, page = '1', limit = '10' } = req.query;
+        const pageNum = parseInt(page as string, 10);
+        const limitNum = parseInt(limit as string, 10);
+        const skip = (pageNum - 1) * limitNum;
+
+        const whereCondition = {
+            isActive: true,
+            ...(search && {
+                OR: [
+                    { nombres: { contains: search as string } },
+                    { apellidos: { contains: search as string } },
+                ],
+            }),
+        };
+
+        const [therapists, totalTherapists] = await prisma.$transaction([
+            prisma.therapistProfile.findMany({
+                where: whereCondition,
+                orderBy: { nombres: 'asc' },
+                skip: skip,
+                take: limitNum,
+            }),
+            prisma.therapistProfile.count({ where: whereCondition }),
+        ]);
+
+        const therapistsWithFullName = therapists.map(t => ({
+            ...t,
+            fullName: `${t.nombres} ${t.apellidos}`
+        }));
+
+        res.json({
+            data: therapistsWithFullName,
+            total: totalTherapists,
+            page: pageNum,
+            totalPages: Math.ceil(totalTherapists / limitNum),
         });
-        res.json(therapists);
     } catch (error) {
         res.status(500).json({ error: 'No se pudieron obtener los terapeutas.' });
     }
@@ -79,33 +108,30 @@ export const getTherapistById = async (req: Request, res: Response) => {
     }
 };
 
-// Actualizar un terapeuta
 export const updateTherapist = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { email, fullName, identityNumber, ...profileData } = req.body;
+        const { email, nombres, apellidos, identityNumber, ...profileData } = req.body;
+        const fullName = `${nombres} ${apellidos}`;
 
         if (profileData.dateOfBirth) {
             profileData.dateOfBirth = new Date(profileData.dateOfBirth);
         }
 
-        // Si se cambia el email o el nombre, también actualizamos el modelo User asociado
-        if (email || fullName) {
-            const profile = await prisma.therapistProfile.findUnique({ where: { id: parseInt(id) }});
-            if (profile) {
-                await prisma.user.update({
-                    where: { id: profile.userId },
-                    data: {
-                        email: email,
-                        name: fullName
-                    }
-                });
-            }
+        const profile = await prisma.therapistProfile.findUnique({ where: { id: parseInt(id) }});
+        if (profile) {
+            await prisma.user.update({
+                where: { id: profile.userId },
+                data: {
+                    email: email,
+                    name: fullName
+                }
+            });
         }
 
         const updatedTherapist = await prisma.therapistProfile.update({
             where: { id: parseInt(id) },
-            data: { email, fullName, identityNumber, ...profileData }
+            data: { email, nombres, apellidos, identityNumber, ...profileData }
         });
         res.json(updatedTherapist);
     } catch (error) {

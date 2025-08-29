@@ -3,8 +3,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import studentService from '../services/studentService';
 import leccionService from '../services/leccionService';
-
-// ✅ Importamos nuestros componentes de UI
 import Label from '../components/ui/Label';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';

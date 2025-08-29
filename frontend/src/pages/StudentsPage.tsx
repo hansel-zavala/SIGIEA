@@ -8,9 +8,12 @@ import Input from "../components/ui/Input";
 import Pagination from "../components/ui/Pagination";
 import { FaUserCircle, FaPencilAlt, FaTrash, FaCalendarPlus } from "react-icons/fa";
 
+// ✅ CAMBIO: Actualizamos la interfaz para reflejar la nueva estructura
 interface Student {
   id: number;
-  fullName: string;
+  nombres: string;
+  apellidos: string;
+  fullName: string; // La recibimos del backend para mostrarla fácilmente
   therapist: { fullName: string } | null;
 }
 
@@ -21,7 +24,7 @@ function StudentsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [itemsPerPage] = useState(5);
+  const [itemsPerPage] = useState(10);
 
   useEffect(() => {
     const fetchStudents = () => {
@@ -49,7 +52,7 @@ function StudentsPage() {
       try {
         await studentService.deleteStudent(studentId);
         setStudents(students.filter((student) => student.id !== studentId));
-        setTotalItems(prev => prev -1);
+        setTotalItems(prev => prev - 1);
       } catch (err) {
         setError("No se pudo desactivar el estudiante.");
       }
@@ -61,15 +64,16 @@ function StudentsPage() {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
+    <div>
       <div className="flex justify-between items-center mb-6 gap-4">
         <h2 className="text-2xl font-bold text-gray-800">
           Gestión de Estudiantes
         </h2>
-        <div className="bg-white flex-grow max-w-md  py-2 px-2 rounded">
+        
+        <div className="flex-grow max-w-md">
             <Input
                 type="text"
-                placeholder="Buscar por nombre..."
+                placeholder="Buscar por nombre o apellido..."
                 value={searchTerm}
                 onChange={(e) => {
                     setSearchTerm(e.target.value);
@@ -77,6 +81,7 @@ function StudentsPage() {
                 }}
             />
         </div>
+
         <Link to="/matricula">
           <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
             Añadir Estudiante
@@ -105,6 +110,7 @@ function StudentsPage() {
                         <div className="text-gray-400"><FaUserCircle size={40} /></div>
                         <div>
                           <Link to={`/students/${student.id}`} className="block font-medium text-gray-800 hover:underline">
+                            {/* Seguimos usando fullName que nos provee el backend */}
                             {student.fullName}
                           </Link>
                           <span className="block text-gray-500 text-xs">ID: {student.id}</span>

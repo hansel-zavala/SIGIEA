@@ -1,6 +1,6 @@
 // frontend/src/pages/ScheduleCalendarPage.tsx
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -15,9 +15,7 @@ import Label from '../components/ui/Label';
 import Select from '../components/ui/Select';
 import Input from '../components/ui/Input';
 import { FaTrash, FaEdit } from 'react-icons/fa';
-import Badge from '../components/ui/Badge';
 
-// --- Interfaces y helpers ---
 interface Leccion { id: number; title: string; }
 interface TherapySession { id: number; startTime: string; endTime: string; leccion: Leccion; leccionId: number; duration?: number; }
 const modalStyles = { content: { top: '50%', left: '50%', right: 'auto', bottom: 'auto', marginRight: '-50%', transform: 'translate(-50%, -50%)', width: '450px', borderRadius: '8px', padding: '25px', boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)' }, overlay: { backgroundColor: 'rgba(0, 0, 0, 0.6)', zIndex: 10 }};
@@ -37,7 +35,6 @@ const calculateAge = (birthDate: string) => {
 function ScheduleCalendarPage() {
     const { studentId } = useParams<{ studentId: string }>();
     const [student, setStudent] = useState<any>(null);
-    const navigate = useNavigate();
     const [events, setEvents] = useState<EventInput[]>([]);
     const [lecciones, setLecciones] = useState<Leccion[]>([]);
     const [therapists, setTherapists] = useState<TherapistProfile[]>([]);
@@ -49,7 +46,6 @@ function ScheduleCalendarPage() {
     const [therapistId, setTherapistId] = useState('');
     const [weeksToSchedule, setWeeksToSchedule] = useState(4);
     const dayOptions = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
-
     const [isManageModalOpen, setIsManageModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [selectedSession, setSelectedSession] = useState<TherapySession | null>(null);
@@ -59,19 +55,18 @@ function ScheduleCalendarPage() {
 
     useEffect(() => {
         if (!studentId) return;
-
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                const [studentData, leccionesData, therapistsData, sessionsData] = await Promise.all([
-                    studentService.getStudentById(parseInt(studentId)), // <- Se añade esta llamada
+                const [studentData, leccionesData, therapistsResponse, sessionsData] = await Promise.all([
+                    studentService.getStudentById(parseInt(studentId)),
                     leccionService.getAllLecciones(),
-                    therapistService.getAllTherapists(),
+                    therapistService.getAllTherapists("", 1, 999), 
                     therapySessionService.getSessionsByStudent(parseInt(studentId))
                 ]);
-                setStudent(studentData); // <- Se guarda el estado del estudiante
+                setStudent(studentData);
                 setLecciones(leccionesData);
-                setTherapists(therapistsData);
+                setTherapists(therapistsResponse.data); 
                 setEvents(sessionsData.map(sessionToEvent));
             } catch (error) {
                 console.error("Error al cargar los datos de la página:", error);
@@ -80,26 +75,7 @@ function ScheduleCalendarPage() {
                 setIsLoading(false);
             }
         };
-
         fetchData();
-    }, [studentId]);
-
-    // ✅ CORRECCIÓN: Se separa la carga de datos en dos useEffect
-    useEffect(() => {
-        // Este efecto carga los datos para los menús desplegables
-        leccionService.getAllLecciones().then(setLecciones).catch(console.error);
-        therapistService.getAllTherapists().then(setTherapists).catch(console.error);
-    }, []);
-
-    useEffect(() => {
-        // Este efecto carga las sesiones del estudiante cuando el studentId está disponible
-        if (studentId) {
-            therapySessionService.getSessionsByStudent(parseInt(studentId))
-                .then(sessionsData => {
-                    setEvents(sessionsData.map(sessionToEvent));
-                })
-                .catch(console.error);
-        }
     }, [studentId]);
 
     const handleCreateSessions = async (e: React.FormEvent) => {
@@ -181,14 +157,8 @@ function ScheduleCalendarPage() {
         }
     };
     
-    const closeManageModal = () => {
-        setIsManageModalOpen(false);
-        setSelectedSession(null);
-    };
-    const closeEditModal = () => {
-        setIsEditModalOpen(false);
-        setSelectedSession(null);
-    };
+    const closeManageModal = () => { setIsManageModalOpen(false); setSelectedSession(null); };
+    const closeEditModal = () => { setIsEditModalOpen(false); setSelectedSession(null); };
 
     const father = student?.guardians?.find((g: any) => g.parentesco === 'Padre');
     const studentAge = student ? calculateAge(student.dateOfBirth) : null;
@@ -200,15 +170,13 @@ function ScheduleCalendarPage() {
 
     return (
         <>
-
-        {/* ✅ NUEVA SECCIÓN: Tarjeta de Perfil del Estudiante */}
             {student && (
                 <div>
                     <h2 className="text-2xl font-bold text-gray-800 mb-4">Gestionando Horario para: {student.fullName}</h2>
                     <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
                         <div><h3 className="font-semibold text-gray-600">Terapeuta Asignado</h3><p>{student.therapist?.fullName || 'No especificado'}</p></div>
                         <div><h3 className="font-semibold text-gray-600">Edad</h3><p>{studentAge !== null ? `${studentAge} años` : 'N/A'}</p></div>
-                        <div><h3 className="font-semibold text-gray-400">Género</h3><p>{student?.genero ? '' : 'warning'}{student?.genero || 'No asignado'}</p></div>
+                        <div><h3 className="font-semibold text-gray-400">Género</h3><p>{student?.genero || 'No asignado'}</p></div>
                         <div><h3 className="font-semibold text-gray-600">Padre de Familia</h3><p>{father?.fullName || 'No especificado'}</p></div>
                         <div><h3 className="font-semibold text-gray-600">Fecha de Ingreso</h3><p>{admissionDate || 'N/A'}</p></div>
                     </div>

@@ -1,4 +1,5 @@
 // frontend/src/pages/AddLeccionPage.tsx
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import leccionService from '../services/leccionService';
@@ -34,7 +35,6 @@ function AddLeccionPage() {
   const textAreaStyles = "block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 sm:text-sm";
 
   return (
-    // ✅ AÑADIMOS ESTE DIV ENVOLVENTE
     <div className="bg-white rounded-lg shadow-md p-6 h-full">
       <div className="max-w-8xl mx-auto">
         <h2 className="text-2xl font-bold mb-6">Crear Nueva Lección</h2>

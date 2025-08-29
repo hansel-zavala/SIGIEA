@@ -103,13 +103,26 @@ function EditStudentPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    if (type === 'checkbox') {
-        setFormData(prev => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }));
+    const isCheckbox = type === 'checkbox';
+    const checked = isCheckbox ? (e.target as HTMLInputElement).checked : false;
+
+    const tiposDeAtencionIds = tiposDeAtencion.map(atencion => atencion.id as keyof StudentFormData);
+
+    if (isCheckbox && tiposDeAtencionIds.includes(name as keyof StudentFormData)) {
+        const resetAttentionTypes = Object.fromEntries(
+            tiposDeAtencionIds.map(id => [id, false])
+        );
+
+        setFormData(prev => ({
+            ...prev,
+            ...resetAttentionTypes,
+            [name]: checked,
+        }));
     } else {
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData(prev => ({ ...prev, [name]: isCheckbox ? checked : value }));
     }
   };
-
+  
   const validateForm = () => {
     const errors: Record<string, string> = {};
     const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;

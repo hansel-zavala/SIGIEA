@@ -30,7 +30,15 @@ function EditGuardianPage() {
   }, [id]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+
+    if (name === 'numeroIdentidad' || name === 'telefono') {
+      const numericValue = value.replace(/[^0-9]/g, '');
+      const maxLength = name === 'numeroIdentidad' ? 13 : 8;
+      setFormData(prev => ({ ...prev, [name]: numericValue.slice(0, maxLength) }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = async (event: React.FormEvent) => {

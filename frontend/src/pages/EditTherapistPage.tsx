@@ -40,7 +40,15 @@ function EditTherapistPage() {
   }, [id]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    if (name === 'identityNumber' || name === 'phone') {
+      const numericValue = value.replace(/[^0-9]/g, '');
+      const maxLength = name === 'identityNumber' ? 13 : 8;
+      setFormData(prev => ({ ...prev, [name]: numericValue.slice(0, maxLength) }));
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   const validateForm = () => {

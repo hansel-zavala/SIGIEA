@@ -22,7 +22,19 @@ function AddTherapistPage() {
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    if (name === 'identityNumber' || name === 'phone') {
+      // Solo permite números
+      const numericValue = value.replace(/[^0-9]/g, '');
+      // Define la longitud máxima
+      const maxLength = name === 'identityNumber' ? 13 : 8;
+      // Actualiza el estado cortando el valor si excede el límite
+      setFormData(prev => ({ ...prev, [name]: numericValue.slice(0, maxLength) }));
+    } else {
+      // Comportamiento normal para los otros campos
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   const validateForm = () => {

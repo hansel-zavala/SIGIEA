@@ -128,13 +128,47 @@ function MatriculaPage() {
     const { name, value, type } = e.target;
     const isCheckbox = type === "checkbox";
     const checked = isCheckbox ? (e.target as HTMLInputElement).checked : false;
-    
-    setStudentData(prev => ({ ...prev, [name]: isCheckbox ? checked : value }));
+
+    const tiposDeAtencionIds = tiposDeAtencion.map(atencion => atencion.id);
+
+    if (isCheckbox && tiposDeAtencionIds.includes(name)) {
+        // Creamos un objeto que "resetea" todos los tipos de atención a false
+        const resetAttentionTypes = Object.fromEntries(
+            tiposDeAtencionIds.map(id => [id, false])
+        );
+
+        // Actualizamos el estado: aplicamos el reseteo y luego ponemos en `true` solo el seleccionado
+        setStudentData(prev => ({
+            ...prev,
+            ...resetAttentionTypes,
+            [name]: checked,
+        }));
+    } else {
+        // Comportamiento normal para el resto de los campos
+        setStudentData(prev => ({ ...prev, [name]: isCheckbox ? checked : value }));
+    }
   };
 
-  const handleGuardianChange = (index: number, e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleGuardianChange = (
+    index: number,
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
     const newGuardians = [...guardians];
-    newGuardians[index][e.target.name as keyof Guardian] = e.target.value as any;
+
+    // ✅ LÓGICA DE VALIDACIÓN EN TIEMPO REAL
+    if (name === 'numeroIdentidad' || name === 'telefono') {
+      // 1. Elimina cualquier carácter que no sea un número
+      const numericValue = value.replace(/[^0-9]/g, '');
+      // 2. Define la longitud máxima según el campo
+      const maxLength = name === 'numeroIdentidad' ? 13 : 8;
+      // 3. Corta el string para no exceder el límite
+      newGuardians[index][name as keyof Guardian] = numericValue.slice(0, maxLength) as any;
+    } else {
+      // Comportamiento normal para otros campos como nombre o parentesco
+      newGuardians[index][name as keyof Guardian] = value as any;
+    }
+
     setGuardians(newGuardians);
   };
 
@@ -296,6 +330,7 @@ function MatriculaPage() {
             <div>
               <Label htmlFor="dateOfBirth">Fecha de Nacimiento</Label>
               <Input id="dateOfBirth" name="dateOfBirth" type="date" value={studentData.dateOfBirth} onChange={handleChange} />
+              <p className="text-xs text-gray-500 mt-1">  Mes / Día / Año</p>
               {formErrors.dateOfBirth && <p className="text-red-500 text-sm mt-1">{formErrors.dateOfBirth}</p>}
             </div>
             
@@ -347,7 +382,7 @@ function MatriculaPage() {
                 name="tipoSangre"
                 value={studentData.tipoSangre}
                 onChange={handleChange}
-                placeholder="-- Selecciona el tipo de sangre --"
+                placeholder="Selecciona el tipo de sangre"
                 options={tiposDeSangre}
               />
             </div>

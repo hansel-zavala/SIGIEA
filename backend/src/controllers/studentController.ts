@@ -30,6 +30,8 @@ export const createStudent = async (req: Request, res: Response) => {
         }
     }
 
+    delete studentData.usaMedicamentos;
+    delete studentData.esAlergico;
 
     if (studentData.dateOfBirth) {
       studentData.dateOfBirth = new Date(studentData.dateOfBirth);

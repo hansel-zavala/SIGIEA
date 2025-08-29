@@ -6,23 +6,50 @@ import bcrypt from 'bcrypt';
 // Crear un nuevo terapeuta
 export const createTherapist = async (req: Request, res: Response) => {
     try {
-        const { fullName, email, password, specialty, phone, identityNumber } = req.body;
+        const { fullName, email, password, identityNumber, ...profileData } = req.body;
+
+        // --- Validaciones ---
+        if (!fullName || !email || !password || !identityNumber) {
+            return res.status(400).json({ error: 'Nombre, email, contraseña e identidad son obligatorios.' });
+        }
+
         const existingUser = await prisma.user.findUnique({ where: { email } });
         if (existingUser) {
-            return res.status(400).json({ error: 'El correo electrónico ya está en uso.' });
+            return res.status(409).json({ error: 'El correo electrónico ya está en uso.' });
         }
+        
+        const existingProfile = await prisma.therapistProfile.findUnique({ where: { identityNumber } });
+        if (existingProfile) {
+            return res.status(409).json({ error: 'El número de identidad ya está registrado.' });
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
+        
+        // Convertimos la fecha si viene del frontend
+        if (profileData.dateOfBirth) {
+            profileData.dateOfBirth = new Date(profileData.dateOfBirth);
+        }
+
         const newTherapistProfile = await prisma.therapistProfile.create({
             data: {
-                fullName, email, identityNumber, specialty, phone,
+                fullName,
+                email,
+                identityNumber,
+                ...profileData, // Resto de datos del perfil (teléfono, especialidad, etc.)
                 user: {
-                    create: { email, password: hashedPassword, role: 'terapeuta', name: fullName, }
+                    create: {
+                        email,
+                        password: hashedPassword,
+                        role: 'terapeuta', // Rol asignado por defecto
+                        name: fullName,
+                    }
                 }
             },
-            include: { user: { select: { id: true, email: true } } }
+            include: { user: true }
         });
         res.status(201).json(newTherapistProfile);
     } catch (error) {
+        console.error("Error al crear terapeuta:", error);
         res.status(500).json({ error: 'No se pudo crear el terapeuta.' });
     }
 };
@@ -39,7 +66,6 @@ export const getAllTherapists = async (req: Request, res: Response) => {
     }
 };
 
-// ✅ AÑADIMOS LAS FUNCIONES FALTANTES
 export const getTherapistById = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
@@ -53,15 +79,37 @@ export const getTherapistById = async (req: Request, res: Response) => {
     }
 };
 
+// Actualizar un terapeuta
 export const updateTherapist = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
+        const { email, fullName, identityNumber, ...profileData } = req.body;
+
+        if (profileData.dateOfBirth) {
+            profileData.dateOfBirth = new Date(profileData.dateOfBirth);
+        }
+
+        // Si se cambia el email o el nombre, también actualizamos el modelo User asociado
+        if (email || fullName) {
+            const profile = await prisma.therapistProfile.findUnique({ where: { id: parseInt(id) }});
+            if (profile) {
+                await prisma.user.update({
+                    where: { id: profile.userId },
+                    data: {
+                        email: email,
+                        name: fullName
+                    }
+                });
+            }
+        }
+
         const updatedTherapist = await prisma.therapistProfile.update({
             where: { id: parseInt(id) },
-            data: req.body
+            data: { email, fullName, identityNumber, ...profileData }
         });
         res.json(updatedTherapist);
     } catch (error) {
+        console.error("Error al actualizar terapeuta:", error);
         res.status(500).json({ error: 'No se pudo actualizar el terapeuta.' });
     }
 };

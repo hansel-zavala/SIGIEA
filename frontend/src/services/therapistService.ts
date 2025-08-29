@@ -5,9 +5,11 @@ export interface TherapistProfile {
   id: number;
   fullName: string;
   email: string;
-  specialty: string | null;
-  phone: string | null;
   identityNumber: string;
+  phone: string | null;
+  specialty: 'Psicologo' | 'Terapeuta' | 'Ambos';
+  gender: 'Masculino' | 'Femenino' | null;
+  dateOfBirth: string | null;
 }
 
 // CREATE

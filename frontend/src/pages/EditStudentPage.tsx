@@ -24,9 +24,9 @@ type StudentFormData = {
     recibioEvaluacion: boolean;
     institutoIncluido: string;
     anoIngreso: string;
-    zona: 'Urbano' | 'Rural';
-    jornada: 'Matutina' | 'Vespertina';
-    genero: 'Masculino' | 'Femenino';
+    zona: string;
+    jornada: string;
+    genero: string;
     tipoSangre?: string;
     therapistId?: number | string;
     atencionGrupal: boolean;
@@ -156,6 +156,19 @@ function EditStudentPage() {
 
     if (!departamento) errors.departamento = "Debe seleccionar un departamento.";
     if (!municipio) errors.municipio = "Debe seleccionar un municipio.";
+    if (!formData.dateOfBirth) errors.dateOfBirth = "La fecha de nacimiento es obligatoria.";
+    if (!departamento) errors.departamento = "Debe seleccionar un departamento.";
+    if (!municipio) errors.municipio = "Debe seleccionar un municipio.";
+    if (!formData.genero) errors.genero = "Debe seleccionar un género.";
+    if (!formData.zona) errors.zona = "Debe seleccionar una zona.";
+    if (!formData.jornada) errors.jornada = "Debe seleccionar una jornada.";
+    if (!formData.tipoSangre) errors.tipoSangre = "Debe seleccionar un tipo de sangre.";
+    if (!formData.direccion) errors.direccion = "La dirección es obligatoria.";
+    if (!formData.institucionProcedencia) errors.institucionProcedencia = "La institución de procedencia es obligatoria.";
+    if (!therapists) errors.therapistId = "Debe seleccionar un terapeuta.";
+    if (formData.dateOfBirth && new Date(formData.dateOfBirth) > new Date()) {
+        errors.dateOfBirth = "La fecha de nacimiento no puede ser futura.";
+    }
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -206,8 +219,10 @@ function EditStudentPage() {
     }
   };
   
+  const today = new Date().toISOString().split("T")[0];
+
   return (
-    <div className="max-w-8xl mx-auto">
+    <div className="bg-white p-6 rounded-lg shadow-md">
       <h2 className="text-3xl font-bold mb-6 text-gray-800">Editar Ficha del Estudiante</h2>
       <form onSubmit={handleSubmit} className="space-y-8 bg-white p-8 rounded-lg shadow-md" noValidate>
         {error && <p className="text-red-500 bg-red-100 p-3 rounded-md mb-6">{error}</p>}
@@ -217,18 +232,20 @@ function EditStudentPage() {
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
                 <Label htmlFor="nombres">Nombres</Label>
-                <Input id="nombres" name="nombres" type="text" value={formData.nombres || ''} onChange={handleChange}/>
+                <Input id="nombres" name="nombres" type="text" value={formData.nombres || ''} placeholder="Ingresa sus nombres" onChange={handleChange}/>
                 {formErrors.nombres && <p className="text-red-500 text-sm mt-1">{formErrors.nombres}</p>}
             </div>
             <div>
                 <Label htmlFor="apellidos">Apellidos</Label>
-                <Input id="apellidos" name="apellidos" type="text" value={formData.apellidos || ''} onChange={handleChange}/>
+                <Input id="apellidos" name="apellidos" type="text" value={formData.apellidos || ''} placeholder="Ingresa sus apellidos" onChange={handleChange}/>
                 {formErrors.apellidos && <p className="text-red-500 text-sm mt-1">{formErrors.apellidos}</p>}
             </div>
 
             <div>
                 <Label htmlFor="dateOfBirth">Fecha de Nacimiento</Label>
-                <Input id="dateOfBirth" name="dateOfBirth" type="date" value={formData.dateOfBirth || ''} onChange={handleChange} />
+                <Input id="dateOfBirth" name="dateOfBirth" type="date" value={formData.dateOfBirth || ''} onChange={handleChange} max={today} />
+                <p className="text-xs text-gray-500 mt-1">Mes / Día / Año</p>
+                {formErrors.dateOfBirth && <p className="text-red-500 text-sm mt-1">{formErrors.dateOfBirth}</p>}
             </div>
             <div>
               <Label htmlFor="departamento">Departamento de Nacimiento</Label>
@@ -251,8 +268,23 @@ function EditStudentPage() {
               />
               {formErrors.municipio && <p className="text-red-500 text-sm mt-1">{formErrors.municipio}</p>}
             </div>
-            <div><Label htmlFor="direccion">Dirección</Label><Input id="direccion" name="direccion" type="text" value={formData.direccion || ''} onChange={handleChange} /></div>
-            <div><Label htmlFor="genero">Género</Label><Select id="genero" name="genero" value={formData.genero || ''} onChange={handleChange} options={[{ value: 'Masculino', label: 'Masculino' }, { value: 'Femenino', label: 'Femenino' }]}/></div>
+            <div>
+              <Label htmlFor="direccion">Dirección</Label>
+              <Input id="direccion" name="direccion" type="text" value={formData.direccion || ''} placeholder="Ingresa la dirección" onChange={handleChange} />
+              {formErrors.direccion && <p className="text-red-500 text-sm mt-1">{formErrors.direccion}</p>}
+            </div>
+
+            <div>
+              <Label htmlFor="genero">Género</Label>
+              <Select 
+                id="genero" 
+                name="genero" 
+                value={formData.genero || ''} 
+                onChange={handleChange}
+                placeholder=" Selecciona el género "
+                options={[{ value: 'Masculino', label: 'Masculino' }, { value: 'Femenino', label: 'Femenino' }]}/>
+              {formErrors.genero && <p className="text-red-500 text-sm mt-1">{formErrors.genero}</p>}
+            </div>
             <div>
               <Label htmlFor="tipoSangre">Tipo de Sangre</Label>
               <Select
@@ -260,13 +292,26 @@ function EditStudentPage() {
                 name="tipoSangre"
                 value={formData.tipoSangre || ''}
                 onChange={handleChange}
-                placeholder="-- Opcional --"
+                placeholder="Selecciona el tipo de sangre"
                 options={tiposDeSangre}
               />
+              {formErrors.tipoSangre && <p className="text-red-500 text-sm mt-1">{formErrors.tipoSangre}</p>}
             </div>
-            <div><Label htmlFor="zona">Zona</Label><Select id="zona" name="zona" value={formData.zona || ''} onChange={handleChange} options={[{ value: 'Urbano', label: 'Urbano' }, { value: 'Rural', label: 'Rural' }]}/></div>
-            <div><Label htmlFor="jornada">Jornada</Label><Select id="jornada" name="jornada" value={formData.jornada || ''} onChange={handleChange} options={[{ value: 'Matutina', label: 'Matutina' }, { value: 'Vespertina', label: 'Vespertina' }]}/></div>
-            <div><Label htmlFor="institucionProcedencia">Institución de Procedencia</Label><Input id="institucionProcedencia" name="institucionProcedencia" type="text" value={formData.institucionProcedencia || ''} onChange={handleChange} /></div>
+            <div>
+              <Label htmlFor="zona">Zona</Label>
+              <Select id="zona" name="zona" value={formData.zona || ''} onChange={handleChange} placeholder=" Selecciona la zona " options={[{ value: 'Urbano', label: 'Urbano' }, { value: 'Rural', label: 'Rural' }]}/>
+              {formErrors.zona && <p className="text-red-500 text-sm mt-1">{formErrors.zona}</p>}
+            </div>
+            <div>
+              <Label htmlFor="jornada">Jornada</Label>
+              <Select id="jornada" name="jornada" value={formData.jornada || ''} onChange={handleChange} placeholder=" Selecciona la jornada " options={[{ value: 'Matutina', label: 'Matutina' }, { value: 'Vespertina', label: 'Vespertina' }]}/>
+              {formErrors.jornada && <p className="text-red-500 text-sm mt-1">{formErrors.jornada}</p>}
+            </div>
+            <div>
+              <Label htmlFor="institucionProcedencia">Institución de Procedencia</Label>
+              <Input id="institucionProcedencia" name="institucionProcedencia" type="text" value={formData.institucionProcedencia || ''} placeholder="Ingresa su institución de procedencia" onChange={handleChange} />
+              {formErrors.institucionProcedencia && <p className="text-red-500 text-sm mt-1">{formErrors.institucionProcedencia}</p>}
+            </div>
             <div>
               <Label>Partida de Nacimiento</Label>
               {formData.partidaNacimientoUrl ? (

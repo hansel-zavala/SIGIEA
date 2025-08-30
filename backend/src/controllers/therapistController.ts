@@ -111,7 +111,7 @@ export const getTherapistById = async (req: Request, res: Response) => {
 export const updateTherapist = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { email, nombres, apellidos, identityNumber, ...profileData } = req.body;
+        const { email, nombres, apellidos, password, ...profileData } = req.body;
         const fullName = `${nombres} ${apellidos}`;
 
         if (profileData.dateOfBirth) {
@@ -120,18 +120,25 @@ export const updateTherapist = async (req: Request, res: Response) => {
 
         const profile = await prisma.therapistProfile.findUnique({ where: { id: parseInt(id) }});
         if (profile) {
+            const userDataToUpdate: { email?: string; name?: string; password?: string } = {
+                email: email,
+                name: fullName
+            };
+
+            if (password) {
+                const hashedPassword = await bcrypt.hash(password, 10);
+                userDataToUpdate.password = hashedPassword;
+            }
+            
             await prisma.user.update({
                 where: { id: profile.userId },
-                data: {
-                    email: email,
-                    name: fullName
-                }
+                data: userDataToUpdate
             });
         }
 
         const updatedTherapist = await prisma.therapistProfile.update({
             where: { id: parseInt(id) },
-            data: { email, nombres, apellidos, identityNumber, ...profileData }
+            data: { email, nombres, apellidos, ...profileData }
         });
         res.json(updatedTherapist);
     } catch (error) {

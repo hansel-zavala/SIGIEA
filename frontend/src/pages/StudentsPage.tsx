@@ -8,12 +8,11 @@ import Input from "../components/ui/Input";
 import Pagination from "../components/ui/Pagination";
 import { FaUserCircle, FaPencilAlt, FaTrash, FaCalendarPlus } from "react-icons/fa";
 
-// ✅ CAMBIO: Actualizamos la interfaz para reflejar la nueva estructura
 interface Student {
   id: number;
   nombres: string;
   apellidos: string;
-  fullName: string; // La recibimos del backend para mostrarla fácilmente
+  fullName: string;
   therapist: { fullName: string } | null;
 }
 
@@ -64,7 +63,7 @@ function StudentsPage() {
   };
 
   return (
-    <div>
+    <div className="bg-white p-6 rounded-lg shadow-md">
       <div className="flex justify-between items-center mb-6 gap-4">
         <h2 className="text-2xl font-bold text-gray-800">
           Gestión de Estudiantes
@@ -75,7 +74,7 @@ function StudentsPage() {
                 type="text"
                 placeholder="Buscar por nombre o apellido..."
                 value={searchTerm}
-                onChange={(e) => {
+                onChange={(e) => { 
                     setSearchTerm(e.target.value);
                     setCurrentPage(1);
                 }}
@@ -91,7 +90,7 @@ function StudentsPage() {
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div className="max-w-full overflow-x-auto">
-          <table className="w-full text-lg">
+          <table className="w-full text-sm">
             <thead className="border-b border-gray-100 bg-gray-50">
               <tr>
                 <th className="px-5 py-3 font-medium text-gray-500 text-left">Nombre</th>
@@ -110,7 +109,6 @@ function StudentsPage() {
                         <div className="text-gray-400"><FaUserCircle size={40} /></div>
                         <div>
                           <Link to={`/students/${student.id}`} className="block font-medium text-gray-800 hover:underline">
-                            {/* Seguimos usando fullName que nos provee el backend */}
                             {student.fullName}
                           </Link>
                           <span className="block text-gray-500 text-xs">ID: {student.id}</span>

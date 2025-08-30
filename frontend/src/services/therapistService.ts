@@ -2,6 +2,7 @@
 import api from './api.js';
 
 export interface TherapistProfile {
+  password: string;
   id: number;
   nombres: string;
   apellidos: string;

@@ -56,7 +56,6 @@ function AssignPlanPage() {
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && <p className="text-red-500">{error}</p>}
 
-        {/* ✅ Usamos nuestros nuevos componentes */}
         <div>
           <Label htmlFor="leccionId">Lección:</Label>
           <Select

@@ -18,7 +18,7 @@ interface Guardian {
   apellidos: string;
   numeroIdentidad: string;
   telefono: string;
-  parentesco: "Padre" | "Madre" | "Tutor_Legal" | "Otro";
+  parentesco: string;
   direccionEmergencia: string;
 }
 
@@ -40,6 +40,7 @@ const tiposDeSangre = [
     { value: 'O_POSITIVO', label: 'O+' }, { value: 'O_NEGATIVO', label: 'O-' },
 ];
 
+
 function MatriculaPage() {
     const [departamento, setDepartamento] = useState('');
     const [municipio, setMunicipio] = useState('');
@@ -55,9 +56,9 @@ function MatriculaPage() {
     recibioEvaluacion: false,
     institutoIncluido: "",
     anoIngreso: new Date().toISOString().split("T")[0],
-    zona: "Urbano" as "Urbano" | "Rural",
-    jornada: "Matutina" as "Matutina" | "Vespertina",
-    genero: "Masculino" as "Masculino" | "Femenino",
+    zona: "",
+    jornada: "",
+    genero: "",
     tipoSangre: "",
     atencionGrupal: false,
     atencionIndividual: false,
@@ -75,7 +76,7 @@ function MatriculaPage() {
       apellidos: "",
       numeroIdentidad: "",
       telefono: "",
-      parentesco: "Padre",
+      parentesco: "",
       direccionEmergencia: "",
     },
   ]);
@@ -205,8 +206,17 @@ function MatriculaPage() {
     if (!studentData.dateOfBirth) errors.dateOfBirth = "La fecha de nacimiento es obligatoria.";
     if (!departamento) errors.departamento = "Debe seleccionar un departamento.";
     if (!municipio) errors.municipio = "Debe seleccionar un municipio.";
-
+    if (!studentData.genero) errors.genero = "Debe seleccionar un género.";
+    if (!studentData.zona) errors.zona = "Debe seleccionar una zona.";
+    if (!studentData.jornada) errors.jornada = "Debe seleccionar una jornada.";
+    if (!studentData.tipoSangre) errors.tipoSangre = "Debe seleccionar un tipo de sangre.";
+    if (!studentData.direccion) errors.direccion = "La dirección es obligatoria.";
+    if (!studentData.institucionProcedencia) errors.institucionProcedencia = "La institución de procedencia es obligatoria.";
     if (!therapistId) errors.therapistId = "Debe seleccionar un terapeuta.";
+
+    if (studentData.dateOfBirth && new Date(studentData.dateOfBirth) > new Date()) {
+        errors.dateOfBirth = "La fecha de nacimiento no puede ser futura.";
+    }
     
     errors.partidaFileError = validateFile(partidaFile);
     errors.evaluacionFileError = validateFile(evaluacionFile);
@@ -227,6 +237,10 @@ function MatriculaPage() {
 
         if (!guardian.telefono.trim()) errors[`guardian_telefono_${index}`] = "El teléfono es obligatorio.";
         else if (!phoneRegex.test(guardian.telefono)) errors[`guardian_telefono_${index}`] = "El teléfono debe tener 8 dígitos.";
+
+        if (!guardian.direccionEmergencia.trim()) errors[`guardian_direccionEmergencia_${index}`] = "La dirección de emergencia es obligatoria.";
+
+        if (!guardian.parentesco) errors[`guardian_parentesco_${index}`] = "El parentesco es obligatorio.";
     });
     
     const finalErrors = Object.fromEntries(Object.entries(errors).filter(([_, value]) => value));
@@ -282,9 +296,10 @@ function MatriculaPage() {
     }
   };
 
+  const today = new Date().toISOString().split("T")[0];
 
   return (
-    <div className="max-w-8xl mx-auto">
+    <div className="bg-white p-6 rounded-lg shadow-md">
       <h2 className="text-3xl font-bold mb-6 text-gray-800">Ficha de Matrícula</h2>
       {error && <p className="text-red-500 bg-red-100 p-3 rounded-md mb-6">{error}</p>}
       <form onSubmit={handleSubmit} className="space-y-8 bg-white p-8 rounded-lg shadow-md" noValidate>
@@ -293,20 +308,14 @@ function MatriculaPage() {
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <Label htmlFor="nombres">Nombres del Alumno(a)</Label>
-              <Input id="nombres" name="nombres" type="text" value={studentData.nombres} onChange={handleChange} />
+              <Input id="nombres" name="nombres" type="text" value={studentData.nombres} onChange={handleChange} placeholder="Ingresa sus nombre"/>
               {formErrors.nombres && <p className="text-red-500 text-sm mt-1">{formErrors.nombres}</p>}
             </div>
+
             <div>
               <Label htmlFor="apellidos">Apellidos del Alumno(a)</Label>
-              <Input id="apellidos" name="apellidos" type="text" value={studentData.apellidos} onChange={handleChange} />
+              <Input id="apellidos" name="apellidos" type="text" value={studentData.apellidos} onChange={handleChange} placeholder="Ingresa sus apellido"/>
               {formErrors.apellidos && <p className="text-red-500 text-sm mt-1">{formErrors.apellidos}</p>}
-            </div>
-            
-            <div>
-              <Label htmlFor="dateOfBirth">Fecha de Nacimiento</Label>
-              <Input id="dateOfBirth" name="dateOfBirth" type="date" value={studentData.dateOfBirth} onChange={handleChange} />
-              <p className="text-xs text-gray-500 mt-1">Mes / Día / Año</p>
-              {formErrors.dateOfBirth && <p className="text-red-500 text-sm mt-1">{formErrors.dateOfBirth}</p>}
             </div>
             
             <div>
@@ -319,6 +328,7 @@ function MatriculaPage() {
               />
               {formErrors.departamento && <p className="text-red-500 text-sm mt-1">{formErrors.departamento}</p>}
             </div>
+
             <div>
               <Label htmlFor="municipio">Municipio de Nacimiento</Label>
               <ComboBox
@@ -332,8 +342,16 @@ function MatriculaPage() {
             </div>
 
             <div>
+              <Label htmlFor="dateOfBirth">Fecha de Nacimiento</Label>
+              <Input id="dateOfBirth" name="dateOfBirth" type="date" value={studentData.dateOfBirth} onChange={handleChange} max={today}/>
+              <p className="text-xs text-gray-500 mt-1">Mes / Día / Año</p>
+              {formErrors.dateOfBirth && <p className="text-red-500 text-sm mt-1">{formErrors.dateOfBirth}</p>}
+            </div>
+
+            <div>
               <Label htmlFor="direccion">Dirección</Label>
-              <Input id="direccion" name="direccion" type="text" value={studentData.direccion} onChange={handleChange}/>
+              <Input id="direccion" name="direccion" type="text" value={studentData.direccion} onChange={handleChange} placeholder="Ingresa su dirección"/>
+              {formErrors.direccion && <p className="text-red-500 text-sm mt-1">{formErrors.direccion}</p>}
             </div>
             <div>
               <Label htmlFor="genero">Género</Label>
@@ -342,11 +360,13 @@ function MatriculaPage() {
                 name="genero"
                 value={studentData.genero}
                 onChange={handleChange}
+                placeholder=" Selecciona el género "
                 options={[
                   { value: "Masculino", label: "Masculino" },
                   { value: "Femenino", label: "Femenino" },
                 ]}
               />
+              {formErrors.genero && <p className="text-red-500 text-sm mt-1">{formErrors.genero}</p>}
             </div>
             
             <div>
@@ -356,9 +376,10 @@ function MatriculaPage() {
                 name="tipoSangre"
                 value={studentData.tipoSangre}
                 onChange={handleChange}
-                placeholder="-- Opcional --"
+                placeholder="Selecciona el tipo de sangre"
                 options={tiposDeSangre}
               />
+              {formErrors.dateOfBirth && <p className="text-red-500 text-sm mt-1">{formErrors.dateOfBirth}</p>}
             </div>
 
             <div>
@@ -368,12 +389,15 @@ function MatriculaPage() {
                 name="zona"
                 value={studentData.zona}
                 onChange={handleChange}
+                placeholder=" Selecciona la zona "
                 options={[
                   { value: "Urbano", label: "Urbano" },
                   { value: "Rural", label: "Rural" },
                 ]}
               />
+              {formErrors.zona && <p className="text-red-500 text-sm mt-1">{formErrors.zona}</p>}
             </div>
+
             <div>
               <Label htmlFor="jornada">Jornada</Label>
               <Select
@@ -381,12 +405,15 @@ function MatriculaPage() {
                 name="jornada"
                 value={studentData.jornada}
                 onChange={handleChange}
+                placeholder=" Selecciona la jornada "
                 options={[
                   { value: "Matutina", label: "Matutina" },
                   { value: "Vespertina", label: "Vespertina" },
                 ]}
               />
+              {formErrors.jornada && <p className="text-red-500 text-sm mt-1">{formErrors.jornada}</p>}
             </div>
+
             <div>
               <Label htmlFor="institucionProcedencia">
                 Institución de Procedencia
@@ -396,9 +423,12 @@ function MatriculaPage() {
                 name="institucionProcedencia"
                 type="text"
                 value={studentData.institucionProcedencia}
+                placeholder="Ingresa su institución de procedencia"
                 onChange={handleChange}
               />
+              {formErrors.institucionProcedencia && <p className="text-red-500 text-sm mt-1">{formErrors.institucionProcedencia}</p>}
             </div>
+
             <div>
               <Label htmlFor="institutoIncluido">
                 Nombre del instituto u otro centro donde está incluido
@@ -412,7 +442,7 @@ function MatriculaPage() {
               />
             </div>
             <div>
-              <Label htmlFor="anoIngreso">Año de Ingreso a APO-AUTIS</Label>
+              <Label htmlFor="anoIngreso">Fecha de Ingreso a APO-AUTIS</Label>
               <Input
                 id="anoIngreso"
                 name="anoIngreso"
@@ -519,7 +549,7 @@ function MatriculaPage() {
               name="therapistId"
               value={therapistId}
               onChange={(e) => setTherapistId(e.target.value)}
-              placeholder="-- Selecciona un terapeuta --"
+              placeholder="Selecciona un terapeuta"
               options={therapists.map(therapist => ({ value: String(therapist.id), label: therapist.fullName }))}
             />
             {formErrors.therapistId && <p className="text-red-500 text-sm mt-1">{formErrors.therapistId}</p>}
@@ -536,31 +566,33 @@ function MatriculaPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <Label htmlFor={`g-nombres-${index}`}>Nombres</Label>
-                  <Input id={`g-nombres-${index}`} name="nombres" type="text" value={guardian.nombres} onChange={(e) => handleGuardianChange(index, e)} />
+                  <Input id={`g-nombres-${index}`} name="nombres" type="text" value={guardian.nombres} placeholder="Ingresa sus nombre" onChange={(e) => handleGuardianChange(index, e)} />
                   {formErrors[`guardian_nombres_${index}`] && <p className="text-red-500 text-sm mt-1">{formErrors[`guardian_nombres_${index}`]}</p>}
                 </div>
                 <div>
                   <Label htmlFor={`g-apellidos-${index}`}>Apellidos</Label>
-                  <Input id={`g-apellidos-${index}`} name="apellidos" type="text" value={guardian.apellidos} onChange={(e) => handleGuardianChange(index, e)} />
+                  <Input id={`g-apellidos-${index}`} name="apellidos" type="text" value={guardian.apellidos} placeholder="Ingresa sus apellidos" onChange={(e) => handleGuardianChange(index, e)} />
                   {formErrors[`guardian_apellidos_${index}`] && <p className="text-red-500 text-sm mt-1">{formErrors[`guardian_apellidos_${index}`]}</p>}
                 </div>
                  <div>
                   <Label htmlFor={`g-parentesco-${index}`}>Parentesco</Label>
-                  <Select id={`g-parentesco-${index}`} name="parentesco" value={guardian.parentesco} onChange={(e) => handleGuardianChange(index, e)} options={[{ value: "Padre", label: "Padre" }, { value: "Madre", label: "Madre" }, { value: "Tutor_Legal", label: "Tutor Legal" }, { value: "Otro", label: "Otro" }]} />
+                  <Select id={`g-parentesco-${index}`} name="parentesco" value={guardian.parentesco} onChange={(e) => handleGuardianChange(index, e)} placeholder="Selecciona su parentesco" options={[{ value: "Padre", label: "Padre" }, { value: "Madre", label: "Madre" }, { value: "Tutor_Legal", label: "Tutor Legal" }, { value: "Otro", label: "Otro" }]} />
+                  {formErrors[`guardian_parentesco_${index}`] && <p className="text-red-500 text-sm mt-1">{formErrors[`guardian_parentesco_${index}`]}</p>}
                 </div>
                 <div>
                   <Label htmlFor={`g-numeroIdentidad-${index}`}>Número de Identidad</Label>
-                  <Input id={`g-numeroIdentidad-${index}`} name="numeroIdentidad" type="text" value={guardian.numeroIdentidad} onChange={(e) => handleGuardianChange(index, e)} />
+                  <Input id={`g-numeroIdentidad-${index}`} name="numeroIdentidad" type="text" value={guardian.numeroIdentidad} placeholder="Ingresa su número de identidad" onChange={(e) => handleGuardianChange(index, e)} />
                   {formErrors[`guardian_numeroIdentidad_${index}`] && <p className="text-red-500 text-sm mt-1">{formErrors[`guardian_numeroIdentidad_${index}`]}</p>}
                 </div>
                 <div>
                   <Label htmlFor={`g-telefono-${index}`}>Teléfono</Label>
-                  <Input id={`g-telefono-${index}`} name="telefono" type="text" value={guardian.telefono} onChange={(e) => handleGuardianChange(index, e)} />
+                  <Input id={`g-telefono-${index}`} name="telefono" type="text" value={guardian.telefono} placeholder="Ingresa su teléfono" onChange={(e) => handleGuardianChange(index, e)} />
                   {formErrors[`guardian_telefono_${index}`] && <p className="text-red-500 text-sm mt-1">{formErrors[`guardian_telefono_${index}`]}</p>}
                 </div>
-                <div className="md:col-span-2">
+                <div>
                   <Label htmlFor={`g-direccionEmergencia-${index}`}>Dirección de Emergencia</Label>
-                  <Input id={`g-direccionEmergencia-${index}`} name="direccionEmergencia" type="text" value={guardian.direccionEmergencia} onChange={(e) => handleGuardianChange(index, e)} />
+                  <Input id={`g-direccionEmergencia-${index}`} name="direccionEmergencia" type="text" value={guardian.direccionEmergencia} placeholder="Ingresa su dirección de emergencia" onChange={(e) => handleGuardianChange(index, e)} />
+                  {formErrors[`guardian_direccionEmergencia_${index}`] && <p className="text-red-500 text-sm mt-1">{formErrors[`guardian_direccionEmergencia_${index}`]}</p>}
                 </div>
                 <div className="md:col-span-2">
                   <Label htmlFor={`g-copiaIdentidadUrl-${index}`}>Subir Copia de Identidad</Label>

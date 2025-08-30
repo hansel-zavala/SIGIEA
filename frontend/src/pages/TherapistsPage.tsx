@@ -73,9 +73,9 @@ function TherapistsPage() {
           </button>
         </Link>
       </div>
-      <div className="overflow-x-auto">
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <table className="w-full text-sm">
-          <thead className="border-b bg-gray-50">
+          <thead className=" bg-gray-50">
             <tr>
               <th className="px-5 py-3 font-medium text-gray-500 text-left">Nombre</th>
               <th className="px-5 py-3 font-medium text-gray-500 text-left">Contacto</th>

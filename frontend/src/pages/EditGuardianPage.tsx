@@ -91,11 +91,11 @@ function EditGuardianPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-6">Editar Guardián</h2>
-      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+    <div className=" mx-auto bg-white p-8 rounded-lg shadow-md">
+      <h2 className="text-2xl font-bold mb-6">Editar Datos {formData.parentesco.replace('_', ' ')}</h2>
+      <form onSubmit={handleSubmit} className="space-y-8 bg-white p-8 rounded-lg shadow-md" noValidate>
         {error && <p className="text-red-500 bg-red-100 p-3 rounded-md">{error}</p>}
-        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <Label htmlFor="nombres">Nombres</Label>
           <Input id="nombres" name="nombres" type="text" value={formData.nombres} onChange={handleChange} />
@@ -132,9 +132,12 @@ function EditGuardianPage() {
           <Label htmlFor="direccionEmergencia">Dirección de Emergencia</Label>
           <Input id="direccionEmergencia" name="direccionEmergencia" type="text" value={formData.direccionEmergencia} onChange={handleChange} />
         </div>
-        <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+        </div>
+        <div className="pt-6 text-right">
+        <button type="submit" className=" bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
           Guardar Cambios
         </button>
+        </div>
       </form>
     </div>
   );

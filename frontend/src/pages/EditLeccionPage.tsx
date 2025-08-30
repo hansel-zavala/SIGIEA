@@ -8,6 +8,7 @@ import Input from '../components/ui/Input';
 function EditLeccionPage() {
   const [formData, setFormData] = useState({ title: '', objective: '', description: '', category: '', keySkill: '' });
   const [error, setError] = useState('');
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const navigate = useNavigate();
   const { id } = useParams();
 
@@ -29,8 +30,52 @@ function EditLeccionPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    const validCharsRegex = /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s.,;:'"¡!¿?()-]+$/;
+
+    if (!formData.title.trim()) {
+      errors.title = "El título es obligatorio.";
+    } else if (!validCharsRegex.test(formData.title)) {
+      errors.title = "El título contiene caracteres no permitidos.";
+    }
+
+    if (!formData.objective.trim()) {
+      errors.objective = "El objetivo es obligatorio.";
+    } else if (!validCharsRegex.test(formData.objective)) {
+      errors.objective = "El objetivo contiene caracteres no permitidos.";
+    }
+
+    if (!formData.description.trim()) {
+      errors.description = "La descripción es obligatoria.";
+    } else if (!validCharsRegex.test(formData.description)) {
+      errors.description = "La descripción contiene caracteres no permitidos.";
+    }
+
+    if (!formData.category.trim()) {
+      errors.category = "La categoría es obligatoria.";
+    } else if (formData.category && !validCharsRegex.test(formData.category)) {
+        errors.category = "La categoría contiene caracteres no permitidos.";
+    }
+
+    if (!formData.keySkill.trim()) {
+      errors.keySkill = "La habilidad clave es obligatoria.";
+    } else if (formData.keySkill && !validCharsRegex.test(formData.keySkill)) {
+      errors.keySkill = "La habilidad clave contiene caracteres no permitidos.";
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (!validateForm()) {
+        setError("Por favor, corrige los errores en el formulario.");
+        return;
+    }
+    setError('');
+
     if (id) {
         try {
             await leccionService.updateLeccion(Number(id), formData);
@@ -47,27 +92,32 @@ function EditLeccionPage() {
     <div className="bg-white rounded-lg shadow-md p-6 h-full">
     <div className="max-w-8xl mx-auto">
       <h2 className="text-2xl font-bold mb-6">Editar Lección</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-8 bg-white p-8 rounded-lg shadow-md">
         {error && <p className="text-red-500">{error}</p>}
         <div>
           <Label htmlFor="title">Título:</Label>
           <Input id="title" name="title" type="text" value={formData.title} onChange={handleChange} required />
+          {formErrors.title && <p className="text-red-500 text-sm mt-1">{formErrors.title}</p>}
         </div>
         <div>
           <Label htmlFor="objective">Objetivo:</Label>
           <Input id="objective" name="objective" type="text" value={formData.objective} onChange={handleChange} required />
+          {formErrors.objective && <p className="text-red-500 text-sm mt-1">{formErrors.objective}</p>}
         </div>
         <div>
           <Label htmlFor="description">Descripción:</Label>
-          <textarea id="description" name="description" value={formData.description} onChange={handleChange} className={textAreaStyles} />
+          <textarea id="description" name="description" value={formData.description} onChange={handleChange} className={textAreaStyles} rows={6}/>
+          {formErrors.description && <p className="text-red-500 text-sm mt-1">{formErrors.description}</p>}
         </div>
         <div>
           <Label htmlFor="category">Categoría:</Label>
           <Input id="category" name="category" type="text" value={formData.category} onChange={handleChange} />
+          {formErrors.category && <p className="text-red-500 text-sm mt-1">{formErrors.category}</p>}
         </div>
         <div>
           <Label htmlFor="keySkill">Habilidad Clave:</Label>
           <Input id="keySkill" name="keySkill" type="text" value={formData.keySkill} onChange={handleChange} />
+          {formErrors.keySkill && <p className="text-red-500 text-sm mt-1">{formErrors.keySkill}</p>}
         </div>
         <button
           type="submit"

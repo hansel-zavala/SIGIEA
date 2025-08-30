@@ -154,31 +154,8 @@ function LoginPage() {
                 />
               ))}
             </button>
-            
-            <div className="relative flex items-center">
-              <div className="flex-grow border-t border-white/30"></div>
-              <span className="flex-shrink mx-4 text-sm opacity-70">O CONTINÚA CON</span>
-              <div className="flex-grow border-t border-white/30"></div>
-            </div>
-            
-            <div className="flex justify-center space-x-6">
-              <a href="#" className="social-icon w-12 h-12 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all hover:scale-110">
-                <FaGoogle className="text-xl" />
-              </a>
-              <a href="#" className="social-icon w-12 h-12 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all hover:scale-110">
-                <FaApple className="text-xl" />
-              </a>
-              <a href="#" className="social-icon w-12 h-12 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all hover:scale-110">
-                <FaFacebookF className="text-xl" />
-              </a>
-            </div>
           </form>
-          
-          <div className="mt-6 text-center text-sm">
-            <p>¿No tienes una cuenta? <a href="#" className="font-medium hover:underline">Regístrate</a></p>
-          </div>
         </div>
-        
         <div className="mt-6 text-center text-white/70 text-xs">
           <p>Al continuar, aceptas nuestros <a href="#" className="hover:underline">Términos de Servicio</a> y <a href="#" className="hover:underline">Política de Privacidad</a>.</p>
         </div>

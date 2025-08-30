@@ -11,10 +11,11 @@ function EditTherapistPage() {
     nombres: '',
     apellidos: '',
     email: '',
+    password: '',
     identityNumber: '',
     phone: '',
-    specialty: 'Terapeuta' as 'Psicologo' | 'Terapeuta' | 'Ambos',
-    gender: 'Masculino' as 'Masculino' | 'Femenino',
+    specialty: '',
+    gender: '',
     dateOfBirth: '',
   });
   const [error, setError] = useState('');
@@ -30,10 +31,11 @@ function EditTherapistPage() {
             nombres: data.nombres || '',
             apellidos: data.apellidos || '',
             email: data.email || '',
+            password: '',
             identityNumber: data.identityNumber || '',
             phone: data.phone || '',
-            specialty: data.specialty || 'Terapeuta',
-            gender: data.gender || 'Masculino',
+            specialty: data.specialty || '',
+            gender: data.gender || '',
             dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth).toISOString().split('T')[0] : '',
           });
         })
@@ -70,8 +72,21 @@ function EditTherapistPage() {
     
     if (!formData.identityNumber.trim()) errors.identityNumber = "El DNI es obligatorio.";
     else if (!dniRegex.test(formData.identityNumber)) errors.identityNumber = "El DNI debe tener 13 dígitos.";
-    
-    if (formData.phone && !phoneRegex.test(formData.phone)) errors.phone = "El teléfono debe tener 8 dígitos.";
+
+    if (!formData.phone.trim()) errors.phone = "El teléfono es obligatorio.";
+    else if (formData.phone && !phoneRegex.test(formData.phone)) errors.phone = "El teléfono debe tener 8 dígitos.";
+
+    if (!formData.specialty.trim()) errors.specialty = "La especialidad es obligatoria.";
+    if (!formData.gender.trim()) errors.gender = "El género es obligatorio.";
+    if (!formData.dateOfBirth.trim()) errors.dateOfBirth = "La fecha de nacimiento es obligatoria.";
+
+    if (formData.dateOfBirth && new Date(formData.dateOfBirth) > new Date()) {
+        errors.dateOfBirth = "La fecha de nacimiento no puede ser futura.";
+    }
+
+    if (formData.password && formData.password.length < 6) {
+        errors.password = "La nueva contraseña debe tener al menos 6 caracteres.";
+    }
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -87,11 +102,7 @@ function EditTherapistPage() {
 
     if (id) {
       try {
-        const dataToUpdate = {
-            ...formData,
-            fullName: `${formData.nombres} ${formData.apellidos}`
-        }
-        await therapistService.updateTherapist(Number(id), dataToUpdate);
+        await therapistService.updateTherapist(Number(id), formData);
         navigate('/therapists');
       } catch (err: any) {
         setError(err.response?.data?.error || 'No se pudo actualizar el terapeuta.');
@@ -99,67 +110,80 @@ function EditTherapistPage() {
     }
   };
 
+  const today = new Date().toISOString().split("T")[0];
+
   return (
-    <div className="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md">
+    <div className="bg-white p-6 rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-6 text-gray-800">Editar Perfil del Terapeuta</h2>
-      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+      <form onSubmit={handleSubmit} className="space-y-8 bg-white p-8 rounded-lg shadow-md" noValidate>
         {error && <p className="text-red-500 bg-red-100 p-3 rounded-md">{error}</p>}
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="nombres">Nombres</Label>
-              <Input id="nombres" name="nombres" type="text" value={formData.nombres} onChange={handleChange} />
+              <Input id="nombres" name="nombres" type="text" value={formData.nombres} placeholder="Ingresa sus nombres" onChange={handleChange} />
               {formErrors.nombres && <p className="text-red-500 text-sm mt-1">{formErrors.nombres}</p>}
             </div>
             <div>
               <Label htmlFor="apellidos">Apellidos</Label>
-              <Input id="apellidos" name="apellidos" type="text" value={formData.apellidos} onChange={handleChange} />
+              <Input id="apellidos" name="apellidos" type="text" value={formData.apellidos} placeholder="Ingresa sus apellidos" onChange={handleChange} />
               {formErrors.apellidos && <p className="text-red-500 text-sm mt-1">{formErrors.apellidos}</p>}
             </div>
 
             <div>
               <Label htmlFor="identityNumber">Número de Identidad</Label>
-              <Input id="identityNumber" name="identityNumber" type="text" value={formData.identityNumber} onChange={handleChange} />
+              <Input id="identityNumber" name="identityNumber" type="text" value={formData.identityNumber} placeholder="Ingresa su número de identidad" onChange={handleChange} />
               {formErrors.identityNumber && <p className="text-red-500 text-sm mt-1">{formErrors.identityNumber}</p>}
             </div>
             <div>
               <Label htmlFor="email">Email de Acceso</Label>
-              <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} />
+              <Input id="email" name="email" type="email" value={formData.email} placeholder="Ingresa su email" onChange={handleChange} />
               {formErrors.email && <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>}
+            </div>
+            <div>
+              <Label htmlFor="password">Nueva Contraseña</Label>
+              <Input id="password" name="password" type="password" value={formData.password} placeholder="Ingresa una nueva contraseña" onChange={handleChange} />
+              {formErrors.password && <p className="text-red-500 text-sm mt-1">{formErrors.password}</p>}
             </div>
              <div>
               <Label htmlFor="phone">Teléfono</Label>
-              <Input id="phone" name="phone" type="text" value={formData.phone} onChange={handleChange} />
+              <Input id="phone" name="phone" type="text" value={formData.phone} placeholder="Ingresa su teléfono" onChange={handleChange} />
               {formErrors.phone && <p className="text-red-500 text-sm mt-1">{formErrors.phone}</p>}
             </div>
              <div>
               <Label htmlFor="specialty">Especialidad</Label>
-              <Select id="specialty" name="specialty" value={formData.specialty} onChange={handleChange}
+              <Select id="specialty" name="specialty" value={formData.specialty} placeholder="Selecciona su especialidad" onChange={handleChange}
                 options={[
                     { value: 'Terapeuta', label: 'Terapeuta' },
                     { value: 'Psicologo', label: 'Psicólogo' },
                     { value: 'Ambos', label: 'Ambos' },
                 ]}
               />
+              {formErrors.specialty && <p className="text-red-500 text-sm mt-1">{formErrors.specialty}</p>}
             </div>
              <div>
               <Label htmlFor="gender">Género</Label>
-              <Select id="gender" name="gender" value={formData.gender} onChange={handleChange}
+              <Select id="gender" name="gender" value={formData.gender} placeholder="Selecciona su género" onChange={handleChange}
                 options={[
                     { value: 'Masculino', label: 'Masculino' },
                     { value: 'Femenino', label: 'Femenino' },
                 ]}
               />
+              {formErrors.gender && <p className="text-red-500 text-sm mt-1">{formErrors.gender}</p>}
             </div>
             <div>
                 <Label htmlFor="dateOfBirth">Fecha de Nacimiento</Label>
-                <Input id="dateOfBirth" name="dateOfBirth" type="date" value={formData.dateOfBirth} onChange={handleChange} />
+                <Input id="dateOfBirth" name="dateOfBirth" type="date" value={formData.dateOfBirth} onChange={handleChange} max={today}/>
+                <p className="text-xs text-gray-500 mt-1">Mes / Día / Año</p>
+                {formErrors.dateOfBirth && <p className="text-red-500 text-sm mt-1">{formErrors.dateOfBirth}</p>}
             </div>
         </div>
 
-        <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-6">
-          Guardar Cambios
-        </button>
+        <div className="pt-6 text-right">
+          <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-6">
+            Guardar Cambios
+          </button>
+        </div>
       </form>
     </div>
   );

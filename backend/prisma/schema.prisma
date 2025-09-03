@@ -138,6 +138,22 @@ model Leccion {
   updatedAt    DateTime @updatedAt
 }
 
+model Event {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String?   @db.Text
+  startDate   DateTime
+  endDate     DateTime
+  isAllDay    Boolean   @default(false)
+  location    String?
+  audience    EventAudience @default(General)
+  isActive    Boolean   @default(true)
+  categoryId  Int?
+  category    Category? @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
 model Medicamento {
   id        Int       @id @default(autoincrement())
   nombre    String    @unique
@@ -152,6 +168,13 @@ model Alergia {
   students  Student[] @relation("AlergiaToStudent")
 
   @@map("alergias")
+}
+
+model Category {
+  id     Int     @id @default(autoincrement())
+  name   String  @unique
+  color  String
+  events Event[]
 }
 
 enum SessionStatus {
@@ -198,4 +221,10 @@ enum TipoSangre {
   AB_NEGATIVO
   O_POSITIVO
   O_NEGATIVO
+}
+
+enum EventAudience {
+  General
+  Padres
+  Terapeutas
 }

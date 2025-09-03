@@ -75,7 +75,7 @@ function CatalogModal({ isOpen, onRequestClose, title, items, onAddItem, onUpdat
             onChange={(e) => setNewItemName(e.target.value)}
             className="flex-grow"
           />
-          <button onClick={handleAddItem} className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+          <button onClick={handleAddItem} className="bg-violet-600 text-white p-2 rounded-lg hover:bg-violet-700 flex items-center gap-2">
             <FaPlus /> Añadir
           </button>
         </div>

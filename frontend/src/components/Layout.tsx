@@ -10,13 +10,9 @@ function Layout() {
   return (
     <div className="flex h-screen bg-gray-100">
       <Sidebar isOpen={sidebarOpen} />
-
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header isOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
-
-        {/* ✅ CAMBIO: Simplificamos el <main> y el <Outlet> */}
-        <main className="flex-1 overflow-y-auto p-6">
-          {/* Ahora el Outlet renderiza directamente aquí. Cada página tendrá su propio fondo. */}
+        <main className="flex-1 overflow-y-auto p-6 bg-violet-50">
           <Outlet />
         </main>
       </div>

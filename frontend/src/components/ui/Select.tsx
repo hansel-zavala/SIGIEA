@@ -16,7 +16,7 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
 
 function Select({ options, placeholder, className, ...props }: SelectProps) {
   // Usamos los mismos estilos base que nuestro componente Input para consistencia
-  const baseStyles = "block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 sm:text-lg";
+  const baseStyles = "block w-full rounded-md border-gray-300 shadow-sm focus:border-violet focus:ring focus:ring-indigo-500 focus:ring-opacity-50 sm:text-lg";
 
   return (
     <select

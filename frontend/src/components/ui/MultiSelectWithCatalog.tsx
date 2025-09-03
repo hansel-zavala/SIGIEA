@@ -53,7 +53,7 @@ function MultiSelectWithCatalog({
       {/* Contenedor para los ítems seleccionados (las "píldoras") */}
       <div className="flex flex-wrap gap-2 p-2 border border-gray-300 rounded-md min-h-[40px]">
         {selectedItems.map((item) => (
-          <div key={item.id} className="bg-blue-500 text-white flex items-center gap-2 px-2 py-1 rounded-full text-sm">
+          <div key={item.id} className="bg-violet-500 text-white flex items-center gap-2 px-2 py-1 rounded-full text-sm">
             {item.nombre}
             <button
               type="button"
@@ -100,7 +100,7 @@ function MultiSelectWithCatalog({
       <button
         type="button"
         onClick={() => setIsModalOpen(true)}
-        className="text-sm text-blue-600 hover:underline mt-2 flex items-center gap-1"
+        className="text-sm text-violet-600 hover:underline mt-2 flex items-center gap-1"
       >
         <FaCog /> Gestionar Catálogo
       </button>

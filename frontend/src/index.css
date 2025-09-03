@@ -2,3 +2,109 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* --- ESTILOS PERSONALIZADOS PARA FULLCALENDAR --- */
+
+/* Contenedor principal para poder aplicar variables */
+/* Contenedor principal */
+/* Contenedor principal para poder aplicar variables */
+.custom-calendar-container {
+  --fc-border-color: #e5e7eb; /* Borde de las celdas */
+  --fc-today-bg-color: transparent; /* Fondo del día de hoy */
+}
+
+/* Ocultar la cabecera por defecto, ya que creamos la nuestra */
+.custom-calendar-container .fc-header-toolbar {
+  margin-bottom: 1.5rem !important;
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+
+.custom-calendar-container .fc-toolbar-title {
+  font-size: 1.875rem;
+  font-weight: 700;
+}
+
+.custom-calendar-container .fc-prev-button,
+.custom-calendar-container .fc-next-button {
+  background-color: transparent !important;
+  border: none !important;
+  color: #111827 !important;
+  box-shadow: none !important;
+  font-size: 1.5rem;
+  position: absolute;
+}
+.custom-calendar-container .fc-prev-button {
+  left: 0;
+}
+.custom-calendar-container .fc-next-button {
+  right: 0;
+}
+
+
+/* Estilo de los encabezados de los días (SUN, MON, etc.) */
+.custom-calendar-container .fc-col-header-cell {
+  background-color: #26082ecc;
+  color: white;
+  padding: 0.5rem 0;
+  border-radius: 0.9rem;
+  border: none !important;
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 0.975rem;
+}
+
+/* Espacio entre los encabezados */
+.custom-calendar-container .fc-col-header {
+  margin: 0 -0.01rem;
+}
+.custom-calendar-container .fc-col-header-cell-cushion {
+    display: inline-block;
+    padding: 2px 4px;
+}
+
+
+/* Celdas de los días */
+.custom-calendar-container .fc-daygrid-day {
+  border-radius: 0.5rem;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Borde del día de hoy */
+.custom-calendar-container .fc-day-today {
+  border: 2px solid #8b5cf6 !important;
+  background-color: #f5f3ff !important;
+}
+
+/* Número del día */
+.custom-calendar-container .fc-daygrid-day-number {
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.5rem;
+}
+
+/* Días que no son del mes actual */
+.custom-calendar-container .fc-day-other .fc-daygrid-day-number {
+  color: #4c5158;
+}
+
+/* Estilo de la "píldora" del evento */
+.custom-calendar-container .fc-daygrid-event {
+  background-color: #cab5db !important;
+  border: 1px solid #e5e7eb !important;
+  border-left-width: 4px !important;
+  /* La siguiente línea usa la variable que pasamos desde JS */
+  border-left-color: var(--fc-event-border-color) !important;
+  color: #111827 !important; /* Texto del evento en negro */
+  border-radius: 0.375rem;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  margin-top: 2px !important;
+  cursor: pointer;
+}
+
+/* Quitar el punto de los eventos de "todo el día" */
+.custom-calendar-container .fc-daygrid-dot-event .fc-event-dot {
+  display: none;
+}

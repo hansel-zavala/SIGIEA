@@ -29,10 +29,11 @@ function Header({ onToggleSidebar, isOpen }: HeaderProps) {
     <header className="flex justify-between items-center p-4 bg-white shadow-md">
       {/* Sección Izquierda */}
       <div className="flex items-center">
-        <button className="text-gray-500 focus:outline-none md:hidden" onClick={onToggleSidebar}>
+        {/* --- CORRECCIÓN AQUÍ: SE ELIMINÓ 'md:hidden' --- */}
+        <button className="text-gray-500 focus:outline-none" onClick={onToggleSidebar}>
           {isOpen ? <FaTimes /> : <FaBars />}
         </button>
-        <h1 className="text-xl font-semibold ml-2">SIGIEA</h1>
+        <h1 className="text-xl font-semibold ml-4">SIGIEA</h1>
       </div>
 
       {/* Sección Derecha: El Menú Desplegable */}
@@ -46,7 +47,6 @@ function Header({ onToggleSidebar, isOpen }: HeaderProps) {
           <FaChevronDown className={`transition-transform duration-200 ${isMenuOpen ? 'rotate-180' : ''}`} />
         </button>
 
-        {/* El menú desplegable que aparece y desaparece */}
         {isMenuOpen && (
           <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20">
             <Link to="/profile" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">

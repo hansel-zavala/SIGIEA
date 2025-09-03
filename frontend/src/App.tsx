@@ -20,6 +20,10 @@ import TherapistsPage from './pages/TherapistsPage';
 import AddTherapistPage from './pages/AddTherapistPage';
 import EditTherapistPage from './pages/EditTherapistPage';
 import PrintMatriculaPage from './pages/PrintMatriculaPage';
+import EventsPage from './pages/EventsPage';
+import AddEventPage from './pages/AddEventPage';
+import EditEventPage from './pages/EditEventPage';
+import CategoriesPage from './pages/CategoriesPage';
 
 function App() {
   const { user } = useAuth();
@@ -29,7 +33,6 @@ function App() {
       <Routes>
         {user ? (
           <>
-            {/* Rutas DENTRO del Layout principal */}
             <Route path="/" element={<Layout />}>
               <Route index element={<DashboardPage />} />
               <Route path="students" element={<StudentsPage />} />
@@ -46,16 +49,18 @@ function App() {
               <Route path="therapists" element={<TherapistsPage />} />
               <Route path="therapists/new" element={<AddTherapistPage />} />
               <Route path="therapists/edit/:id" element={<EditTherapistPage />} />
+              <Route path="events" element={<EventsPage />} />
+              <Route path="events/new" element={<AddEventPage />} />
+              <Route path="events/edit/:id" element={<EditEventPage />} />
+              <Route path="categories" element={<CategoriesPage />} />
             </Route>
 
-            {/* Ruta de impresión FUERA del Layout */}
             <Route path="/students/:id/print" element={<PrintMatriculaPage />} />
           </>
         ) : (
           <Route path="/login" element={<LoginPage />} />
         )}
 
-        {/* Ruta catch-all para redirigir */}
         <Route path="*" element={<Navigate to={user ? '/' : '/login'} />} />
       </Routes>
     </BrowserRouter>

@@ -57,16 +57,16 @@ function EventsPage() {
           Gestión de Eventos
         </h2>
         <Link to="/categories">
-          <button className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded flex items-center gap-2">
-            <FaTags />
-            Gestionar Categorías
+          <button className="min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-gray-300 to-gray-500 hover:from-gray-500 hover:to-gray-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">
+            <FaTags className="text-xl" />
+            <span className="text-lg">Gestionar Categorías</span>
           </button>
         </Link>
         <Link to="/events/new">
-          <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2">
-            <FaPlus />
-            Crear Nuevo Evento
-          </button>
+            <button className="min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">
+              <FaPlus className="text-xl" />
+              <span className="text-lg">Crear Nuevo Evento</span>
+            </button>
         </Link>
       </div>
 

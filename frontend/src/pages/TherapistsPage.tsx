@@ -68,7 +68,7 @@ function TherapistsPage() {
             />
         </div>
         <Link to="/therapists/new">
-          <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+          <button className="py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200">
             Añadir Terapeuta
           </button>
         </Link>

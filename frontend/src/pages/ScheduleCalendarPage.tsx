@@ -78,6 +78,15 @@ function ScheduleCalendarPage() {
         fetchData();
     }, [studentId]);
 
+    const handleSelectChange = (name: string, value: string | null) => {
+        if (name === 'leccionId') setLeccionId(value || '');
+        if (name === 'therapistId') setTherapistId(value || '');
+    };
+
+    const handleEditFormSelectChange = (name: string, value: string | null) => {
+        setEditFormData(prev => ({...prev, [name]: value || ''}));
+    };
+
     const handleCreateSessions = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!studentId || selectedDays.length === 0 || !leccionId || !therapistId) {
@@ -163,6 +172,8 @@ function ScheduleCalendarPage() {
     const father = student?.guardians?.find((g: any) => g.parentesco === 'Padre');
     const studentAge = student ? calculateAge(student.dateOfBirth) : null;
     const admissionDate = student ? new Date(student.anoIngreso).toLocaleDateString() : null;
+    const leccionOptions = lecciones.map(l => ({ value: String(l.id), label: l.title }));
+    const therapistOptions = therapists.map(t => ({ value: String(t.id), label: t.fullName }));
 
     if (isLoading) {
         return <div className="text-center p-10">Cargando datos del horario...</div>;
@@ -187,15 +198,37 @@ function ScheduleCalendarPage() {
             <div className="grid grid-cols-12 gap-6">
                 <div className="col-span-12 lg:col-span-4 bg-white p-6 rounded-lg shadow-md">
                     <h3 className="text-xl font-bold mb-4">Añadir Horario Recurrente</h3>
-                    <form onSubmit={handleCreateSessions} className="space-y-4">
+                    <form onSubmit={handleCreateSessions} className="space-y-4"> 
                         <div>
                             <Label>Días de la semana</Label>
                             <div className="flex flex-wrap gap-2 mt-2">
                                 {dayOptions.map(day => ( <button type="button" key={day} onClick={() => handleDayToggle(day)} className={`px-3 py-1 text-sm rounded-full transition-colors ${selectedDays.includes(day) ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}>{day.substring(0, 3)}</button>))}
                             </div>
                         </div>
-                        <div><Label htmlFor="leccionId">Lección</Label><Select id="leccionId" value={leccionId} onChange={e => setLeccionId(e.target.value)} required options={lecciones.map(l => ({ value: String(l.id), label: l.title }))} placeholder="-- Selecciona Lección --" /></div>
-                        <div><Label htmlFor="therapistId">Terapeuta</Label><Select id="therapistId" value={therapistId} onChange={e => setTherapistId(e.target.value)} required options={therapists.map(t => ({ value: String(t.id), label: t.fullName }))} placeholder="-- Asignar Terapeuta --" /></div>
+                        <div>
+                            <Label htmlFor="leccionId">Lección</Label>
+                            <Select 
+                                instanceId="leccion-select" 
+                                inputId="leccionId" 
+                                value={leccionOptions.find(o => o.value === leccionId) || null}
+                                onChange={(option) => handleSelectChange('leccionId', option?.value || null)}
+                                required 
+                                options={leccionOptions} 
+                                placeholder="-- Selecciona Lección --" 
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="therapistId">Terapeuta</Label>
+                            <Select 
+                                instanceId="therapist-select"
+                                inputId="therapistId"
+                                value={therapistOptions.find(o => o.value === therapistId) || null}
+                                onChange={(option) => handleSelectChange('therapistId', option?.value || null)}
+                                required 
+                                options={therapistOptions} 
+                                placeholder="-- Asignar Terapeuta --" 
+                            />
+                        </div>
                         <div><Label htmlFor="startTime">Hora de Inicio</Label><Input id="startTime" type="time" value={startTime} onChange={e => setStartTime(e.target.value)} required /></div>
                         <div className="grid grid-cols-2 gap-4">
                             <div><Label htmlFor="duration">Duración (min)</Label><Input id="duration" type="number" value={duration} onChange={e => setDuration(parseInt(e.target.value))} required /></div>
@@ -227,7 +260,16 @@ function ScheduleCalendarPage() {
             <Modal isOpen={isEditModalOpen} onRequestClose={closeEditModal} style={modalStyles} contentLabel="Editar Sesión">
                 <form onSubmit={handleUpdateSession} className="space-y-4">
                     <h3 className="text-xl font-bold">Editar Sesión</h3>
-                    <div><Label htmlFor="edit-leccionId">Lección</Label><Select id="edit-leccionId" value={editFormData.leccionId} onChange={e => setEditFormData({...editFormData, leccionId: e.target.value})} options={lecciones.map(l => ({ value: String(l.id), label: l.title }))} /></div>
+                    <div>
+                        <Label htmlFor="edit-leccionId">Lección</Label>
+                        <Select
+                            instanceId="edit-leccionId-select" 
+                            inputId="edit-leccionId" 
+                            value={leccionOptions.find(o => o.value === editFormData.leccionId) || null} 
+                            onChange={option => handleEditFormSelectChange('leccionId', option?.value || null)}
+                            options={leccionOptions}
+                        />
+                    </div>
                     <div><Label htmlFor="edit-startTime">Nueva Fecha y Hora</Label><Input id="edit-startTime" type="datetime-local" value={editFormData.startTime} onChange={e => setEditFormData({...editFormData, startTime: e.target.value})} /></div>
                     <div><Label htmlFor="edit-duration">Duración (minutos)</Label><Input id="edit-duration" type="number" value={editFormData.duration} onChange={e => setEditFormData({...editFormData, duration: parseInt(e.target.value)})} /></div>
                     <div className="flex justify-end gap-3 pt-3">

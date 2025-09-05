@@ -71,8 +71,8 @@ function AddLeccionPage() {
     try {
       await leccionService.createLeccion(formData);
       navigate('/lecciones');
-    } catch (err) {
-      setError('No se pudo crear la lección. Verifique los datos.');
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'No se pudo crear la lección.');
     }
   };
 

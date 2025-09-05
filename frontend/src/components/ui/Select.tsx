@@ -1,39 +1,59 @@
 // frontend/src/components/ui/Select.tsx
 import React from 'react';
+import Select, { type Props as SelectProps } from 'react-select';
 
 // Definimos la "forma" que tendrá cada objeto en la lista de opciones
-interface SelectOption {
+interface OptionType {
   value: string;
   label: string;
 }
 
-// Definimos las props de nuestro componente. Hereda todas las de un <select> normal
-// y añade las nuestras: 'options' y 'placeholder'.
-interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
-  options: SelectOption[];
-  placeholder?: string;
+// Las props de nuestro nuevo componente
+interface CustomSelectProps extends SelectProps<OptionType, false> {
+  options: OptionType[];
+  // No necesitamos 'placeholder' aquí, react-select lo maneja internamente
 }
 
-function Select({ options, placeholder, className, ...props }: SelectProps) {
-  // Usamos los mismos estilos base que nuestro componente Input para consistencia
-  const baseStyles = "block w-full rounded-md border-gray-300 shadow-sm focus:border-violet focus:ring focus:ring-indigo-500 focus:ring-opacity-50 sm:text-lg";
+// --- Objeto de estilos para personalizar react-select ---
+const customStyles = {
+  control: (provided: any, state: { isFocused: any; }) => ({
+    ...provided,
+    borderRadius: '0.375rem', // rounded-md
+    borderColor: state.isFocused ? '#8b5cf6' : '#d1d5db', // Borde violeta al enfocar
+    boxShadow: state.isFocused ? '0 0 0 1px #8b5cf6' : 'none',
+    '&:hover': {
+      borderColor: '#8b5cf6',
+    },
+    minHeight: '42px', // Altura similar a nuestros inputs
+  }),
+  option: (provided: any, state: { isSelected: any; isFocused: any; }) => ({
+    ...provided,
+    backgroundColor: state.isSelected
+      ? '#8b5cf6' // Fondo violeta para la opción seleccionada
+      : state.isFocused
+      ? '#ede9fe' // Fondo violeta claro al pasar el cursor (hover)
+      : 'white',
+    color: state.isSelected ? 'white' : 'black',
+    '&:active': {
+      backgroundColor: '#7c3aed',
+    },
+  }),
+  singleValue: (provided: any) => ({
+    ...provided,
+    color: '#1f2937', // Color del texto de la opción seleccionada
+  }),
+};
 
+
+function CustomSelect({ options, className, ...props }: CustomSelectProps) {
   return (
-    <select
-      className={`${baseStyles} ${className || ''}`}
+    <Select
+      className={`sm:text-lg ${className || ''}`}
+      styles={customStyles}
+      options={options}
       {...props}
-    >
-      {/* Si nos pasan un placeholder, lo mostramos como la primera opción (deshabilitada) */}
-      {placeholder && <option value="" disabled>{placeholder}</option>}
-
-      {/* Aquí recorremos el array de 'options' y creamos una etiqueta <option> por cada una */}
-      {options.map((option) => (
-        <option key={option.value} value={option.value}>
-          {option.label}
-        </option>
-      ))}
-    </select>
+    />
   );
 }
 
-export default Select;
+export default CustomSelect;

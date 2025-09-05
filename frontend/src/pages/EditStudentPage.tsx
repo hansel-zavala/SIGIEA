@@ -13,6 +13,7 @@ import ComboBox from '../components/ui/ComboBox';
 import MultiSelectWithCatalog from '../components/ui/MultiSelectWithCatalog';
 import { departamentos, municipiosPorDepartamento } from '../data/honduras-data';
 import { FaExternalLinkAlt, FaTrash } from 'react-icons/fa';
+import CustomDatePicker from '../components/ui/DatePicker';
 
 type StudentFormData = {
     nombres: string;
@@ -46,6 +47,21 @@ const tiposDeSangre = [
     { value: 'B_POSITIVO', label: 'B+' }, { value: 'B_NEGATIVO', label: 'B-' },
     { value: 'AB_POSITIVO', label: 'AB+' }, { value: 'AB_NEGATIVO', label: 'AB-' },
     { value: 'O_POSITIVO', label: 'O+' }, { value: 'O_NEGATIVO', label: 'O-' },
+];
+
+const genderOptions = [
+  { value: "Masculino", label: "Masculino" },
+  { value: "Femenino", label: "Femenino" },
+];
+
+const zonaOptions = [
+  { value: "Urbano", label: "Urbano" },
+  { value: "Rural", label: "Rural" },
+];
+
+const jornadaOptions = [
+  { value: "Matutina", label: "Matutina" },
+  { value: "Vespertina", label: "Vespertina" },
 ];
 
 const tiposDeAtencion: { id: keyof StudentFormData; label: string }[] = [
@@ -122,12 +138,26 @@ function EditStudentPage() {
     if (departamento) setMunicipios(municipiosPorDepartamento[departamento] || []);
   }, [departamento]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    const isCheckbox = type === 'checkbox';
-    const checked = isCheckbox ? (e.target as HTMLInputElement).checked : false;
+  const handleSelectChange = (name: string, value: string | null) => {
+    setFormData(prev => ({ ...prev, [name]: value || '' }));
+  };
 
-    const tiposDeAtencionIds = tiposDeAtencion.map(atencion => atencion.id as keyof StudentFormData);
+  const handleDateChange = (date: Date | null) => {
+      setFormData(prev => ({...prev, dateOfBirth: date ? date.toISOString() : '' }));
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const { name, value, type } = e.target;
+  const isCheckbox = type === 'checkbox';
+  const checked = isCheckbox ? (e.target as HTMLInputElement).checked : false;
+
+  if (name === 'nombres' || name === 'apellidos') {
+      const filteredValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
+      setFormData(prev => ({ ...prev, [name]: filteredValue }));
+      return;
+    }
+
+  const tiposDeAtencionIds = tiposDeAtencion.map(atencion => atencion.id as keyof StudentFormData);
 
     if (isCheckbox && tiposDeAtencionIds.includes(name as keyof StudentFormData)) {
         const resetAttentionTypes = Object.fromEntries(
@@ -220,6 +250,7 @@ function EditStudentPage() {
   };
   
   const today = new Date().toISOString().split("T")[0];
+  const therapistOptions = therapists.map(therapist => ({ value: String(therapist.id), label: therapist.fullName }));
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
@@ -243,9 +274,12 @@ function EditStudentPage() {
 
             <div>
                 <Label htmlFor="dateOfBirth">Fecha de Nacimiento</Label>
-                <Input id="dateOfBirth" name="dateOfBirth" type="date" value={formData.dateOfBirth || ''} onChange={handleChange} max={today} />
-                <p className="text-xs text-gray-500 mt-1">Mes / Día / Año</p>
-                {formErrors.dateOfBirth && <p className="text-red-500 text-sm mt-1">{formErrors.dateOfBirth}</p>}
+                <CustomDatePicker
+                selected={formData.dateOfBirth ? new Date(formData.dateOfBirth) : null}
+                onChange={handleDateChange}
+                maxDate={new Date()}
+              />
+              {formErrors.dateOfBirth && <p className="text-red-500 text-sm mt-1">{formErrors.dateOfBirth}</p>}
             </div>
             <div>
               <Label htmlFor="departamento">Departamento de Nacimiento</Label>
@@ -276,35 +310,22 @@ function EditStudentPage() {
 
             <div>
               <Label htmlFor="genero">Género</Label>
-              <Select 
-                id="genero" 
-                name="genero" 
-                value={formData.genero || ''} 
-                onChange={handleChange}
-                placeholder=" Selecciona el género "
-                options={[{ value: 'Masculino', label: 'Masculino' }, { value: 'Femenino', label: 'Femenino' }]}/>
+              <Select instanceId="genero-edit-select" inputId="genero" name="genero" value={genderOptions.find(o => o.value === formData.genero) || null} onChange={(option) => handleSelectChange('genero', option?.value || null)} placeholder=" Selecciona el género " options={genderOptions}/>
               {formErrors.genero && <p className="text-red-500 text-sm mt-1">{formErrors.genero}</p>}
             </div>
             <div>
               <Label htmlFor="tipoSangre">Tipo de Sangre</Label>
-              <Select
-                id="tipoSangre"
-                name="tipoSangre"
-                value={formData.tipoSangre || ''}
-                onChange={handleChange}
-                placeholder="Selecciona el tipo de sangre"
-                options={tiposDeSangre}
-              />
+              <Select instanceId="sangre-edit-select" inputId="tipoSangre" name="tipoSangre" value={tiposDeSangre.find(o => o.value === formData.tipoSangre) || null} onChange={(option) => handleSelectChange('tipoSangre', option?.value || null)} placeholder="Selecciona el tipo de sangre" options={tiposDeSangre} />
               {formErrors.tipoSangre && <p className="text-red-500 text-sm mt-1">{formErrors.tipoSangre}</p>}
             </div>
             <div>
               <Label htmlFor="zona">Zona</Label>
-              <Select id="zona" name="zona" value={formData.zona || ''} onChange={handleChange} placeholder=" Selecciona la zona " options={[{ value: 'Urbano', label: 'Urbano' }, { value: 'Rural', label: 'Rural' }]}/>
+              <Select instanceId="zona-edit-select" inputId="zona" name="zona" value={zonaOptions.find(o => o.value === formData.zona) || null} onChange={(option) => handleSelectChange('zona', option?.value || null)} placeholder=" Selecciona la zona " options={zonaOptions}/>
               {formErrors.zona && <p className="text-red-500 text-sm mt-1">{formErrors.zona}</p>}
             </div>
             <div>
               <Label htmlFor="jornada">Jornada</Label>
-              <Select id="jornada" name="jornada" value={formData.jornada || ''} onChange={handleChange} placeholder=" Selecciona la jornada " options={[{ value: 'Matutina', label: 'Matutina' }, { value: 'Vespertina', label: 'Vespertina' }]}/>
+              <Select instanceId="jornada-edit-select" inputId="jornada" name="jornada" value={jornadaOptions.find(o => o.value === formData.jornada) || null} onChange={(option) => handleSelectChange('jornada', option?.value || null)} placeholder=" Selecciona la jornada " options={jornadaOptions}/>
               {formErrors.jornada && <p className="text-red-500 text-sm mt-1">{formErrors.jornada}</p>}
             </div>
             <div>
@@ -324,7 +345,7 @@ function EditStudentPage() {
                   </button>
                 </div>
               ) : ( <p className="text-sm text-gray-500 mt-1">No hay archivo subido.</p> )}
-              <Input type="file" onChange={(e) => setNewPartidaFile(e.target.files ? e.target.files[0] : null)} className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+              <Input type="file" onChange={(e) => setNewPartidaFile(e.target.files ? e.target.files[0] : null)} className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-200 file:text-violet-700 hover:file:bg-violet-100"/>
               
             </div>
             <div>
@@ -339,7 +360,7 @@ function EditStudentPage() {
                   </button>
                 </div>
               ) : ( <p className="text-sm text-gray-500 mt-1">No hay archivo subido.</p> )}
-              <Input type="file" onChange={(e) => setNewEvaluacionFile(e.target.files ? e.target.files[0] : null)} className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+              <Input type="file" onChange={(e) => setNewEvaluacionFile(e.target.files ? e.target.files[0] : null)} className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-200 file:text-violet-700 hover:file:bg-violet-100" />
             </div>
           </div>
         </div>
@@ -398,24 +419,22 @@ function EditStudentPage() {
           <div className="mt-4">
             <Label htmlFor="therapistId">Terapeuta Asignado</Label>
             <Select
-              id="therapistId"
+              instanceId="therapist-edit-select"
+              inputId="therapistId"
               name="therapistId"
-              value={formData.therapistId || ''}
-              onChange={handleChange}
+              value={therapistOptions.find(o => o.value === String(formData.therapistId)) || null}
+              onChange={(option) => handleSelectChange('therapistId', option?.value || null)}
               placeholder="-- No asignado --"
-              options={therapists.map(therapist => ({ 
-                value: String(therapist.id), 
-                label: therapist.fullName 
-              }))}
+              options={therapistOptions}
             />
             {formErrors.therapistId && <p className="text-red-500 text-sm mt-1">{formErrors.therapistId}</p>}
           </div>
         </div>
 
         <div className="pt-6 text-right">
-            <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">
-                Guardar Cambios
-            </button>
+          <button type="submit" className=" py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200">
+            Guardar Cambios
+          </button>
         </div>
       </form>
     </div>

@@ -1,8 +1,7 @@
 // frontend/src/components/ui/ComboBox.tsx
 import { useState, useEffect, useRef } from 'react';
-import Input from './Input'; // ✅ CORRECCIÓN: Importamos el componente Input
+import Input from './Input';
 
-// ... (El resto del código del ComboBox se mantiene igual)
 interface Option {
   value: string;
   label: string;
@@ -46,20 +45,23 @@ function ComboBox({ options, value, onChange, placeholder, disabled }: ComboBoxP
     onChange(optionValue);
     setIsOpen(false);
   };
-
+  
+  // ✅ CORRECCIÓN: Se han unificado los estilos para que coincidan con el componente Input y Select.
+  // Se quitan los estilos de foco de aquí porque ya están definidos en el componente Input base.
+  // El Input ya tiene `shadow-sm` y los estilos de foco `focus:border-indigo-500 focus:ring...`
   return (
     <div className="relative" ref={wrapperRef}>
       <Input
         type="text"
         value={searchTerm}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => { // ✅ CORRECCIÓN: Tipado del evento 'e'
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
             setSearchTerm(e.target.value);
             if (!isOpen) setIsOpen(true);
         }}
         onFocus={() => setIsOpen(true)}
         placeholder={placeholder}
         disabled={disabled}
-        className="w-full"
+        className="w-full" // Mantenemos w-full para asegurar que ocupe todo el espacio.
       />
 
       {isOpen && !disabled && (
@@ -68,7 +70,11 @@ function ComboBox({ options, value, onChange, placeholder, disabled }: ComboBoxP
             filteredOptions.map(option => (
               <li
                 key={option.value}
-                className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
+                className={`px-4 py-2 cursor-pointer ${
+                  option.value === value
+                    ? 'bg-violet-600 text-white' // Estilo para el elemento seleccionado
+                    : 'hover:bg-violet-100'     // Estilo para el hover
+                }`}
                 onClick={() => handleSelectOption(option.value)}
               >
                 {option.label}

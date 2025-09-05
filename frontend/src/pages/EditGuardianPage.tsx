@@ -38,6 +38,10 @@ function EditGuardianPage() {
     }
   }, [id]);
 
+  const handleSelectChange = (name: string, value: string | null) => {
+    setFormData(prev => ({ ...prev, [name]: value || '' }));
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
@@ -90,6 +94,13 @@ function EditGuardianPage() {
     }
   };
 
+  const parentescoOptions = [
+    { value: 'Padre', label: 'Padre' },
+    { value: 'Madre', label: 'Madre' },
+    { value: 'Tutor_Legal', label: 'Tutor Legal' },
+    { value: 'Otro', label: 'Otro' },
+  ];
+
   return (
     <div className=" mx-auto bg-white p-8 rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-6">Editar Datos {formData.parentesco.replace('_', ' ')}</h2>
@@ -109,13 +120,13 @@ function EditGuardianPage() {
 
         <div>
           <Label htmlFor="parentesco">Parentesco</Label>
-          <Select id="parentesco" name="parentesco" value={formData.parentesco} onChange={handleChange}
-            options={[
-              { value: 'Padre', label: 'Padre' },
-              { value: 'Madre', label: 'Madre' },
-              { value: 'Tutor_Legal', label: 'Tutor Legal' },
-              { value: 'Otro', label: 'Otro' },
-            ]}
+          <Select 
+            instanceId="parentesco-select"
+            inputId="parentesco"
+            name="parentesco" 
+            value={parentescoOptions.find(o => o.value === formData.parentesco) || null}
+            onChange={(option) => handleSelectChange('parentesco', option?.value || null)}
+            options={parentescoOptions}
           />
         </div>
         <div>
@@ -134,7 +145,7 @@ function EditGuardianPage() {
         </div>
         </div>
         <div className="pt-6 text-right">
-        <button type="submit" className=" bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+        <button type="submit" className=" py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200">
           Guardar Cambios
         </button>
         </div>

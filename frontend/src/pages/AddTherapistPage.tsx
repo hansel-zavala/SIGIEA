@@ -23,6 +23,11 @@ function AddTherapistPage() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const navigate = useNavigate();
 
+  const handleSelectChange = (name: string, value: string | null) => {
+    setFormData(prev => ({ ...prev, [name]: value || '' }));
+  };
+  
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     if (name === 'identityNumber' || name === 'phone') {
@@ -89,6 +94,17 @@ function AddTherapistPage() {
 
   const today = new Date().toISOString().split("T")[0];
 
+  const specialtyOptions = [
+    { value: 'Terapeuta', label: 'Terapeuta' },
+    { value: 'Psicologo', label: 'Psicólogo' },
+    { value: 'Ambos', label: 'Ambos' },
+  ];
+
+  const genderOptions = [
+    { value: 'Masculino', label: 'Masculino' },
+    { value: 'Femenino', label: 'Femenino' },
+  ];
+
   return (
     <div className="mx-auto bg-white p-6 rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-6 text-gray-800">Añadir Nuevo Terapeuta</h2>
@@ -130,28 +146,24 @@ function AddTherapistPage() {
              <div>
               <Label htmlFor="specialty">Especialidad</Label>
               <Select
-                id="specialty"
-                name="specialty"
-                value={formData.specialty}
-                onChange={handleChange}
+                instanceId="specialty-select"
+                inputId="specialty"
+                value={specialtyOptions.find(o => o.value === formData.specialty) || null}
+                onChange={(option) => handleSelectChange('specialty', option?.value || null)}
+                options={specialtyOptions}
                 placeholder="Selecciona su especialidad"
-                options={[
-                  { value: 'Terapeuta', label: 'Terapeuta' },
-                  { value: 'Psicologo', label: 'Psicólogo' },
-                  { value: 'Ambos', label: 'Ambos' },
-                ]}
               />
               {formErrors.specialty && <p className="text-red-500 text-sm mt-1">{formErrors.specialty}</p>}
             </div>
              <div>
               <Label htmlFor="gender">Género</Label>
-              <Select id="gender" name="gender" value={formData.gender} 
-              onChange={handleChange}
-              placeholder="Selecciona su género"
-                options={[
-                    { value: 'Masculino', label: 'Masculino' },
-                    { value: 'Femenino', label: 'Femenino' },
-                ]}
+              <Select 
+                instanceId="gender-select"
+                inputId="gender"
+                value={genderOptions.find(o => o.value === formData.gender) || null}
+                onChange={(option) => handleSelectChange('gender', option?.value || null)}
+                placeholder="Selecciona su género"
+                options={genderOptions}
               />
               {formErrors.gender && <p className="text-red-500 text-sm mt-1">{formErrors.gender}</p>}
             </div>
@@ -163,7 +175,7 @@ function AddTherapistPage() {
             </div>
         </div>
         <div className="pt-6 text-right">
-          <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-6">
+          <button type="submit" className="py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200">
             Guardar Terapeuta
           </button>
         </div>

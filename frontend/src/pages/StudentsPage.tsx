@@ -6,7 +6,7 @@ import studentService from "../services/studentService";
 import Badge from "../components/ui/Badge";
 import Input from "../components/ui/Input";
 import Pagination from "../components/ui/Pagination";
-import { FaUserCircle, FaPencilAlt, FaTrash, FaCalendarPlus } from "react-icons/fa";
+import { FaUserCircle, FaPencilAlt, FaTrash, FaCalendarPlus, FaPlus } from "react-icons/fa";
 
 interface Student {
   id: number;
@@ -82,8 +82,9 @@ function StudentsPage() {
         </div>
 
         <Link to="/matricula">
-          <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-            Añadir Estudiante
+          <button className="min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">
+            <FaPlus className="text-xl" />
+            <span className="text-lg">Crear Nuevo Estudiante</span>
           </button>
         </Link>
       </div>

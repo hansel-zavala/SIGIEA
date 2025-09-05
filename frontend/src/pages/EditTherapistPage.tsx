@@ -43,6 +43,10 @@ function EditTherapistPage() {
     }
   }, [id]);
 
+  const handleSelectChange = (name: string, value: string | null) => {
+    setFormData(prev => ({ ...prev, [name]: value || '' }));
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     if (name === 'identityNumber' || name === 'phone') {
@@ -102,7 +106,11 @@ function EditTherapistPage() {
 
     if (id) {
       try {
-        await therapistService.updateTherapist(Number(id), formData);
+        const dataToSend = { ...formData };
+        if (!dataToSend.password) {
+          delete (dataToSend as Partial<typeof dataToSend>).password;
+        }
+        await therapistService.updateTherapist(Number(id), dataToSend);
         navigate('/therapists');
       } catch (err: any) {
         setError(err.response?.data?.error || 'No se pudo actualizar el terapeuta.');
@@ -111,6 +119,17 @@ function EditTherapistPage() {
   };
 
   const today = new Date().toISOString().split("T")[0];
+
+  const specialtyOptions = [
+    { value: 'Terapeuta', label: 'Terapeuta' },
+    { value: 'Psicologo', label: 'Psicólogo' },
+    { value: 'Ambos', label: 'Ambos' },
+  ];
+
+  const genderOptions = [
+    { value: 'Masculino', label: 'Masculino' },
+    { value: 'Femenino', label: 'Femenino' },
+  ];
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
@@ -152,22 +171,23 @@ function EditTherapistPage() {
             </div>
              <div>
               <Label htmlFor="specialty">Especialidad</Label>
-              <Select id="specialty" name="specialty" value={formData.specialty} placeholder="Selecciona su especialidad" onChange={handleChange}
-                options={[
-                    { value: 'Terapeuta', label: 'Terapeuta' },
-                    { value: 'Psicologo', label: 'Psicólogo' },
-                    { value: 'Ambos', label: 'Ambos' },
-                ]}
+               {/* ✅ CORRECCIÓN: Actualizamos cómo se usa el componente Select */}
+              <Select id="specialty" name="specialty" instanceId="specialty-select"
+                value={specialtyOptions.find(o => o.value === formData.specialty) || null}
+                onChange={(option) => handleSelectChange('specialty', option?.value || null)}
+                placeholder="Selecciona su especialidad"
+                options={specialtyOptions}
               />
               {formErrors.specialty && <p className="text-red-500 text-sm mt-1">{formErrors.specialty}</p>}
             </div>
              <div>
               <Label htmlFor="gender">Género</Label>
-              <Select id="gender" name="gender" value={formData.gender} placeholder="Selecciona su género" onChange={handleChange}
-                options={[
-                    { value: 'Masculino', label: 'Masculino' },
-                    { value: 'Femenino', label: 'Femenino' },
-                ]}
+               {/* ✅ CORRECCIÓN: Actualizamos cómo se usa el componente Select */}
+              <Select id="gender" name="gender" instanceId="gender-select"
+                value={genderOptions.find(o => o.value === formData.gender) || null}
+                onChange={(option) => handleSelectChange('gender', option?.value || null)}
+                placeholder="Selecciona su género"
+                options={genderOptions}
               />
               {formErrors.gender && <p className="text-red-500 text-sm mt-1">{formErrors.gender}</p>}
             </div>
@@ -180,7 +200,7 @@ function EditTherapistPage() {
         </div>
 
         <div className="pt-6 text-right">
-          <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-6">
+          <button type="submit" className="py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200">
             Guardar Cambios
           </button>
         </div>

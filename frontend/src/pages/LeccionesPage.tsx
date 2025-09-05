@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import leccionService from "../services/leccionService";
 import Badge from "../components/ui/Badge"; // Importamos el Badge
 import { FaBook } from "react-icons/fa"; // Importamos un ícono
-import { FaPencilAlt, FaTrash } from "react-icons/fa";
+import { FaPencilAlt, FaTrash, FaPlus } from "react-icons/fa";
 
 interface Leccion {
   id: number;
@@ -53,8 +53,9 @@ function LeccionesPage() {
           Catálogo de Lecciones
         </h2>
         <Link to="/lecciones/new">
-          <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-            Crear Nueva Lección
+          <button className="min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">
+            <FaPlus className="text-xl" />
+            <span className="text-lg">Crear Nueva Lección</span>
           </button>
         </Link>
       </div>

@@ -108,3 +108,49 @@
 .custom-calendar-container .fc-daygrid-dot-event .fc-event-dot {
   display: none;
 }
+
+
+/* --- ESTILOS PERSONALIZADOS PARA REACT-DATEPICKER --- */
+.react-datepicker {
+  border-color: #c4b5fd !important; /* Borde violeta claro */
+  font-family: inherit !important;
+}
+
+.react-datepicker__header {
+  background-color: #ede9fe !important; /* Fondo violeta pálido */
+  border-bottom-color: #c4b5fd !important;
+}
+
+.react-datepicker__current-month, .react-datepicker-time__header, .react-datepicker-year-header {
+  color: #5b21b6 !important; /* Texto violeta oscuro */
+  font-weight: bold !important;
+}
+
+.react-datepicker__day-name, .react-datepicker__day, .react-datepicker__time-name {
+  color: #000000 !important; /* Texto negro */
+}
+
+.react-datepicker__day--selected, .react-datepicker__day--in-selecting-range, .react-datepicker__day--in-range {
+  background-color: #7c3aed !important; /* Violeta intenso para el día seleccionado */
+  color: white !important;
+  border-radius: 9999px !important;
+}
+
+.react-datepicker__day:hover {
+  background-color: #ede9fe !important; /* Violeta pálido para el hover */
+  border-radius: 9999px !important;
+}
+
+.react-datepicker__day--keyboard-selected {
+  background-color: #a78bfa !important; /* Violeta medio para selección con teclado */
+  color: white !important;
+  border-radius: 9999px !important;
+}
+
+.react-datepicker__year-read-view--down-arrow, .react-datepicker__navigation-icon::before {
+    border-color: #5b21b6 !important;
+}
+.react-datepicker__day--outside-month {
+  color: #a1a1aa !important; /* Un color gris suave */
+}
+

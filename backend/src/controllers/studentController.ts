@@ -75,7 +75,7 @@ export const getAllStudents = async (req: Request, res: Response) => {
         take: limitNum,
         include: {
           therapist: {
-            select: { nombres: true, apellidos: true },
+            select: { id: true, nombres: true, apellidos: true },
           },
         },
       }),

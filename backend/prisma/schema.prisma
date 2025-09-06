@@ -9,6 +9,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// --- Modelos de Usuario y Estudiante (Existentes) ---
 model User {
   id               Int                @id @default(autoincrement())
   email            String             @unique
@@ -18,6 +19,7 @@ model User {
   therapistProfile TherapistProfile?
   guardian         Guardian?
   createdLecciones Leccion[]
+  createdReports   Report[]
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 }
@@ -54,12 +56,87 @@ model Student {
   therapistId            Int?
   therapySessions        TherapySession[]
   guardians              Guardian[]
+  reports                Report[] // Relación con los reportes del estudiante
   createdAt              DateTime          @default(now())
   updatedAt              DateTime          @updatedAt
 }
 
+// --- NUEVOS MODELOS PARA REPORTES DINÁMICOS ---
+
+// Plantilla principal del reporte (ej. "Informe Semestral 2025")
+model ReportTemplate {
+  id          Int      @id @default(autoincrement())
+  title       String   @unique
+  description String?  @db.Text
+  isActive    Boolean  @default(true)
+  sections    ReportSection[]
+  reports     Report[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Secciones dentro de una plantilla (ej. "Socialización", "Comunicación")
+model ReportSection {
+  id         Int      @id @default(autoincrement())
+  title      String
+  order      Int // Para mantener el orden de las secciones
+  template   ReportTemplate @relation(fields: [templateId], references: [id])
+  templateId Int
+  items      ReportItem[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// Items a evaluar dentro de cada sección (ej. "Saluda y se despide")
+model ReportItem {
+  id          Int      @id @default(autoincrement())
+  description String   @db.Text
+  order       Int // Para mantener el orden de los ítems
+  section     ReportSection @relation(fields: [sectionId], references: [id])
+  sectionId   Int
+  answers     ReportItemAnswer[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// El reporte específico llenado por un terapeuta para un alumno
+model Report {
+  id              Int      @id @default(autoincrement())
+  student         Student  @relation(fields: [studentId], references: [id])
+  studentId       Int
+  therapist       User     @relation(fields: [therapistId], references: [id])
+  therapistId     Int
+  template        ReportTemplate @relation(fields: [templateId], references: [id])
+  templateId      Int
+  reportDate      DateTime @default(now())
+  attendance      String?  // Asistencia general al semestre
+  summary         String?  @db.Text
+  therapyActivities String? @db.Text
+  conclusions     String?  @db.Text
+  recommendations String?  @db.Text
+  itemAnswers     ReportItemAnswer[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// La respuesta/calificación para un ítem específico en un reporte
+model ReportItemAnswer {
+  id         Int      @id @default(autoincrement())
+  report     Report   @relation(fields: [reportId], references: [id])
+  reportId   Int
+  item       ReportItem @relation(fields: [itemId], references: [id])
+  itemId     Int
+  level      AcquisitionLevel
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([reportId, itemId]) // Un ítem solo puede tener una respuesta por reporte
+}
+
+
+// --- Modelos existentes (Guardian, TherapistProfile, etc.) ---
 model Guardian {
-  id                      Int         @id @default(autoincrement())
+  id                    Int         @id @default(autoincrement())
   nombres                 String
   apellidos               String
   direccionEmergencia     String?
@@ -227,4 +304,14 @@ enum EventAudience {
   General
   Padres
   Terapeutas
+}
+
+// --- ENUMS ---
+enum AcquisitionLevel {
+  CONSEGUIDO
+  CON_AYUDA_ORAL
+  CON_AYUDA_GESTUAL
+  CON_AYUDA_FISICA
+  NO_CONSEGUIDO
+  NO_TRABAJADO
 }

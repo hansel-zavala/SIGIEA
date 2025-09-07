@@ -6,7 +6,6 @@ export interface Medicamento {
   nombre: string;
 }
 
-// Obtener todos los medicamentos
 const getAll = async (): Promise<Medicamento[]> => {
   try {
     const response = await api.get('/medicamentos');
@@ -17,7 +16,6 @@ const getAll = async (): Promise<Medicamento[]> => {
   }
 };
 
-// Crear un nuevo medicamento
 const create = async (nombre: string): Promise<Medicamento> => {
   try {
     const response = await api.post('/medicamentos', { nombre });
@@ -28,7 +26,6 @@ const create = async (nombre: string): Promise<Medicamento> => {
   }
 };
 
-// Actualizar un medicamento
 const update = async (id: number, nombre: string): Promise<Medicamento> => {
   try {
     const response = await api.put(`/medicamentos/${id}`, { nombre });
@@ -39,7 +36,6 @@ const update = async (id: number, nombre: string): Promise<Medicamento> => {
   }
 };
 
-// Eliminar un medicamento
 const remove = async (id: number): Promise<any> => {
   try {
     const response = await api.delete(`/medicamentos/${id}`);

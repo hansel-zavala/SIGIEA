@@ -1,21 +1,18 @@
 // frontend/src/services/therapySessionService.ts
 import api from './api';
 
-// Interfaz para los datos que enviaremos para crear sesiones
 interface CreateRecurringSessionsData {
   studentId: number;
   therapistId: number;
   leccionId: number;
-  daysOfWeek: string[]; // ["Lunes", "Miércoles"]
-  startTime: string; // "14:00"
-  duration: number; // 45 (en minutos)
-  weeksToSchedule: number; // Cuántas semanas hacia el futuro generar
+  daysOfWeek: string[];
+  startTime: string;
+  duration: number;
+  weeksToSchedule: number;
 }
 
-// Llama a la API para crear un lote de sesiones recurrentes
 const createRecurringSessions = async (data: CreateRecurringSessionsData) => {
   try {
-    // La URL ahora apunta a la ruta que creamos en el backend
     const response = await api.post(`/students/${data.studentId}/sessions`, data);
     return response.data;
   } catch (error) {
@@ -24,7 +21,6 @@ const createRecurringSessions = async (data: CreateRecurringSessionsData) => {
   }
 };
 
-// Obtiene todas las sesiones programadas para un estudiante
 const getSessionsByStudent = async (studentId: number) => {
     try {
         const response = await api.get(`/students/${studentId}/sessions`);
@@ -54,9 +50,6 @@ const updateSession = async (studentId: number, sessionId: number, data: any) =>
         throw error;
     }
 }
-
-
-// (Más adelante añadiremos funciones para actualizar y eliminar sesiones individuales aquí)
 
 export default {
   createRecurringSessions,

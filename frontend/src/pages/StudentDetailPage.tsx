@@ -3,11 +3,11 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import studentService from "../services/studentService";
 import therapySessionService from "../services/therapySessionService";
-import { FaCalendarAlt, FaFileAlt, FaPrint, FaPencilAlt } from "react-icons/fa";
+import reportService from "../services/reportService";
+import { FaCalendarAlt, FaFileAlt, FaPrint, FaPencilAlt, FaEye } from "react-icons/fa";
 import Badge from "../components/ui/Badge";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
-//import type { EventInput } from '@fullcalendar/core';
 import Modal from "react-modal";
 import Label from "../components/ui/Label";
 import Select from "../components/ui/Select";
@@ -28,6 +28,17 @@ interface TherapySession {
   notes?: string;
   behavior?: string;
   progress?: string;
+}
+
+interface Report {
+  id: number;
+  reportDate: string;
+  template: {
+    title: string;
+  };
+  therapist: {
+    name: string;
+  };
 }
 const modalStyles = {
   content: {
@@ -60,6 +71,7 @@ const calculateAge = (birthDate: string) => {
 function StudentDetailPage() {
   const [student, setStudent] = useState<any>(null);
   const [sessions, setSessions] = useState<TherapySession[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const { id: studentId } = useParams<{ id: string }>();
@@ -80,10 +92,12 @@ function StudentDetailPage() {
       Promise.all([
         studentService.getStudentById(parseInt(studentId)),
         therapySessionService.getSessionsByStudent(parseInt(studentId)),
+        reportService.getReportsByStudent(parseInt(studentId))
       ])
-        .then(([studentData, sessionsData]) => {
+        .then(([studentData, sessionsData, reportsData]) => {
           setStudent(studentData);
           setSessions(sessionsData);
+          setReports(reportsData);
         })
         .catch(() =>
           setError("No se pudo cargar la información del estudiante.")
@@ -197,7 +211,6 @@ function StudentDetailPage() {
             <h2 className="text-2xl font-bold text-gray-800">
               Perfil de: {student?.fullName}
             </h2>
-            {/* Grupo de botones */}
             <div className="flex gap-2">
               <Link to={`/students/edit/${studentId}`}>
                 <button className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 border border-yellow-600 rounded shadow-sm flex items-center gap-2">
@@ -313,6 +326,49 @@ function StudentDetailPage() {
               currentPage={currentPage}
               onPageChange={onPageChange}
             />
+          </div>
+        </div>
+         <div>
+          <h3 className="text-xl font-bold text-gray-800 mb-4">
+            Historial de Reportes
+          </h3>
+          <div className="overflow-hidden rounded-xl bg-white shadow-md">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr className="text-left">
+                  <th className="px-5 py-3 font-medium text-gray-500">Fecha de Creación</th>
+                  <th className="px-5 py-3 font-medium text-gray-500">Tipo de Reporte</th>
+                  <th className="px-5 py-3 font-medium text-gray-500">Generado por</th>
+                  <th className="px-5 py-3 font-medium text-gray-500">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reports.map((report) => (
+                  <tr key={report.id}>
+                    <td className="px-5 py-4">{new Date(report.reportDate).toLocaleDateString()}</td>
+                    <td className="px-5 py-4">{report.template.title}</td>
+                    <td className="px-5 py-4">{report.therapist.name}</td>
+                    <td className="px-5 py-4">
+                      <div className="flex gap-4">
+                          <Link to={`/reports/view/${report.id}`} title="Ver Reporte" className="flex items-center gap-1 text-blue-600 hover:underline">
+                              <FaEye /> Ver
+                          </Link>
+                          <Link to={`/reports/edit/${report.id}`} title="Editar Reporte" className="flex items-center gap-1 text-green-600 hover:underline">
+                              <FaPencilAlt /> Editar
+                          </Link>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {reports.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="text-center p-8 text-gray-500">
+                      No hay reportes generados para este estudiante.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
         <div className="p-1"></div>

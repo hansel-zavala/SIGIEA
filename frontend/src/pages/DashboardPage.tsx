@@ -23,7 +23,7 @@ function DashboardPage() {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
-  const [currentDate, setCurrentDate] = useState(new Date()); // Estado para el año y mes actual
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   useEffect(() => {
     const loadDashboardData = () => {
@@ -88,7 +88,7 @@ function DashboardPage() {
             value={stats.students} 
             icon={<FaUserGraduate size={24} />}
             color="pink"
-            growth={stats.studentGrowthPercentage} // <-- Pasamos el nuevo dato
+            growth={stats.studentGrowthPercentage}
         />
         <StatCard 
             title="Terapeutas Activos" 
@@ -113,7 +113,6 @@ function DashboardPage() {
           </div>
 
           <div className="lg:col-span-1 bg-violet-100 rounded-lg p-2">
-             {/* --- CAMBIO 2: ESTRUCTURA DEL HEADER DEL CALENDARIO --- */}
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-2xl font-bold">{"Calendario de Eventos"}</h3>
               <div className="flex items-center gap-4">
@@ -128,7 +127,7 @@ function DashboardPage() {
               </div>
             </div>
             
-            <div className="bg-white p-4 rounded-lg shadow-md custom-calendar-container"> {/* Añadimos una clase contenedora */}
+            <div className="bg-white p-4 rounded-lg shadow-md custom-calendar-container">
               <FullCalendar
                 plugins={[dayGridPlugin, interactionPlugin]}
                 initialView="dayGridMonth"
@@ -137,7 +136,6 @@ function DashboardPage() {
                   center: 'title',
                   right: 'prev,next'
                 }}
-                // Esta función se ejecuta cada vez que cambia el mes/año visible
                 datesSet={(arg) => {
                   setCurrentDate(arg.view.currentStart);
                 }}

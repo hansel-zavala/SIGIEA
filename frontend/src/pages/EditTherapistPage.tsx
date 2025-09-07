@@ -171,7 +171,6 @@ function EditTherapistPage() {
             </div>
              <div>
               <Label htmlFor="specialty">Especialidad</Label>
-               {/* ✅ CORRECCIÓN: Actualizamos cómo se usa el componente Select */}
               <Select id="specialty" name="specialty" instanceId="specialty-select"
                 value={specialtyOptions.find(o => o.value === formData.specialty) || null}
                 onChange={(option) => handleSelectChange('specialty', option?.value || null)}
@@ -182,7 +181,6 @@ function EditTherapistPage() {
             </div>
              <div>
               <Label htmlFor="gender">Género</Label>
-               {/* ✅ CORRECCIÓN: Actualizamos cómo se usa el componente Select */}
               <Select id="gender" name="gender" instanceId="gender-select"
                 value={genderOptions.find(o => o.value === formData.gender) || null}
                 onChange={(option) => handleSelectChange('gender', option?.value || null)}

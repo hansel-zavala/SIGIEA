@@ -2,8 +2,8 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import leccionService from "../services/leccionService";
-import Badge from "../components/ui/Badge"; // Importamos el Badge
-import { FaBook } from "react-icons/fa"; // Importamos un ícono
+import Badge from "../components/ui/Badge";
+import { FaBook } from "react-icons/fa";
 import { FaPencilAlt, FaTrash, FaPlus } from "react-icons/fa";
 
 interface Leccion {

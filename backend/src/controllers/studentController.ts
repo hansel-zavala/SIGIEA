@@ -52,47 +52,82 @@ export const createStudent = async (req: Request, res: Response) => {
 
 export const getAllStudents = async (req: Request, res: Response) => {
   try {
-    const { search, page = '1', limit = '10' } = req.query;
+    const { search, page = '1', limit = '10', status } = req.query;
     const pageNum = parseInt(page as string, 10);
     const limitNum = parseInt(limit as string, 10);
     const skip = (pageNum - 1) * limitNum;
 
-    const whereCondition = {
-      isActive: true,
-      ...(search && {
-        OR: [
-          { nombres: { contains: search as string } },
-          { apellidos: { contains: search as string } },
-        ],
-      }),
-    };
+    let whereCondition: any = {};
+    
+    if (status === 'active') {
+      whereCondition.isActive = true;
+    } else if (status === 'inactive') {
+      whereCondition.isActive = false;
+    }
+
+    if (search) {
+      const searchTerms = (search as string).split(' ').filter(term => term);
+      whereCondition.OR = [
+        {
+          AND: searchTerms.map(term => ({
+            OR: [
+              { nombres: { contains: term } },
+              { apellidos: { contains: term } },
+            ],
+          })),
+        },
+        {
+          therapist: {
+            OR: searchTerms.map(term => ({
+              OR: [
+                { nombres: { contains: term } },
+                { apellidos: { contains: term } },
+              ],
+            })),
+          },
+        },
+      ];
+    }
 
     const [students, totalStudents] = await prisma.$transaction([
       prisma.student.findMany({
         where: whereCondition,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [
+          { isActive: 'desc' }, 
+          { createdAt: 'desc' }
+        ],
         skip: skip,
         take: limitNum,
         include: {
-          therapist: {
-            select: { id: true, nombres: true, apellidos: true },
-          },
+          therapist: { select: { id: true, nombres: true, apellidos: true } },
+          guardians: { orderBy: { parentesco: 'asc' }, take: 1 },
         },
       }),
       prisma.student.count({ where: whereCondition }),
     ]);
+    
+    const calculateAge = (birthDate: Date) => {
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+        return age;
+    };
 
-    const studentsWithFullName = students.map(s => ({
-        ...s,
-        fullName: `${s.nombres} ${s.apellidos}`,
-        therapist: s.therapist ? {
-            ...s.therapist,
-            fullName: `${s.therapist.nombres} ${s.therapist.apellidos}`
-        } : null
-    }));
+    const studentsWithDetails = students.map(s => {
+        const primaryGuardian = s.guardians[0];
+        return {
+            ...s,
+            fullName: `${s.nombres} ${s.apellidos}`,
+            age: calculateAge(s.dateOfBirth),
+            therapist: s.therapist ? { ...s.therapist, fullName: `${s.therapist.nombres} ${s.therapist.apellidos}` } : null,
+            guardianName: primaryGuardian ? `${primaryGuardian.nombres} ${primaryGuardian.apellidos}` : 'No asignado',
+            guardianPhone: primaryGuardian ? primaryGuardian.telefono : 'N/A'
+        };
+    });
 
     res.json({
-      data: studentsWithFullName,
+      data: studentsWithDetails,
       total: totalStudents,
       page: pageNum,
       totalPages: Math.ceil(totalStudents / limitNum),
@@ -183,5 +218,18 @@ export const deleteStudent = async (req: Request, res: Response) => {
     res.json({ message: 'Estudiante desactivado correctamente.', student });
   } catch (error) {
     res.status(500).json({ error: 'No se pudo desactivar el estudiante.' });
+  }
+};
+
+export const reactivateStudent = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const student = await prisma.student.update({
+      where: { id: parseInt(id) },
+      data: { isActive: true },
+    });
+    res.json({ message: 'Estudiante reactivado correctamente.', student });
+  } catch (error) {
+    res.status(500).json({ error: 'No se pudo reactivar el estudiante.' });
   }
 };

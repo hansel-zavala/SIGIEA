@@ -94,6 +94,30 @@ function EditStudentPage() {
   const [selectedMedicamentos, setSelectedMedicamentos] = useState<Medicamento[]>([]);
   const [allAlergias, setAllAlergias] = useState<Alergia[]>([]);
   const [selectedAlergias, setSelectedAlergias] = useState<Alergia[]>([]);
+  const [partidaFile, setPartidaFile] = useState<File | null>(null);
+  const [evaluacionFile, setEvaluacionFile] = useState<File | null>(null);
+
+  const validateFile = (file: File | null) => {
+  if (!file) return "";
+
+  const allowedFileTypes = [
+    "image/jpeg",
+    "image/png",
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ];
+  if (!allowedFileTypes.includes(file.type)) {
+    return "Archivo no válido. Solo se permiten imágenes, PDF o Word.";
+  }
+
+  const maxSizeInBytes = 5 * 1024 * 1024;
+  if (file.size > maxSizeInBytes) {
+    return "El archivo es demasiado grande. El límite es de 5MB.";
+  }
+
+  return "";
+};
 
   useEffect(() => {
     if (id) {
@@ -177,6 +201,7 @@ function EditStudentPage() {
   const validateForm = () => {
     const errors: Record<string, string> = {};
     const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+    const addressRegex = /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s.,#\-°]+$/;
     
     if (!formData.nombres?.trim()) errors.nombres = "Los nombres son obligatorios.";
     else if (!nameRegex.test(formData.nombres)) errors.nombres = "Los nombres solo deben contener letras.";
@@ -184,21 +209,34 @@ function EditStudentPage() {
     if (!formData.apellidos?.trim()) errors.apellidos = "Los apellidos son obligatorios.";
     else if (!nameRegex.test(formData.apellidos)) errors.apellidos = "Los apellidos solo deben contener letras.";
 
-    if (!departamento) errors.departamento = "Debe seleccionar un departamento.";
-    if (!municipio) errors.municipio = "Debe seleccionar un municipio.";
     if (!formData.dateOfBirth) errors.dateOfBirth = "La fecha de nacimiento es obligatoria.";
+    else if (formData.dateOfBirth && new Date(formData.dateOfBirth) > new Date()) errors.dateOfBirth = "La fecha no puede ser futura.";
+
+    if (!formData.direccion?.trim()) errors.direccion = "La dirección es obligatoria.";
+    else if (formData.direccion && !addressRegex.test(formData.direccion)) errors.direccion = "La dirección contiene caracteres no permitidos.";
+
+    if (!formData.institucionProcedencia?.trim()) errors.institucionProcedencia = "La institución es obligatoria.";
+    else if (!addressRegex.test(formData.institucionProcedencia)) errors.institucionProcedencia = "El nombre contiene caracteres no permitidos.";
+
     if (!departamento) errors.departamento = "Debe seleccionar un departamento.";
     if (!municipio) errors.municipio = "Debe seleccionar un municipio.";
     if (!formData.genero) errors.genero = "Debe seleccionar un género.";
     if (!formData.zona) errors.zona = "Debe seleccionar una zona.";
     if (!formData.jornada) errors.jornada = "Debe seleccionar una jornada.";
     if (!formData.tipoSangre) errors.tipoSangre = "Debe seleccionar un tipo de sangre.";
-    if (!formData.direccion) errors.direccion = "La dirección es obligatoria.";
-    if (!formData.institucionProcedencia) errors.institucionProcedencia = "La institución de procedencia es obligatoria.";
     if (!therapists) errors.therapistId = "Debe seleccionar un terapeuta.";
-    if (formData.dateOfBirth && new Date(formData.dateOfBirth) > new Date()) {
-        errors.dateOfBirth = "La fecha de nacimiento no puede ser futura.";
-    }
+    if (!Object.values(tiposDeAtencion).some((_, index) => formData[tiposDeAtencion[index].id as keyof typeof formData] === true)) {errors.tiposDeAtencion = "Debe seleccionar al menos un tipo de atención.";}
+
+    // Validar archivos requeridos
+  /*if (!partidaFile) errors.partidaFileError = "La partida de nacimiento es obligatoria.";
+  else errors.partidaFileError = validateFile(partidaFile);*/
+  if (partidaFile) errors.partidaFileError = validateFile(partidaFile);
+  
+  /*if (formData.recibioEvaluacion && !evaluacionFile) errors.evaluacionFileError = "El archivo de evaluación es obligatorio.";
+  else errors.evaluacionFileError = validateFile(evaluacionFile);*/
+  if (formData.recibioEvaluacion && evaluacionFile) errors.evaluacionFileError = validateFile(evaluacionFile);
+
+
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -249,8 +287,9 @@ function EditStudentPage() {
     }
   };
   
-  const today = new Date().toISOString().split("T")[0];
   const therapistOptions = therapists.map(therapist => ({ value: String(therapist.id), label: therapist.fullName }));
+
+  const acceptedFileTypes = "image/png, image/jpeg, application/pdf, .doc, .docx, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
@@ -263,24 +302,38 @@ function EditStudentPage() {
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
                 <Label htmlFor="nombres">Nombres</Label>
-                <Input id="nombres" name="nombres" type="text" value={formData.nombres || ''} placeholder="Ingresa sus nombres" onChange={handleChange}/>
+                <Input 
+                  id="nombres" 
+                  name="nombres" 
+                  type="text" 
+                  value={formData.nombres || ''} 
+                  placeholder="Ingresa sus nombres" 
+                  onChange={handleChange}/>
                 {formErrors.nombres && <p className="text-red-500 text-sm mt-1">{formErrors.nombres}</p>}
             </div>
+
             <div>
                 <Label htmlFor="apellidos">Apellidos</Label>
-                <Input id="apellidos" name="apellidos" type="text" value={formData.apellidos || ''} placeholder="Ingresa sus apellidos" onChange={handleChange}/>
+                <Input 
+                  id="apellidos" 
+                  name="apellidos" 
+                  type="text" 
+                  value={formData.apellidos || ''} 
+                  placeholder="Ingresa sus apellidos" 
+                  onChange={handleChange}/>
                 {formErrors.apellidos && <p className="text-red-500 text-sm mt-1">{formErrors.apellidos}</p>}
             </div>
 
             <div>
                 <Label htmlFor="dateOfBirth">Fecha de Nacimiento</Label>
                 <CustomDatePicker
-                selected={formData.dateOfBirth ? new Date(formData.dateOfBirth) : null}
-                onChange={handleDateChange}
-                maxDate={new Date()}
-              />
+                  selected={formData.dateOfBirth ? new Date(formData.dateOfBirth) : null}
+                  onChange={handleDateChange}
+                  maxDate={new Date()}
+                />
               {formErrors.dateOfBirth && <p className="text-red-500 text-sm mt-1">{formErrors.dateOfBirth}</p>}
             </div>
+
             <div>
               <Label htmlFor="departamento">Departamento de Nacimiento</Label>
               <ComboBox
@@ -291,6 +344,7 @@ function EditStudentPage() {
               />
               {formErrors.departamento && <p className="text-red-500 text-sm mt-1">{formErrors.departamento}</p>}
             </div>
+
             <div>
               <Label htmlFor="municipio">Municipio de Nacimiento</Label>
               <ComboBox
@@ -302,37 +356,89 @@ function EditStudentPage() {
               />
               {formErrors.municipio && <p className="text-red-500 text-sm mt-1">{formErrors.municipio}</p>}
             </div>
+
             <div>
               <Label htmlFor="direccion">Dirección</Label>
-              <Input id="direccion" name="direccion" type="text" value={formData.direccion || ''} placeholder="Ingresa la dirección" onChange={handleChange} />
+              <Input 
+                id="direccion" 
+                name="direccion" 
+                type="text" 
+                value={formData.direccion || ''} 
+                placeholder="Ingresa la dirección" 
+                onChange={handleChange} 
+              />
               {formErrors.direccion && <p className="text-red-500 text-sm mt-1">{formErrors.direccion}</p>}
             </div>
 
             <div>
               <Label htmlFor="genero">Género</Label>
-              <Select instanceId="genero-edit-select" inputId="genero" name="genero" value={genderOptions.find(o => o.value === formData.genero) || null} onChange={(option) => handleSelectChange('genero', option?.value || null)} placeholder=" Selecciona el género " options={genderOptions}/>
+              <Select 
+                instanceId="genero-edit-select" 
+                inputId="genero" 
+                name="genero" 
+                value={genderOptions.find(o => o.value === formData.genero) || null} 
+                onChange={(option) => handleSelectChange('genero', option?.value || null)} 
+                placeholder=" Selecciona el género " 
+                options={genderOptions}
+              />
               {formErrors.genero && <p className="text-red-500 text-sm mt-1">{formErrors.genero}</p>}
             </div>
+
             <div>
               <Label htmlFor="tipoSangre">Tipo de Sangre</Label>
-              <Select instanceId="sangre-edit-select" inputId="tipoSangre" name="tipoSangre" value={tiposDeSangre.find(o => o.value === formData.tipoSangre) || null} onChange={(option) => handleSelectChange('tipoSangre', option?.value || null)} placeholder="Selecciona el tipo de sangre" options={tiposDeSangre} />
+              <Select 
+                instanceId="sangre-edit-select" 
+                inputId="tipoSangre" 
+                name="tipoSangre" 
+                value={tiposDeSangre.find(o => o.value === formData.tipoSangre) || null} 
+                onChange={(option) => handleSelectChange('tipoSangre', option?.value || null)} 
+                placeholder="Selecciona el tipo de sangre" 
+                options={tiposDeSangre} 
+              />
               {formErrors.tipoSangre && <p className="text-red-500 text-sm mt-1">{formErrors.tipoSangre}</p>}
             </div>
+
             <div>
               <Label htmlFor="zona">Zona</Label>
-              <Select instanceId="zona-edit-select" inputId="zona" name="zona" value={zonaOptions.find(o => o.value === formData.zona) || null} onChange={(option) => handleSelectChange('zona', option?.value || null)} placeholder=" Selecciona la zona " options={zonaOptions}/>
+              <Select 
+                instanceId="zona-edit-select" 
+                inputId="zona" 
+                name="zona" 
+                value={zonaOptions.find(o => o.value === formData.zona) || null} 
+                onChange={(option) => handleSelectChange('zona', option?.value || null)} 
+                placeholder=" Selecciona la zona " 
+                options={zonaOptions}
+              />
               {formErrors.zona && <p className="text-red-500 text-sm mt-1">{formErrors.zona}</p>}
             </div>
+
             <div>
               <Label htmlFor="jornada">Jornada</Label>
-              <Select instanceId="jornada-edit-select" inputId="jornada" name="jornada" value={jornadaOptions.find(o => o.value === formData.jornada) || null} onChange={(option) => handleSelectChange('jornada', option?.value || null)} placeholder=" Selecciona la jornada " options={jornadaOptions}/>
+              <Select 
+                instanceId="jornada-edit-select" 
+                inputId="jornada" 
+                name="jornada" 
+                value={jornadaOptions.find(o => o.value === formData.jornada) || null} 
+                onChange={(option) => handleSelectChange('jornada', option?.value || null)} 
+                placeholder=" Selecciona la jornada " 
+                options={jornadaOptions}
+              />
               {formErrors.jornada && <p className="text-red-500 text-sm mt-1">{formErrors.jornada}</p>}
             </div>
+
             <div>
               <Label htmlFor="institucionProcedencia">Institución de Procedencia</Label>
-              <Input id="institucionProcedencia" name="institucionProcedencia" type="text" value={formData.institucionProcedencia || ''} placeholder="Ingresa su institución de procedencia" onChange={handleChange} />
+              <Input 
+                id="institucionProcedencia" 
+                name="institucionProcedencia" 
+                type="text" 
+                value={formData.institucionProcedencia || ''} 
+                placeholder="Ingresa su institución de procedencia" 
+                onChange={handleChange} 
+              />
               {formErrors.institucionProcedencia && <p className="text-red-500 text-sm mt-1">{formErrors.institucionProcedencia}</p>}
             </div>
+
             <div>
               <Label>Partida de Nacimiento</Label>
               {formData.partidaNacimientoUrl ? (
@@ -340,14 +446,28 @@ function EditStudentPage() {
                   <a href={`http://localhost:3001${formData.partidaNacimientoUrl}`} target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:underline flex items-center gap-2">
                     Ver Archivo Actual <FaExternalLinkAlt />
                   </a>
-                  <button type="button" onClick={() => handleFileDelete('partidaNacimientoUrl')} title="Eliminar Archivo">
-                    <FaTrash className="text-red-500 hover:text-red-700" />
+                  <button 
+                    type="button" 
+                    onClick={() => handleFileDelete('partidaNacimientoUrl')} 
+                    title="Eliminar Archivo">
+                      <FaTrash className="text-red-500 hover:text-red-700" />
                   </button>
                 </div>
               ) : ( <p className="text-sm text-gray-500 mt-1">No hay archivo subido.</p> )}
-              <Input type="file" onChange={(e) => setNewPartidaFile(e.target.files ? e.target.files[0] : null)} className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-200 file:text-violet-700 hover:file:bg-violet-100"/>
-              
+              <Input 
+                type="file" 
+                accept={acceptedFileTypes}
+                onChange={(e) =>  {
+                  const file = e.target.files ? e.target.files[0] : null;
+                  setNewPartidaFile(file);
+                  setPartidaFile(file);
+                }}
+                onClick={() => setPartidaFile(null)}
+                className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-200 file:text-violet-700 hover:file:bg-violet-100"
+              />
+              {formErrors.partidaFileError && <p className="text-red-500 text-sm mt-1">{formErrors.partidaFileError}</p>}
             </div>
+
             <div>
               <Label>Resultado de Evaluación</Label>
               {formData.resultadoEvaluacionUrl ? (
@@ -355,12 +475,26 @@ function EditStudentPage() {
                   <a href={`http://localhost:3001${formData.resultadoEvaluacionUrl}`} target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:underline flex items-center gap-2">
                     Ver Archivo Actual <FaExternalLinkAlt />
                   </a>
-                  <button type="button" onClick={() => handleFileDelete('resultadoEvaluacionUrl')} title="Eliminar Archivo">
+                  <button 
+                    type="button"
+                    onClick={() => handleFileDelete('resultadoEvaluacionUrl')}
+                    title="Eliminar Archivo">
                     <FaTrash className="text-red-500 hover:text-red-700" />
                   </button>
                 </div>
               ) : ( <p className="text-sm text-gray-500 mt-1">No hay archivo subido.</p> )}
-              <Input type="file" onChange={(e) => setNewEvaluacionFile(e.target.files ? e.target.files[0] : null)} className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-200 file:text-violet-700 hover:file:bg-violet-100" />
+              <Input 
+                type="file"
+                accept={acceptedFileTypes}
+                onChange={(e) =>  {
+                  const file = e.target.files ? e.target.files[0] : null;
+                  setNewPartidaFile(file);
+                  setPartidaFile(file);
+                }}
+                onClick={() => setEvaluacionFile(null)}
+                className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-200 file:text-violet-700 hover:file:bg-violet-100" 
+              />
+              {formErrors.evaluacionFileError && <p className="text-red-500 text-sm mt-1">{formErrors.evaluacionFileError}</p>}
             </div>
           </div>
         </div>
@@ -376,12 +510,13 @@ function EditStudentPage() {
                   type="checkbox" 
                   checked={!!formData[atencion.id as keyof StudentFormData]}  
                   onChange={handleChange} 
-                  className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600" 
+                  className="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500 accent-violet-500"
                 />
                 <Label htmlFor={atencion.id} className="ml-2">{atencion.label}</Label>
               </div>
             ))}
           </div>
+          {formErrors.tiposDeAtencion && <p className="text-red-500 text-sm mt-1">{formErrors.tiposDeAtencion}</p>}
         </div>
         
         <div className="border-b pb-6">

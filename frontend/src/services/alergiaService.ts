@@ -6,7 +6,6 @@ export interface Alergia {
   nombre: string;
 }
 
-// Obtener todas las alergias
 const getAll = async (): Promise<Alergia[]> => {
   try {
     const response = await api.get('/alergias');
@@ -17,7 +16,6 @@ const getAll = async (): Promise<Alergia[]> => {
   }
 };
 
-// Crear una nueva alergia
 const create = async (nombre: string): Promise<Alergia> => {
   try {
     const response = await api.post('/alergias', { nombre });
@@ -28,7 +26,6 @@ const create = async (nombre: string): Promise<Alergia> => {
   }
 };
 
-// Actualizar una alergia
 const update = async (id: number, nombre: string): Promise<Alergia> => {
   try {
     const response = await api.put(`/alergias/${id}`, { nombre });
@@ -39,7 +36,6 @@ const update = async (id: number, nombre: string): Promise<Alergia> => {
   }
 };
 
-// Eliminar una alergia
 const remove = async (id: number): Promise<any> => {
   try {
     const response = await api.delete(`/alergias/${id}`);

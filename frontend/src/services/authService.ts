@@ -3,7 +3,6 @@ import axios from 'axios';
 
 const API_URL = 'http://localhost:3001/api/';
 
-// ✅ La corrección: añadimos los tipos a los parámetros
 const login = async (email: string, password: string) => {
     try {
     const response = await axios.post(API_URL + 'users/login', {

@@ -9,7 +9,7 @@ const getAllGuardians = async (searchTerm?: string, page: number = 1, limit: num
         limit,
     };
     const response = await api.get('/guardians', { params });
-    return response.data; // Devolverá { data: [], total: X, ... }
+    return response.data;
   } catch (error) {
     console.error("Error al obtener los guardianes:", error);
     throw error;

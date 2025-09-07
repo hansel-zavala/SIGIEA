@@ -9,12 +9,13 @@ type StudentInput = {
   supportLevel?: string;
 };
 
-const getAllStudents = async (searchTerm?: string, page: number = 1, limit: number = 10) => {
+const getAllStudents = async (searchTerm?: string, page: number = 1, limit: number = 10, status: string = 'active') => {
   try {
     const params = {
         search: searchTerm,
         page,
         limit,
+        status,
     };
     const response = await api.get('/students', { params });
     return response.data; 
@@ -74,6 +75,17 @@ const assignTherapyPlan = async (studentId: number, planData: any) => {
     }
 };
 
+const reactivateStudent = async (id: number) => {
+  try {
+    const response = await api.patch(`/students/${id}/reactivate`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error al reactivar el estudiante con ID ${id}:`, error);
+    throw error;
+  }
+};
+
+
 
 export default {
   getAllStudents,
@@ -82,4 +94,5 @@ export default {
   getStudentById,
   updateStudent,
   assignTherapyPlan,
+  reactivateStudent,
 };

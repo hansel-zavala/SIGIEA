@@ -24,6 +24,10 @@ import EventsPage from './pages/EventsPage';
 import AddEventPage from './pages/AddEventPage';
 import EditEventPage from './pages/EditEventPage';
 import CategoriesPage from './pages/CategoriesPage';
+import ManageTemplatesPage from './pages/ManageTemplatesPage';
+import ReportsListPage from './pages/ReportsListPage';
+import FillReportPage from './pages/FillReportPage';
+import ViewReportPage from './pages/ViewReportPage';
 
 function App() {
   const { user } = useAuth();
@@ -53,6 +57,11 @@ function App() {
               <Route path="events/new" element={<AddEventPage />} />
               <Route path="events/edit/:id" element={<EditEventPage />} />
               <Route path="categories" element={<CategoriesPage />} />
+              <Route path="report-templates" element={<ManageTemplatesPage />} />
+              <Route path="reports" element={<ReportsListPage />} />
+              <Route path="reports/new/:studentId" element={<FillReportPage />} />
+              <Route path="reports/view/:reportId" element={<ViewReportPage />} />
+              <Route path="reports/edit/:reportId" element={<FillReportPage />} />
             </Route>
 
             <Route path="/students/:id/print" element={<PrintMatriculaPage />} />

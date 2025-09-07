@@ -1,7 +1,6 @@
 // frontend/src/services/sessionLogService.ts
 import api from './api';
 
-// Definimos la forma de los datos que enviaremos
 interface LogData {
   date: string;
   attendance: 'Presente' | 'Ausente' | 'Justificado';

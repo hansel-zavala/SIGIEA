@@ -4,16 +4,11 @@
 @tailwind utilities;
 
 /* --- ESTILOS PERSONALIZADOS PARA FULLCALENDAR --- */
-
-/* Contenedor principal para poder aplicar variables */
-/* Contenedor principal */
-/* Contenedor principal para poder aplicar variables */
 .custom-calendar-container {
-  --fc-border-color: #e5e7eb; /* Borde de las celdas */
-  --fc-today-bg-color: transparent; /* Fondo del día de hoy */
+  --fc-border-color: #e5e7eb;
+  --fc-today-bg-color: transparent;
 }
 
-/* Ocultar la cabecera por defecto, ya que creamos la nuestra */
 .custom-calendar-container .fc-header-toolbar {
   margin-bottom: 1.5rem !important;
   display: flex;

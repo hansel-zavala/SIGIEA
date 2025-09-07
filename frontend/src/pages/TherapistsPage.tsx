@@ -6,7 +6,7 @@ import therapistService from '../services/therapistService.js';
 import type { TherapistProfile } from '../services/therapistService.js';
 import Input from '../components/ui/Input';
 import Pagination from '../components/ui/Pagination';
-import { FaUserMd, FaPencilAlt, FaTrash } from 'react-icons/fa';
+import { FaUserMd, FaPencilAlt, FaTrash, FaPlus } from 'react-icons/fa';
 
 function TherapistsPage() {
   const [therapists, setTherapists] = useState<TherapistProfile[]>([]);
@@ -68,8 +68,9 @@ function TherapistsPage() {
             />
         </div>
         <Link to="/therapists/new">
-          <button className="py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200">
-            Añadir Terapeuta
+          <button className="min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">
+            <FaPlus className="text-xl" />
+              <span className="text-lg">Crear Nuevo Terapeuta</span>
           </button>
         </Link>
       </div>
@@ -83,7 +84,7 @@ function TherapistsPage() {
               <th className="px-5 py-3 font-medium text-gray-500 text-left">Acciones</th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="divide-y divide-gray-100 border-t border-gray-100">
             {therapists.map((therapist) => (
               <tr key={therapist.id}>
                 <td className="px-5 py-4">

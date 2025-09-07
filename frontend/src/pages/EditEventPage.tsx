@@ -85,8 +85,6 @@ function EditEventPage() {
         ...dataToUpdate
       } = formData;
 
-      // --- 4. CORRECCIÓN AL ENVIAR DATOS ---
-      // Convertimos categoryId (que es un string) a número. ¡Correcto!
       const finalData = {
         ...dataToUpdate,
         categoryId: dataToUpdate.categoryId
@@ -113,7 +111,6 @@ function EditEventPage() {
   ];
 
   return (
-    // ... El resto del componente (el JSX del formulario) no necesita cambios ...
     <div className="bg-white p-6 rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-6 text-gray-800">Editar Evento</h2>
       <form onSubmit={handleSubmit} className="space-y-6">

@@ -5,7 +5,8 @@ import {
     getAllStudents, 
     getStudentById, 
     updateStudent, 
-    deleteStudent 
+    deleteStudent,
+    reactivateStudent
 } from '../controllers/studentController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import therapySessionRoutes from './therapySessionRoutes.js';
@@ -17,8 +18,7 @@ router.get('/', protect, getAllStudents);
 router.get('/:id', protect, getStudentById);
 router.put('/:id', protect, updateStudent);
 router.delete('/:id', protect, deleteStudent);
-
-// Usamos las nuevas rutas de sesiones y eliminamos las de logs
+router.patch('/:id/reactivate', protect, reactivateStudent);
 router.use('/:studentId/sessions', therapySessionRoutes);
 
 export default router;

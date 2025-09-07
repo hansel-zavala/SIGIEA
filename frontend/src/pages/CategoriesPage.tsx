@@ -6,7 +6,6 @@ import Modal from 'react-modal';
 import Label from "../components/ui/Label";
 import Input from "../components/ui/Input";
 
-// Estilos para el modal (puedes moverlos a un archivo CSS si prefieres)
 const modalStyles = {
   content: {
     top: '50%', left: '50%', right: 'auto', bottom: 'auto',
@@ -23,7 +22,6 @@ function CategoriesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Estados para el modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [formData, setFormData] = useState({ name: '', color: '#4287f5' });

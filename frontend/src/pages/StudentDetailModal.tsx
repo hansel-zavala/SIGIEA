@@ -3,7 +3,6 @@ import Modal from 'react-modal';
 import Label from '../components/ui/Label';
 import Badge from '../components/ui/Badge';
 
-// Estilos para el modal
 const modalStyles = {
   content: {
     top: '50%', left: '50%', right: 'auto', bottom: 'auto',
@@ -17,7 +16,6 @@ const modalStyles = {
 
 Modal.setAppElement('#root');
 
-// Componente para mostrar un campo de información
 const InfoField = ({ label, value }: { label: string, value: string | undefined | null }) => (
   <div>
     <Label as="h3" className="text-sm font-semibold text-gray-500">{label}</Label>
@@ -25,7 +23,6 @@ const InfoField = ({ label, value }: { label: string, value: string | undefined 
   </div>
 );
 
-// Tipos para los datos del estudiante que esperamos recibir
 interface Student {
     fullName: string;
     dateOfBirth: string;
@@ -69,14 +66,13 @@ function StudentDetailModal({ isOpen, onRequestClose, student }: ModalProps) {
     { label: "Atención Vocacional", value: student.atencionVocacional },
     { label: "Inclusión Escolar", value: student.inclusionEscolar },
     { label: "Educación Física", value: student.educacionFisica },
-  ].filter(atencion => atencion.value); // Filtramos para mostrar solo los seleccionados
+  ].filter(atencion => atencion.value);
 
   return (
     <Modal isOpen={isOpen} onRequestClose={onRequestClose} style={modalStyles} contentLabel="Ficha Completa del Estudiante">
       <div className="space-y-6">
         <h2 className="text-2xl font-bold text-gray-800">Ficha Completa de: {student.fullName}</h2>
 
-        {/*  Datos Personales  */}
         <div className="border-t pt-4">
           <h3 className="text-lg font-semibold text-blue-700 mb-3">Información Personal</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -91,7 +87,6 @@ function StudentDetailModal({ isOpen, onRequestClose, student }: ModalProps) {
           </div>
         </div>
         
-        {/*  Datos Médicos  */}
         <div className="border-t pt-4">
           <h3 className="text-lg font-semibold text-blue-700 mb-3">Información Médica</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -107,7 +102,6 @@ function StudentDetailModal({ isOpen, onRequestClose, student }: ModalProps) {
           </div>
         </div>
 
-        {/*  Tipos de Atención  */}
         <div className="border-t pt-4">
           <h3 className="text-lg font-semibold text-blue-700 mb-3">Tipos de Atención Recibida</h3>
           <div className="flex flex-wrap gap-2">

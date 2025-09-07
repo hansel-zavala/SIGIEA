@@ -18,7 +18,6 @@ export interface Event {
   category?: Category | null;
 }
 
-// Función para obtener todos los eventos del backend
 const getAllEvents = async (): Promise<Event[]> => {
   try {
     const response = await api.get('/events');

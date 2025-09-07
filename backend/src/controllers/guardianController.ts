@@ -19,10 +19,17 @@ export const getAllGuardians = async (req: Request, res: Response) => {
       }),
     };
 
+    // --- MODIFICACIÓN PARA LA TABLA ENRIQUECIDA ---
     const [guardians, totalGuardians] = await prisma.$transaction([
       prisma.guardian.findMany({
         where: whereCondition,
-        include: { student: true },
+        include: { 
+          student: {
+            include: {
+              therapist: true
+            }
+          } 
+        },
         orderBy: { createdAt: 'desc' },
         skip: skip,
         take: limitNum,
@@ -30,17 +37,22 @@ export const getAllGuardians = async (req: Request, res: Response) => {
       prisma.guardian.count({ where: whereCondition }),
     ]);
 
-    const guardiansWithFullName = guardians.map(g => ({
+    const guardiansWithDetails = guardians.map(g => ({
         ...g,
         fullName: `${g.nombres} ${g.apellidos}`,
         student: {
             ...g.student,
-            fullName: `${g.student.nombres} ${g.student.apellidos}`
+            fullName: `${g.student.nombres} ${g.student.apellidos}`,
+            therapist: g.student.therapist ? {
+              ...g.student.therapist,
+              fullName: `${g.student.therapist.nombres} ${g.student.therapist.apellidos}`
+            } : null
         }
     }));
+    // --- FIN DE LA MODIFICACIÓN ---
 
     res.json({
-      data: guardiansWithFullName,
+      data: guardiansWithDetails,
       total: totalGuardians,
       page: pageNum,
       totalPages: Math.ceil(totalGuardians / limitNum),
@@ -55,12 +67,36 @@ export const getGuardianById = async (req: Request, res: Response) => {
     const { id } = req.params;
     const guardian = await prisma.guardian.findFirst({
       where: { id: parseInt(id), isActive: true },
+      // --- ESTA ES LA MODIFICACIÓN CLAVE PARA EL PERFIL ---
+      include: {
+        student: {
+          include: {
+            therapist: true, // Incluye el perfil del terapeuta
+            reports: {       // Incluye los reportes del estudiante
+              include: {
+                template: {  // De cada reporte, incluye la plantilla para obtener el título
+                  select: {
+                    id: true,
+                    title: true
+                  }
+                }
+              },
+              orderBy: {
+                reportDate: 'desc' // Ordena los reportes del más reciente al más antiguo
+              }
+            }
+          }
+        }
+      }
+      // --- FIN DE LA MODIFICACIÓN CLAVE ---
     });
+
     if (!guardian) {
       return res.status(404).json({ error: 'Guardián no encontrado.' });
     }
     res.json(guardian);
   } catch (error) {
+    console.error("Error al obtener el guardián:", error);
     res.status(500).json({ error: 'No se pudo obtener el guardián.' });
   }
 };

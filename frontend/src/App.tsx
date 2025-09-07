@@ -1,7 +1,6 @@
 // frontend/src/App.tsx
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
-
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
 import MatriculaPage from './pages/MatriculaPage';
@@ -16,6 +15,7 @@ import EditLeccionPage from './pages/EditLeccionPage';
 import LogSessionPage from './pages/LogSessionPage';
 import GuardiansPage from './pages/GuardiansPage';
 import EditGuardianPage from './pages/EditGuardianPage';
+import GuardianDetailPage from './pages/GuardianDetailPage'; // <-- IMPORTANTE: Importa la nueva página
 import TherapistsPage from './pages/TherapistsPage';
 import AddTherapistPage from './pages/AddTherapistPage';
 import EditTherapistPage from './pages/EditTherapistPage';
@@ -27,7 +27,6 @@ import CategoriesPage from './pages/CategoriesPage';
 
 function App() {
   const { user } = useAuth();
-
   return (
     <BrowserRouter>
       <Routes>
@@ -45,6 +44,10 @@ function App() {
               <Route path="lecciones/edit/:id" element={<EditLeccionPage />} />
               <Route path="guardians" element={<GuardiansPage />} />
               <Route path="guardians/edit/:id" element={<EditGuardianPage />} />
+              
+              {/* --- LÍNEA AÑADIDA --- */}
+              <Route path="guardians/profile/:id" element={<GuardianDetailPage />} />
+              
               <Route path="/students/:studentId/plans/:planId/log-session" element={<LogSessionPage />} />
               <Route path="therapists" element={<TherapistsPage />} />
               <Route path="therapists/new" element={<AddTherapistPage />} />

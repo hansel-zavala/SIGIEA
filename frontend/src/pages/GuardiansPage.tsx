@@ -2,24 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import guardianService from '../services/guardianService';
+import guardianService, { type GuardianListItem } from '../services/guardianService';
 import Input from '../components/ui/Input';
 import Pagination from '../components/ui/Pagination';
 import { FaUserCircle, FaPencilAlt, FaTrash } from 'react-icons/fa';
 
-interface Guardian {
-  id: number;
-  nombres: string;
-  apellidos: string;
-  fullName: string;
-  telefono: string;
-  student: {
-    fullName: string;
-  }
-}
-
 function GuardiansPage() {
-  const [guardians, setGuardians] = useState<Guardian[]>([]);
+  const [guardians, setGuardians] = useState<GuardianListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState("");
@@ -28,6 +17,8 @@ function GuardiansPage() {
   const [itemsPerPage] = useState(10);
 
   useEffect(() => {
+    // Limpiamos el error en cada nueva búsqueda para que no persista
+    setError('');
     const fetchGuardians = () => {
         setLoading(true);
         guardianService.getAllGuardians(searchTerm, currentPage, itemsPerPage)
@@ -80,33 +71,42 @@ function GuardiansPage() {
         </div>
       </div>
 
+      {/* --- INICIO DE LA CORRECCIÓN --- */}
+      {/* Mostramos el mensaje de error si existe */}
+      {error && <p className="text-red-500 bg-red-100 p-3 rounded-md my-4 text-center">{error}</p>}
+      {/* --- FIN DE LA CORRECCIÓN --- */}
+
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <table className="w-full text-sm">
           <thead className="border-b border-gray-100 bg-gray-50">
             <tr>
               <th className="px-5 py-3 font-medium text-gray-500 text-left">Nombre del Guardián</th>
+              <th className="px-5 py-3 font-medium text-gray-500 text-left">Parentesco</th>
+              <th className="px-5 py-3 font-medium text-gray-500 text-left">DNI</th>
               <th className="px-5 py-3 font-medium text-gray-500 text-left">Estudiante Asociado</th>
-              <th className="px-5 py-3 font-medium text-gray-500 text-left">Teléfono</th>
+              <th className="px-5 py-3 font-medium text-gray-500 text-left">Terapeuta</th>
               <th className="px-5 py-3 font-medium text-gray-500 text-left">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
-                <tr><td colSpan={4} className="text-center p-8 text-gray-500">Cargando...</td></tr>
+                <tr><td colSpan={6} className="text-center p-8 text-gray-500">Cargando...</td></tr>
             ) : guardians.length > 0 ? (
                 guardians.map((guardian) => (
                   <tr key={guardian.id}>
                     <td className="px-5 py-4">
-                      <div className="flex items-center gap-3">
+                      <Link to={`/guardians/profile/${guardian.id}`} className="flex items-center gap-3 group">
                         <div className="text-gray-400"><FaUserCircle size={40} /></div>
                         <div>
-                          <span className="block font-medium text-gray-800">{guardian.fullName}</span>
+                          <span className="block font-medium text-gray-800 group-hover:text-violet-600 group-hover:underline">{guardian.fullName}</span>
                           <span className="block text-gray-500 text-xs">ID: {guardian.id}</span>
                         </div>
-                      </div>
+                      </Link>
                     </td>
+                    <td className="px-5 py-4 text-gray-500">{guardian.parentesco.replace('_', ' ')}</td>
+                    <td className="px-5 py-4 text-gray-500">{guardian.numeroIdentidad}</td>
                     <td className="px-5 py-4 text-gray-500 font-medium">{guardian.student.fullName}</td>
-                    <td className="px-5 py-4 text-gray-500">{guardian.telefono}</td>
+                    <td className="px-5 py-4 text-gray-500">{guardian.student.therapist?.fullName || 'No asignado'}</td>
                     <td className="px-5 py-4">
                       <div className="flex gap-4">
                         <Link to={`/guardians/edit/${guardian.id}`} title="Editar Guardián">
@@ -120,7 +120,8 @@ function GuardiansPage() {
                   </tr>
                 ))
             ) : (
-                <tr><td colSpan={4} className="text-center p-8 text-gray-500">No se encontraron guardianes.</td></tr>
+                // Solo mostramos este mensaje si no hay un error de carga general
+                !error && <tr><td colSpan={6} className="text-center p-8 text-gray-500">No se encontraron guardianes.</td></tr>
             )}
           </tbody>
         </table>

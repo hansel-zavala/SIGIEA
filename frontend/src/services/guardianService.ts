@@ -1,45 +1,94 @@
 // frontend/src/services/guardianService.ts
+
 import api from './api';
 
-const getAllGuardians = async (searchTerm?: string, page: number = 1, limit: number = 10) => {
-  try {
-    const params = {
-        search: searchTerm,
-        page,
-        limit,
+// --- DEFINICIÓN DE TIPOS DE DATOS (INTERFACES) ---
+
+// Tipo base para un guardián
+export interface Guardian {
+  id: number;
+  nombres: string;
+  apellidos: string;
+  direccionEmergencia: string | null;
+  numeroIdentidad: string;
+  telefono: string;
+  parentesco: string;
+}
+
+// Interfaz para el nuevo perfil detallado del guardián
+export interface GuardianProfile extends Guardian {
+  student: {
+    id: number;
+    nombres: string;
+    apellidos: string;
+    dateOfBirth: string;
+    anoIngreso: string;
+    jornada: string;
+    therapist: {
+      nombres: string;
+      apellidos: string;
+    } | null;
+    reports: {
+      id: number;
+      reportDate: string;
+      template: {
+        id: number;
+        title: string;
+      }
+    }[];
+  };
+}
+
+// Interfaz para la lista enriquecida de guardianes que se mostrará en la tabla
+export interface GuardianListItem {
+    id: number;
+    fullName: string;
+    parentesco: string;
+    numeroIdentidad: string;
+    telefono: string;
+    student: {
+        id: number;
+        fullName: string;
+        therapist: {
+            fullName: string;
+        } | null;
     };
-    const response = await api.get('/guardians', { params });
-    return response.data; // Devolverá { data: [], total: X, ... }
-  } catch (error) {
-    console.error("Error al obtener los guardianes:", error);
-    throw error;
-  }
+}
+
+// Interfaz para la respuesta paginada de la API
+interface GuardiansResponse {
+  data: GuardianListItem[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+
+// --- FUNCIONES DEL SERVICIO ---
+
+const getAllGuardians = async (search: string, page: number, limit: number): Promise<GuardiansResponse> => {
+  const response = await api.get('/guardians', { params: { search, page, limit } });
+  return response.data;
 };
 
-const updateGuardian = async (id: number, guardianData: any) => {
-    try {
-        const response = await api.put(`/guardians/${id}`, guardianData);
-        return response.data;
-    } catch (error) { throw error; }
+const getGuardianById = async (id: number): Promise<GuardianProfile> => {
+  const response = await api.get(`/guardians/${id}`);
+  return response.data;
 };
 
-const deleteGuardian = async (id: number) => {
-    try {
-        const response = await api.delete(`/guardians/${id}`);
-        return response.data;
-    } catch (error) { throw error; }
+const updateGuardian = async (id: number, data: Partial<Guardian>): Promise<Guardian> => {
+  const response = await api.put(`/guardians/${id}`, data);
+  return response.data;
 };
 
-const getGuardianById = async (id: number) => {
-    try {
-        const response = await api.get(`/guardians/${id}`);
-        return response.data;
-    } catch (error) { throw error; }
+const deleteGuardian = async (id: number): Promise<{ message: string }> => {
+  const response = await api.delete(`/guardians/${id}`);
+  return response.data;
 };
 
 export default {
-  getAllGuardians,
-  updateGuardian,
-  deleteGuardian,
-  getGuardianById,
+    getAllGuardians,
+    getGuardianById,
+    updateGuardian,
+    deleteGuardian,
 };

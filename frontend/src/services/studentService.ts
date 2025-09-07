@@ -1,85 +1,70 @@
 // frontend/src/services/studentService.ts
+
 import api from './api';
 
-type StudentInput = {
-  nombres: string;
-  apellidos: string;
-  dateOfBirth: string;
-  diagnosis?: string;
-  supportLevel?: string;
-};
+// --- INTERFAZ AÑADIDA Y EXPORTADA ---
+// Aquí definimos la estructura de datos completa de un estudiante
+export interface Student {
+    id: number;
+    nombres: string;
+    apellidos: string;
+    fullName: string; // Este campo lo construye el backend
+    dateOfBirth: string;
+    therapist: {
+        id: number;
+        nombres: string;
+        apellidos: string;
+        fullName: string;
+    } | null;
+    reports: {
+        id: number;
+        reportDate: string;
+        template: {
+            id: number;
+            title: string;
+        };
+    }[];
+    // Agrega otros campos que puedas necesitar mostrar
+}
 
-const getAllStudents = async (searchTerm?: string, page: number = 1, limit: number = 10) => {
-  try {
-    const params = {
-        search: searchTerm,
-        page,
-        limit,
-    };
-    const response = await api.get('/students', { params });
-    return response.data; 
-  } catch (error) {
-    console.error("Error al obtener los estudiantes:", error);
-    throw error;
-  }
-};
+interface StudentsResponse {
+  data: Student[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
 
-const createStudent = async (studentData: any) => {
-  try {
-    const response = await api.post('/students', studentData);
+const createStudent = async (data: any): Promise<Student> => {
+    const response = await api.post('/students', data);
     return response.data;
-  } catch (error) {
-    console.error("Error al crear el estudiante:", error);
-    throw error;
-  }
 };
 
-const deleteStudent = async (id: number) => {
-  try {
-    const response = await api.delete(`/students/${id}`);
+const getAllStudents = async (search: string, page: number, limit: number): Promise<StudentsResponse> => {
+    const response = await api.get('/students', { params: { search, page, limit } });
     return response.data;
-  } catch (error) {
-    console.error(`Error al eliminar el estudiante con ID ${id}:`, error);
-    throw error;
-  }
 };
 
-const getStudentById = async (id: number) => {
-  try {
+// La función ahora devuelve el tipo 'Student' que definimos
+const getStudentById = async (id: number): Promise<Student> => {
     const response = await api.get(`/students/${id}`);
     return response.data;
-  } catch (error) {
-    console.error(`Error al obtener el estudiante con ID ${id}:`, error);
-    throw error;
-  }
 };
 
-const updateStudent = async (id: number, studentData: Partial<StudentInput>) => {
-    try {
-        const response = await api.put(`/students/${id}`, studentData);
-        return response.data;
-    } catch (error) {
-        console.error(`Error al actualizar el estudiante con ID ${id}:`, error);
-        throw error;
-    }
+const updateStudent = async (id: number, data: any): Promise<Student> => {
+    const response = await api.put(`/students/${id}`, data);
+    return response.data;
 };
 
-const assignTherapyPlan = async (studentId: number, planData: any) => {
-    try {
-        const response = await api.post(`/students/${studentId}/plans`, planData);
-        return response.data;
-    } catch (error) {
-        console.error(`Error al asignar el plan al estudiante con ID ${studentId}:`, error);
-        throw error;
-    }
+const deleteStudent = async (id: number): Promise<{ message: string }> => {
+    const response = await api.delete(`/students/${id}`);
+    return response.data;
 };
 
 
 export default {
-  getAllStudents,
-  createStudent,
-  deleteStudent,
-  getStudentById,
-  updateStudent,
-  assignTherapyPlan,
+    createStudent,
+    getAllStudents,
+    getStudentById,
+    updateStudent,
+    deleteStudent,
 };

@@ -2,40 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import guardianService, { type GuardianProfile } from '../services/guardianService';
-import reportService, { type ReportDetail, AcquisitionLevel } from '../services/reportService';
+import guardianService, { type GuardianProfile, type TherapySession } from '../services/guardianService';
 import Label from '../components/ui/Label';
 import Input from '../components/ui/Input';
-import Select from '../components/ui/Select';
-import { FaUserEdit, FaBaby, FaChartBar, FaFilePdf } from 'react-icons/fa';
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-
-// Mapeo de niveles de adquisición a una puntuación numérica para las gráficas
-const levelToScore: Record<AcquisitionLevel, number> = {
-    [AcquisitionLevel.CONSEGUIDO]: 5,
-    [AcquisitionLevel.CON_AYUDA_ORAL]: 4,
-    [AcquisitionLevel.CON_AYUDA_GESTUAL]: 3,
-    [AcquisitionLevel.CON_AYUDA_FISICA]: 2,
-    [AcquisitionLevel.NO_CONSEGUIDO]: 1,
-    [AcquisitionLevel.NO_TRABAJADO]: 0,
-};
-
-interface ChartData {
-    area: string;
-    score: number;
-}
+import Badge from '../components/ui/Badge'; // Importamos el componente Badge
+import { FaUserEdit, FaBaby, FaClipboardList } from 'react-icons/fa';
 
 function GuardianDetailPage() {
     const [guardian, setGuardian] = useState<GuardianProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    
-    const [selectedReportId, setSelectedReportId] = useState<string>('');
-    const [reportDetails, setReportDetails] = useState<ReportDetail | null>(null);
-    const [reportLoading, setReportLoading] = useState(false);
-    const [reportError, setReportError] = useState('');
-    const [chartData, setChartData] = useState<ChartData[]>([]);
-
     const { id } = useParams<{ id: string }>();
 
     useEffect(() => {
@@ -48,44 +24,35 @@ function GuardianDetailPage() {
         }
     }, [id]);
 
-    useEffect(() => {
-        if (selectedReportId) {
-            setReportLoading(true);
-            setReportDetails(null);
-            setReportError('');
-            reportService.getReportById(Number(selectedReportId))
-                .then(details => {
-                    setReportDetails(details);
-                    const dataForCharts = details.template.sections.map(section => {
-                        const sectionItems = section.items;
-                        const answeredItems = details.itemAnswers.filter(ans => 
-                            sectionItems.some(item => item.id === ans.itemId)
-                        );
-                        
-                        const totalScore = answeredItems.reduce((sum, ans) => sum + (levelToScore[ans.level] || 0), 0);
-                        const averageScore = answeredItems.length > 0 ? totalScore / answeredItems.length : 0;
-
-                        return {
-                            area: section.title,
-                            score: parseFloat(averageScore.toFixed(2)),
-                        };
-                    });
-                    setChartData(dataForCharts);
-                })
-                .catch(() => setReportError('No se pudieron cargar los detalles del informe.'))
-                .finally(() => setReportLoading(false));
+    // Función para dar formato legible a la fecha y hora
+    const formatDateTime = (dateTimeString: string) => {
+        const date = new Date(dateTimeString);
+        return date.toLocaleString('es-HN', {
+            dateStyle: 'long',
+            timeStyle: 'short',
+        });
+    };
+    
+    // Función para asignar un color al badge según el estado
+    const getStatusColor = (status: TherapySession['status']) => {
+        switch (status) {
+            case 'Completada': return 'success';
+            case 'Cancelada': return 'error';
+            case 'Ausente': return 'warning';
+            default: return 'info';
         }
-    }, [selectedReportId]);
+    };
 
     if (loading) return <div className="text-center p-8">Cargando perfil...</div>;
     if (error) return <p className="text-red-500 bg-red-100 p-4 rounded-md">{error}</p>;
     if (!guardian) return <p>No se encontró el guardián.</p>;
 
     const studentName = `${guardian.student.nombres} ${guardian.student.apellidos}`;
-    const reportOptions = guardian.student.reports.map(report => ({
-        value: String(report.id),
-        label: `${report.template.title} - ${new Date(report.reportDate).toLocaleDateString()}`
-    }));
+    
+    // Filtramos las sesiones para mostrar solo las que tienen un estado final
+    const loggedSessions = guardian.student.therapySessions.filter(
+        session => session.status !== 'Programada'
+    );
 
     return (
         <div className="space-y-8">
@@ -93,6 +60,7 @@ function GuardianDetailPage() {
                 Perfil de {guardian.nombres} y Progreso de {studentName}
             </h1>
 
+            {/* SECCIÓN 1: DATOS DEL GUARDIÁN (Sin cambios) */}
             <div className="bg-white p-6 rounded-lg shadow-md">
                 <h2 className="text-xl font-semibold text-gray-700 flex items-center gap-3 mb-4"><FaUserEdit /> Datos del Guardián</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -110,6 +78,7 @@ function GuardianDetailPage() {
                 </div>
             </div>
 
+            {/* SECCIÓN 2: DATOS DEL ESTUDIANTE (Sin cambios) */}
             <div className="bg-white p-6 rounded-lg shadow-md">
                 <h2 className="text-xl font-semibold text-gray-700 flex items-center gap-3 mb-4"><FaBaby /> Información del Estudiante Asociado</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-gray-600">
@@ -119,75 +88,40 @@ function GuardianDetailPage() {
                 </div>
             </div>
 
+            {/* SECCIÓN 3: HISTORIAL DE SESIONES DE TERAPIA */}
             <div className="bg-white p-6 rounded-lg shadow-md">
-                <h2 className="text-xl font-semibold text-gray-700 flex items-center gap-3 mb-4"><FaChartBar /> Historial y Portal de Progreso</h2>
-                <div>
-                    <Label>Seleccione un Periodo de Evaluación:</Label>
-                    <Select
-                        instanceId="report-select"
-                        options={reportOptions}
-                        value={reportOptions.find(o => o.value === selectedReportId) || null}
-                        onChange={(option) => setSelectedReportId(option?.value || '')}
-                        placeholder="-- Ver informes de progreso --"
-                        noOptionsMessage={() => "No hay informes para este estudiante"}
-                    />
+                <h2 className="text-xl font-semibold text-gray-700 flex items-center gap-3 mb-4"><FaClipboardList /> Historial de Sesiones de Terapia</h2>
+                <div className="space-y-4">
+                    {loggedSessions.length > 0 ? (
+                        loggedSessions.map(session => (
+                            <div key={session.id} className="border border-gray-200 rounded-lg p-4">
+                                <div className="flex justify-between items-start mb-2">
+                                    <div>
+                                        <p className="text-lg font-bold text-violet-700">Lección: {session.leccion.title}</p>
+                                        <p className="text-sm text-gray-500">Fecha: {formatDateTime(session.startTime)}</p>
+                                    </div>
+                                    <Badge color={getStatusColor(session.status)}>{session.status}</Badge>
+                                </div>
+                                <div className="space-y-2 text-gray-800 bg-gray-50 p-3 rounded-md">
+                                    <div>
+                                        <p className="font-semibold">Notas Clínicas:</p>
+                                        <p className="text-sm whitespace-pre-wrap">{session.notes || 'No se registraron notas.'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold">Observaciones de Comportamiento:</p>
+                                        <p className="text-sm whitespace-pre-wrap">{session.behavior || 'No se registraron observaciones.'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold">Progreso:</p>
+                                        <p className="text-sm whitespace-pre-wrap">{session.progress || 'No se registró progreso.'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-center text-gray-500 py-4">No hay sesiones registradas para este estudiante.</p>
+                    )}
                 </div>
-
-                {reportLoading && <div className="text-center p-8">Cargando informe...</div>}
-                {reportError && <p className="text-red-500 bg-red-100 p-4 rounded-md mt-4">{reportError}</p>}
-                
-                {reportDetails && !reportLoading && (
-                    <div className="mt-6 border-t pt-6 space-y-6">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            <div className="space-y-8">
-                                <div>
-                                    <h3 className="text-lg font-bold text-center mb-4">Radar de Desarrollo por Área</h3>
-                                    <ResponsiveContainer width="100%" height={300}>
-                                        <RadarChart cx="50%" cy="50%" outerRadius="80%" data={chartData}>
-                                            <PolarGrid />
-                                            <PolarAngleAxis dataKey="area" />
-                                            <PolarRadiusAxis angle={30} domain={[0, 5]} />
-                                            <Radar name="Puntuación" dataKey="score" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
-                                            <Tooltip />
-                                        </RadarChart>
-                                    </ResponsiveContainer>
-                                </div>
-                                <div>
-                                    <h3 className="text-lg font-bold text-center mb-4">Puntuación por Área</h3>
-                                    <ResponsiveContainer width="100%" height={300}>
-                                        <BarChart data={chartData} layout="vertical">
-                                            <XAxis type="number" domain={[0, 5]} />
-                                            <YAxis type="category" dataKey="area" width={120} />
-                                            <Tooltip />
-                                            <Legend />
-                                            <Bar dataKey="score" fill="#82ca9d" name="Puntuación Promedio" />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </div>
-                            <div className="space-y-4">
-                                <h3 className="text-lg font-bold">Detalles del Informe</h3>
-                                <div className="p-4 bg-gray-50 rounded-md">
-                                    <p><strong>Asistencia General:</strong> {reportDetails.attendance || 'No registrada'}</p>
-                                </div>
-                                <div className="p-4 bg-gray-50 rounded-md">
-                                    <p className="font-bold">Resumen del Terapeuta:</p>
-                                    <p className="mt-1 text-gray-700 whitespace-pre-wrap">{reportDetails.summary || 'No hay resumen.'}</p>
-                                </div>
-                                <div className="p-4 bg-gray-50 rounded-md">
-                                    <p className="font-bold">Recomendaciones:</p>
-                                    <p className="mt-1 text-gray-700 whitespace-pre-wrap">{reportDetails.recommendations || 'No hay recomendaciones.'}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="text-center mt-8">
-                             <button className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg flex items-center gap-2 mx-auto">
-                                <FaFilePdf /> Descargar Informe en PDF (Próximamente)
-                            </button>
-                        </div>
-                    </div>
-                )}
             </div>
         </div>
     );

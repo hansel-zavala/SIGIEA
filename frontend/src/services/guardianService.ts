@@ -15,6 +15,21 @@ export interface Guardian {
   parentesco: string;
 }
 
+// --- INICIO DE LA MODIFICACIÓN ---
+// Interfaz para una sesión de terapia individual
+export interface TherapySession {
+    id: number;
+    startTime: string;
+    status: 'Programada' | 'Completada' | 'Cancelada' | 'Ausente';
+    notes: string | null;
+    behavior: string | null;
+    progress: string | null;
+    leccion: {
+        id: number;
+        title: string;
+    };
+}
+
 // Interfaz para el nuevo perfil detallado del guardián
 export interface GuardianProfile extends Guardian {
   student: {
@@ -28,16 +43,10 @@ export interface GuardianProfile extends Guardian {
       nombres: string;
       apellidos: string;
     } | null;
-    reports: {
-      id: number;
-      reportDate: string;
-      template: {
-        id: number;
-        title: string;
-      }
-    }[];
+    therapySessions: TherapySession[]; // Se reemplaza 'reports' por 'therapySessions'
   };
 }
+// --- FIN DE LA MODIFICACIÓN ---
 
 // Interfaz para la lista enriquecida de guardianes que se mostrará en la tabla
 export interface GuardianListItem {

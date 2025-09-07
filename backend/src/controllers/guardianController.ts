@@ -19,7 +19,6 @@ export const getAllGuardians = async (req: Request, res: Response) => {
       }),
     };
 
-    // --- MODIFICACIÓN PARA LA TABLA ENRIQUECIDA ---
     const [guardians, totalGuardians] = await prisma.$transaction([
       prisma.guardian.findMany({
         where: whereCondition,
@@ -49,7 +48,6 @@ export const getAllGuardians = async (req: Request, res: Response) => {
             } : null
         }
     }));
-    // --- FIN DE LA MODIFICACIÓN ---
 
     res.json({
       data: guardiansWithDetails,
@@ -67,28 +65,23 @@ export const getGuardianById = async (req: Request, res: Response) => {
     const { id } = req.params;
     const guardian = await prisma.guardian.findFirst({
       where: { id: parseInt(id), isActive: true },
-      // --- ESTA ES LA MODIFICACIÓN CLAVE PARA EL PERFIL ---
+      // --- INICIO DE LA MODIFICACIÓN ---
       include: {
         student: {
           include: {
             therapist: true, // Incluye el perfil del terapeuta
-            reports: {       // Incluye los reportes del estudiante
+            therapySessions: { // Incluye las sesiones de terapia en lugar de los reportes
               include: {
-                template: {  // De cada reporte, incluye la plantilla para obtener el título
-                  select: {
-                    id: true,
-                    title: true
-                  }
-                }
+                leccion: true // De cada sesión, incluye la lección para obtener el título
               },
               orderBy: {
-                reportDate: 'desc' // Ordena los reportes del más reciente al más antiguo
+                startTime: 'desc' // Ordena las sesiones de la más reciente a la más antigua
               }
             }
           }
         }
       }
-      // --- FIN DE LA MODIFICACIÓN CLAVE ---
+      // --- FIN DE LA MODIFICACIÓN ---
     });
 
     if (!guardian) {

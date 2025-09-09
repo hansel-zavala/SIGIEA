@@ -2,17 +2,28 @@
 import api from './api.js';
 
 export interface TherapistProfile {
-  password: string;
+  password?: string; // Hacemos la contraseña opcional
   id: number;
   nombres: string;
   apellidos: string;
   fullName: string;
   email: string;
-  specialty: 'Psicologo' | 'Terapeuta' | 'Ambos';
+  specialty: string; // Cambiado de enum a string
   phone: string | null;
   identityNumber: string;
   gender: 'Masculino' | 'Femenino' | null;
   dateOfBirth: string | null;
+  lugarNacimiento?: string | null;
+  direccion?: string | null;
+  hireDate?: string | null;
+  identityCardUrl?: string | null;
+  resumeUrl?: string | null;
+  workDays?: string[];
+  workStartTime?: string;
+  workEndTime?: string;
+  lunchStartTime?: string;
+  lunchEndTime?: string;
+  // --- FIN DE NUEVOS CAMPOS ---
 }
 
 const createTherapist = async (therapistData: any) => {

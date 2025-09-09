@@ -432,12 +432,14 @@ function MatriculaPage() {
       <h2 className="text-3xl font-bold mb-6 text-gray-800">
         Ficha de Matrícula
       </h2>
-      {error && (<p className="text-red-500 bg-red-100 p-3 rounded-md mb-6">{error}</p>)}
-      <form onSubmit={handleSubmit} className="space-y-8 bg-white p-8 rounded-lg shadow-md" noValidate>
-        <div className="border-b border-gray-200 pb-6">
-          <h3 className="text-xl font-semibold text-gray-700">
+      <form onSubmit={handleSubmit} noValidate>
+        {error && (<p className="text-red-500 bg-red-100 p-3 rounded-md mb-6">{error}</p>)}
+
+        <fieldset className="border border-violet-300 p-4 rounded-md">
+          <legend className="text-xl font-semibold text-gray-700">
             Datos del Alumno
-          </h3>
+          </legend>
+
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <Label htmlFor="nombres">Nombres del Alumno(a)</Label>
@@ -447,7 +449,7 @@ function MatriculaPage() {
                 type="text"
                 value={studentData.nombres}
                 onChange={handleChange}
-                placeholder="Ingresa sus nombre"
+                placeholder="Ingresa sus nombres"
               />
               {formErrors.nombres && (<p className="text-red-500 text-sm mt-1"> {formErrors.nombres} </p>)}
             </div>
@@ -515,6 +517,7 @@ function MatriculaPage() {
               />
               {formErrors.direccion && (<p className="text-red-500 text-sm mt-1">{formErrors.direccion}</p>)}
             </div>
+            
             <div>
               <Label htmlFor="genero">Género</Label>
               <Select
@@ -682,12 +685,12 @@ function MatriculaPage() {
           </div>
             )}
           </div>
-        </div>
+        </fieldset>
 
-        <div className="border-b border-gray-200 pb-6">
-          <h3 className="text-xl font-semibold text-gray-700">
+        <fieldset className="border border-violet-300 p-4 rounded-md mt-6">
+          <legend className="text-xl font-semibold text-gray-700 px-2">
             Tipos de Atención
-          </h3>
+          </legend>
           <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
             {tiposDeAtencion.map((atencion) => (
               <div key={atencion.id} className="flex items-center">
@@ -704,12 +707,12 @@ function MatriculaPage() {
             ))}
           </div>
           {formErrors.tiposDeAtencion && (<p className="text-red-500 text-sm mt-1">{formErrors.tiposDeAtencion}</p>)}
-        </div>
+        </fieldset>
 
-        <div className="border-b border-gray-200 pb-6">
-          <h3 className="text-xl font-semibold text-gray-700">
+        <fieldset className="border border-violet-300 p-4 rounded-md mt-6">
+          <legend className="text-xl font-semibold text-gray-700 px-2">
             Información Médica
-          </h3>
+          </legend>
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <Label>Medicamentos</Label>
@@ -737,12 +740,12 @@ function MatriculaPage() {
               />
             </div>
           </div>
-        </div>
+        </fieldset>
 
-        <div className="border-b border-gray-200 pb-6">
-          <h3 className="text-xl font-semibold text-gray-700">
+        <fieldset className="border border-violet-300 p-4 rounded-md mt-6">
+          <legend className="text-xl font-semibold text-gray-700 px-2">
             Asignación de Terapeuta
-          </h3>
+          </legend>
           <div className="mt-4">
             <Label htmlFor="therapistId">Nombre del Terapeuta</Label>
             <Select
@@ -755,14 +758,14 @@ function MatriculaPage() {
             />
             {formErrors.therapistId && (<p className="text-red-500 text-sm mt-1">{formErrors.therapistId}</p>)}
           </div>
-        </div>
+        </fieldset>
 
-        <div className="b-6">
-          <h3 className="text-xl font-semibold text-gray-700">
+        <fieldset className="border border-violet-300 p-4 rounded-md mt-6">
+          <legend className="text-xl font-semibold text-gray-700">
             Información de los Padres o Tutores
-          </h3>
+          </legend>
           {guardians.map((guardian, index) => (
-            <div key={index} className="mt-4 p-4 border rounded-md relative">
+            <div key={index} className="mt-4 p-4 border border-violet-300 rounded-md relative">
               <h4 className="font-medium mb-2">Ficha {index + 1}</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -893,7 +896,9 @@ function MatriculaPage() {
               )}
             </div>
           ))}
-          <div className="pt-6 flex justify-end gap-6">
+          
+        </fieldset>
+        <div className="pt-6 flex justify-end gap-6">
             <button
               type="button"
               onClick={addGuardian}
@@ -909,7 +914,6 @@ function MatriculaPage() {
               Matricular Estudiante
             </button>
           </div>
-        </div>
       </form>
     </div>
   );

@@ -6,12 +6,21 @@ import bcrypt from 'bcrypt';
 
 export const createTherapist = async (req: Request, res: Response) => {
     try {
-        const { nombres, apellidos, email, password, identityNumber, ...profileData } = req.body;
+        // 1. Extraemos todos los nuevos campos del body de la petición
+        const { 
+            nombres, apellidos, email, password, identityNumber, 
+            lugarNacimiento, direccion, specialty, hireDate, 
+            identityCardUrl, resumeUrl, workDays, workStartTime, 
+            workEndTime, lunchStartTime, lunchEndTime, ...profileData 
+        } = req.body;
+        
         const fullName = `${nombres} ${apellidos}`;
 
-        if (!nombres || !apellidos || !email || !password || !identityNumber) {
-            return res.status(400).json({ error: 'Nombres, apellidos, email, contraseña e identidad son obligatorios.' });
+        // Validaciones básicas de campos obligatorios
+        if (!nombres || !apellidos || !email || !password || !identityNumber || !specialty) {
+            return res.status(400).json({ error: 'Los campos de nombres, apellidos, email, contraseña, identidad y cargo son obligatorios.' });
         }
+        
         const existingUser = await prisma.user.findUnique({ where: { email } });
         if (existingUser) {
             return res.status(409).json({ error: 'El correo electrónico ya está en uso.' });
@@ -23,32 +32,48 @@ export const createTherapist = async (req: Request, res: Response) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
         
+        // 2. Preparamos los datos para la base de datos
+        const dataForPrisma = {
+            ...profileData,
+            nombres,
+            apellidos,
+            email,
+            identityNumber,
+            lugarNacimiento,
+            direccion,
+            specialty,
+            hireDate: hireDate ? new Date(hireDate) : new Date(), // Usa la fecha proporcionada o la actual
+            identityCardUrl,
+            resumeUrl,
+            workDays: workDays || ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"], // Valor por defecto si no se envía
+            workStartTime,
+            workEndTime,
+            lunchStartTime,
+            lunchEndTime,
+            user: {
+                create: {
+                    email,
+                    password: hashedPassword,
+                    role: 'terapeuta', // O un rol más genérico si lo prefieres
+                    name: fullName,
+                }
+            }
+        };
+        
         if (profileData.dateOfBirth) {
-            profileData.dateOfBirth = new Date(profileData.dateOfBirth);
+            dataForPrisma.dateOfBirth = new Date(profileData.dateOfBirth);
         }
 
         const newTherapistProfile = await prisma.therapistProfile.create({
-            data: {
-                nombres,
-                apellidos,
-                email,
-                identityNumber,
-                ...profileData,
-                user: {
-                    create: {
-                        email,
-                        password: hashedPassword,
-                        role: 'terapeuta',
-                        name: fullName,
-                    }
-                }
-            },
+            data: dataForPrisma,
             include: { user: true }
         });
+
         res.status(201).json(newTherapistProfile);
+
     } catch (error) {
-        console.error("Error al crear terapeuta:", error);
-        res.status(500).json({ error: 'No se pudo crear el terapeuta.' });
+        console.error("Error al crear el perfil:", error);
+        res.status(500).json({ error: 'No se pudo crear el perfil del personal.' });
     }
 };
 
@@ -111,11 +136,15 @@ export const getTherapistById = async (req: Request, res: Response) => {
 export const updateTherapist = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
+        // 3. Extraemos todos los campos, incluyendo los nuevos, para la actualización
         const { email, nombres, apellidos, password, ...profileData } = req.body;
         const fullName = `${nombres} ${apellidos}`;
 
         if (profileData.dateOfBirth) {
             profileData.dateOfBirth = new Date(profileData.dateOfBirth);
+        }
+        if (profileData.hireDate) {
+            profileData.hireDate = new Date(profileData.hireDate);
         }
 
         const profile = await prisma.therapistProfile.findUnique({ where: { id: parseInt(id) }});
@@ -138,12 +167,13 @@ export const updateTherapist = async (req: Request, res: Response) => {
 
         const updatedTherapist = await prisma.therapistProfile.update({
             where: { id: parseInt(id) },
+            // Pasamos todos los datos del perfil directamente
             data: { email, nombres, apellidos, ...profileData }
         });
         res.json(updatedTherapist);
     } catch (error) {
-        console.error("Error al actualizar terapeuta:", error);
-        res.status(500).json({ error: 'No se pudo actualizar el terapeuta.' });
+        console.error("Error al actualizar el perfil:", error);
+        res.status(500).json({ error: 'No se pudo actualizar el perfil del personal.' });
     }
 };
 

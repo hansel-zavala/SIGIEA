@@ -68,6 +68,11 @@ function ScheduleCalendarPage() {
                 setLecciones(leccionesData);
                 setTherapists(therapistsResponse.data); 
                 setEvents(sessionsData.map(sessionToEvent));
+
+                if (studentData.therapistId) {
+                    setTherapistId(String(studentData.therapistId));
+                }
+
             } catch (error) {
                 console.error("Error al cargar los datos de la página:", error);
                 alert("No se pudieron cargar los datos necesarios para la página.");
@@ -92,13 +97,24 @@ function ScheduleCalendarPage() {
         if (!studentId || selectedDays.length === 0 || !leccionId || !therapistId) {
             alert("Por favor, completa todos los campos."); return;
         }
+
+        const assignedTherapist = therapists.find(t => t.id === parseInt(therapistId));
+        if (assignedTherapist && assignedTherapist.workDays) {
+            for (const day of selectedDays) {
+                if (!assignedTherapist.workDays.includes(day)) {
+                    alert(`Error: El terapeuta no trabaja los días ${day}. Por favor, selecciona un día válido.`);
+                    return;
+                }
+            }
+        }
+
         const sessionData = { studentId: parseInt(studentId), therapistId: parseInt(therapistId), leccionId: parseInt(leccionId), daysOfWeek: selectedDays, startTime, duration, weeksToSchedule };
         try {
             await therapySessionService.createRecurringSessions(sessionData);
             alert("¡Horario creado exitosamente!");
             const sessionsData = await therapySessionService.getSessionsByStudent(parseInt(studentId));
             setEvents(sessionsData.map(sessionToEvent));
-            setSelectedDays([]); setLeccionId(''); setTherapistId('');
+            setSelectedDays([]); setLeccionId('');
         } catch (error: any) {
             alert(`Error: ${error.response?.data?.error || "No se pudo crear el horario."}`);
         }
@@ -223,16 +239,44 @@ function ScheduleCalendarPage() {
                                 instanceId="therapist-select"
                                 inputId="therapistId"
                                 value={therapistOptions.find(o => o.value === therapistId) || null}
-                                onChange={(option) => handleSelectChange('therapistId', option?.value || null)}
+                                onChange={() => {}}
                                 required 
                                 options={therapistOptions} 
-                                placeholder="-- Asignar Terapeuta --" 
+                                placeholder="Selecciona un Terapeuta" 
+                                isDisabled={true} 
                             />
                         </div>
-                        <div><Label htmlFor="startTime">Hora de Inicio</Label><Input id="startTime" type="time" value={startTime} onChange={e => setStartTime(e.target.value)} required /></div>
+                        <div>
+                            <Label htmlFor="startTime">Hora de Inicio</Label>
+                            <Input 
+                                id="startTime" 
+                                type="time" 
+                                value={startTime} 
+                                onChange={e => setStartTime(e.target.value)} 
+                                required 
+                            />
+                        </div>
                         <div className="grid grid-cols-2 gap-4">
-                            <div><Label htmlFor="duration">Duración (min)</Label><Input id="duration" type="number" value={duration} onChange={e => setDuration(parseInt(e.target.value))} required /></div>
-                            <div><Label htmlFor="weeksToSchedule">Semanas</Label><Input id="weeksToSchedule" type="number" value={weeksToSchedule} onChange={e => setWeeksToSchedule(parseInt(e.target.value))} required /></div>
+                            <div>
+                                <Label htmlFor="duration">Duración (min)</Label>
+                                <Input 
+                                    id="duration" 
+                                    type="number" 
+                                    value={duration} 
+                                    onChange={e => setDuration(parseInt(e.target.value))} 
+                                    required 
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="weeksToSchedule">Semanas</Label>
+                                <Input 
+                                    id="weeksToSchedule" 
+                                    type="number" 
+                                    value={weeksToSchedule} 
+                                    onChange={e => setWeeksToSchedule(parseInt(e.target.value))} 
+                                    required 
+                                />
+                            </div>
                         </div>
                         <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Guardar Horario</button>
                     </form>
@@ -247,11 +291,24 @@ function ScheduleCalendarPage() {
                     <div className="space-y-4">
                         <h3 className="text-xl font-bold">Gestionar Sesión</h3>
                         <p><span className="font-semibold">Lección:</span> {selectedSession.leccion.title}</p>
+                        <p><span className="font-semibold">Fecha:</span> {new Date(selectedSession.startTime).toLocaleDateString()}</p>
                         <p><span className="font-semibold">Hora:</span> {new Date(selectedSession.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                        <div className="flex justify-end gap-3 pt-3">
-                            <button onClick={openEditModal} className="bg-yellow-500 text-white font-bold py-2 px-4 rounded hover:bg-yellow-600 flex items-center gap-2"><FaEdit /> Editar</button>
-                            <button onClick={handleDeleteSession} className="bg-red-600 text-white font-bold py-2 px-4 rounded hover:bg-red-700 flex items-center gap-2"><FaTrash /> Eliminar</button>
-                            <button onClick={closeManageModal} className="bg-gray-300 py-2 px-4 rounded hover:bg-gray-400">Cancelar</button>
+                        <div className="flex justify-center gap-3 pt-3">
+                            <button 
+                                onClick={openEditModal} 
+                                className="bg-yellow-500 text-white font-bold py-2 px-4 rounded hover:bg-yellow-600 flex items-center gap-2">
+                                    <FaEdit /> Editar
+                            </button>
+                            <button 
+                                onClick={handleDeleteSession} 
+                                className="bg-red-600 text-white font-bold py-2 px-4 rounded hover:bg-red-700 flex items-center gap-2">
+                                    <FaTrash /> Eliminar
+                            </button>
+                            <button 
+                                onClick={closeManageModal} 
+                                className="bg-gray-600 text-white font-bold py-2 px-4 rounded hover:bg-gray-700 flex items-center gap-2">
+                                    Cancelar
+                            </button>
                         </div>
                     </div>
                 )}
@@ -270,11 +327,34 @@ function ScheduleCalendarPage() {
                             options={leccionOptions}
                         />
                     </div>
-                    <div><Label htmlFor="edit-startTime">Nueva Fecha y Hora</Label><Input id="edit-startTime" type="datetime-local" value={editFormData.startTime} onChange={e => setEditFormData({...editFormData, startTime: e.target.value})} /></div>
-                    <div><Label htmlFor="edit-duration">Duración (minutos)</Label><Input id="edit-duration" type="number" value={editFormData.duration} onChange={e => setEditFormData({...editFormData, duration: parseInt(e.target.value)})} /></div>
+                    <div>
+                        <Label htmlFor="edit-startTime">Nueva Fecha y Hora</Label>
+                        <Input 
+                            id="edit-startTime" 
+                            type="datetime-local" 
+                            value={editFormData.startTime} 
+                            onChange={e => setEditFormData({...editFormData, startTime: e.target.value})} />
+                    </div>
+                    <div>
+                        <Label htmlFor="edit-duration">Duración (minutos)</Label>
+                        <Input 
+                            id="edit-duration" 
+                            type="number" 
+                            value={editFormData.duration} 
+                            onChange={e => setEditFormData({...editFormData, duration: parseInt(e.target.value)})} />
+                    </div>
                     <div className="flex justify-end gap-3 pt-3">
-                        <button type="submit" className="bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700">Guardar Cambios</button>
-                        <button type="button" onClick={closeEditModal} className="bg-gray-300 py-2 px-4 rounded hover:bg-gray-400">Cancelar</button>
+                        <button 
+                            type="submit" 
+                            className="bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700">
+                                Guardar Cambios
+                        </button>
+                        <button 
+                            type="button" 
+                            onClick={closeEditModal} 
+                            className="bg-gray-300 py-2 px-4 rounded hover:bg-gray-400">
+                                Cancelar
+                        </button>
                     </div>
                 </form>
             </Modal>

@@ -1,7 +1,6 @@
 // backend/src/controllers/studentController.ts
-
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client'; // Asegúrate de importar Prisma
 
 const prisma = new PrismaClient();
 
@@ -9,6 +8,7 @@ export const createStudent = async (req: Request, res: Response) => {
   try {
     const { guardians, medicamentos, alergias, ...studentData } = req.body;
 
+    // ... (todas tus validaciones se mantienen igual) ...
     if (!studentData.nombres || !studentData.apellidos || !studentData.dateOfBirth) {
         return res.status(400).json({ error: 'Nombres, apellidos y fecha de nacimiento son obligatorios.' });
     }
@@ -44,9 +44,26 @@ export const createStudent = async (req: Request, res: Response) => {
     });
 
     res.status(201).json(newStudent);
+
+  // --- INICIO DE LA CORRECCIÓN ---
   } catch (error) {
-    console.error("Error al crear la matrícula:", error);
-    res.status(500).json({ error: 'No se pudo procesar la matrícula.' });
+    console.error("Error detallado al crear la matrícula:", error); // Esto imprimirá el error completo en tu terminal
+
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      // Errores conocidos de Prisma (ej: violación de constraint)
+      if (error.code === 'P2002') {
+        // 'meta' suele tener el campo que causó el error
+        const fields = (error.meta as { target?: string[] })?.target?.join(', ');
+        return res.status(409).json({ error: `Ya existe un registro con estos datos únicos: ${fields}` });
+      }
+      if (error.code === 'P2003') {
+        const field = (error.meta as { field_name?: string })?.field_name;
+        return res.status(400).json({ error: `Error de clave foránea en el campo: ${field}. El ID proporcionado no existe.` });
+      }
+    }
+    // Si no es un error conocido de Prisma, enviamos un error genérico
+    res.status(500).json({ error: 'No se pudo procesar la matrícula. Revisa la consola del servidor para más detalles.' });
+  // --- FIN DE LA CORRECCIÓN ---
   }
 };
 

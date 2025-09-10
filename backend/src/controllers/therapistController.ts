@@ -6,7 +6,6 @@ import bcrypt from 'bcrypt';
 
 export const createTherapist = async (req: Request, res: Response) => {
     try {
-        // 1. Extraemos todos los nuevos campos del body de la petición
         const { 
             nombres, apellidos, email, password, identityNumber, 
             lugarNacimiento, direccion, specialty, hireDate, 
@@ -16,7 +15,6 @@ export const createTherapist = async (req: Request, res: Response) => {
         
         const fullName = `${nombres} ${apellidos}`;
 
-        // Validaciones básicas de campos obligatorios
         if (!nombres || !apellidos || !email || !password || !identityNumber || !specialty) {
             return res.status(400).json({ error: 'Los campos de nombres, apellidos, email, contraseña, identidad y cargo son obligatorios.' });
         }
@@ -32,7 +30,6 @@ export const createTherapist = async (req: Request, res: Response) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
         
-        // 2. Preparamos los datos para la base de datos
         const dataForPrisma = {
             ...profileData,
             nombres,
@@ -42,11 +39,10 @@ export const createTherapist = async (req: Request, res: Response) => {
             lugarNacimiento,
             direccion,
             specialty,
-            hireDate: hireDate ? new Date(hireDate) : new Date(), // Usa la fecha proporcionada o la actual
+            hireDate: hireDate ? new Date(hireDate) : new Date(),
             identityCardUrl,
             resumeUrl,
-            workDays: workDays || ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"], // Valor por defecto si no se envía
-            workStartTime,
+            workDays: workDays || ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"],
             workEndTime,
             lunchStartTime,
             lunchEndTime,
@@ -54,7 +50,7 @@ export const createTherapist = async (req: Request, res: Response) => {
                 create: {
                     email,
                     password: hashedPassword,
-                    role: 'terapeuta', // O un rol más genérico si lo prefieres
+                    role: 'terapeuta',
                     name: fullName,
                 }
             }
@@ -124,10 +120,25 @@ export const getTherapistById = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const therapist = await prisma.therapistProfile.findFirst({
-            where: { id: parseInt(id), isActive: true }
+            where: { id: parseInt(id), isActive: true },
+            include: {
+                assignedStudents: {
+                    where: { isActive: true },
+                },
+            },
         });
         if (!therapist) return res.status(404).json({ error: 'Terapeuta no encontrado.' });
-        res.json(therapist);
+        
+        const therapistWithDetails = {
+            ...therapist,
+            fullName: `${therapist.nombres} ${therapist.apellidos}`,
+            assignedStudents: therapist.assignedStudents.map(student => ({
+                ...student,
+                fullName: `${student.nombres} ${student.apellidos}`,
+            })),
+        };
+
+        res.json(therapistWithDetails);
     } catch (error) {
         res.status(500).json({ error: 'No se pudo obtener el terapeuta.' });
     }
@@ -136,7 +147,6 @@ export const getTherapistById = async (req: Request, res: Response) => {
 export const updateTherapist = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        // 3. Extraemos todos los campos, incluyendo los nuevos, para la actualización
         const { email, nombres, apellidos, password, ...profileData } = req.body;
         const fullName = `${nombres} ${apellidos}`;
 
@@ -167,7 +177,6 @@ export const updateTherapist = async (req: Request, res: Response) => {
 
         const updatedTherapist = await prisma.therapistProfile.update({
             where: { id: parseInt(id) },
-            // Pasamos todos los datos del perfil directamente
             data: { email, nombres, apellidos, ...profileData }
         });
         res.json(updatedTherapist);

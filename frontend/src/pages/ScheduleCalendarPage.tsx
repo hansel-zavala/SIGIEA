@@ -85,7 +85,7 @@ function ScheduleCalendarPage() {
 
     const handleSelectChange = (name: string, value: string | null) => {
         if (name === 'leccionId') setLeccionId(value || '');
-        if (name === 'therapistId') setTherapistId(value || '');
+        //if (name === 'therapistId') setTherapistId(value || '');
     };
 
     const handleEditFormSelectChange = (name: string, value: string | null) => {
@@ -230,7 +230,7 @@ function ScheduleCalendarPage() {
                                 onChange={(option) => handleSelectChange('leccionId', option?.value || null)}
                                 required 
                                 options={leccionOptions} 
-                                placeholder="-- Selecciona Lección --" 
+                                placeholder="Selecciona una Lección" 
                             />
                         </div>
                         <div>

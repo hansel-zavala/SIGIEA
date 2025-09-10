@@ -88,13 +88,19 @@ function TherapistsPage() {
             {therapists.map((therapist) => (
               <tr key={therapist.id}>
                 <td className="px-5 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="text-gray-400"><FaUserMd size={40} /></div>
+                  {/* --- INICIO DE LA CORRECCIÓN --- */}
+                  <Link to={`/therapists/${therapist.id}`} className="flex items-center gap-3 group">
+                    <div className="text-gray-400 group-hover:text-violet-500">
+                        <FaUserMd size={40} />
+                    </div>
                     <div>
-                      <span className="block font-medium text-gray-800">{therapist.fullName}</span>
+                      <span className="block font-medium text-gray-800 group-hover:underline group-hover:text-violet-600">
+                        {therapist.fullName}
+                      </span>
                       <span className="block text-gray-500 text-xs">ID de Perfil: {therapist.id}</span>
                     </div>
-                  </div>
+                  </Link>
+                  {/* --- FIN DE LA CORRECCIÓN --- */}
                 </td>
                 <td className="px-5 py-4 text-gray-500">{therapist.email}</td>
                 <td className="px-5 py-4 text-gray-500">{therapist.specialty || 'N/A'}</td>

@@ -19,6 +19,7 @@ import EditGuardianPage from './pages/EditGuardianPage';
 import TherapistsPage from './pages/TherapistsPage';
 import AddTherapistPage from './pages/AddTherapistPage';
 import EditTherapistPage from './pages/EditTherapistPage';
+import TherapistProfilePage from './pages/TherapistProfilePage';
 import PrintMatriculaPage from './pages/PrintMatriculaPage';
 import EventsPage from './pages/EventsPage';
 import AddEventPage from './pages/AddEventPage';
@@ -28,6 +29,7 @@ import ManageTemplatesPage from './pages/ManageTemplatesPage';
 import ReportsListPage from './pages/ReportsListPage';
 import FillReportPage from './pages/FillReportPage';
 import ViewReportPage from './pages/ViewReportPage';
+import GuardianProfilePage from './pages/GuardianProfilePage';
 
 function App() {
   const { user } = useAuth();
@@ -49,10 +51,12 @@ function App() {
               <Route path="lecciones/edit/:id" element={<EditLeccionPage />} />
               <Route path="guardians" element={<GuardiansPage />} />
               <Route path="guardians/edit/:id" element={<EditGuardianPage />} />
+              <Route path="guardians/:id" element={<GuardianProfilePage />} />
               <Route path="/students/:studentId/plans/:planId/log-session" element={<LogSessionPage />} />
               <Route path="therapists" element={<TherapistsPage />} />
               <Route path="therapists/new" element={<AddTherapistPage />} />
               <Route path="therapists/edit/:id" element={<EditTherapistPage />} />
+              <Route path="therapists/:id" element={<TherapistProfilePage />} />
               <Route path="events" element={<EventsPage />} />
               <Route path="events/new" element={<AddEventPage />} />
               <Route path="events/edit/:id" element={<EditEventPage />} />

@@ -13,6 +13,8 @@ interface Guardian {
   apellidos: string;
   fullName: string;
   telefono: string;
+  numeroIdentidad: string;
+  parentesco: string;
   student: {
     fullName: string;
   }
@@ -66,11 +68,11 @@ function GuardiansPage() {
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
       <div className="flex justify-between items-center mb-6 gap-4">
-        <h2 className="text-2xl font-bold text-gray-800">Gestión de Guardianes</h2>
-        <div className="flex-grow max-w-md">
+        <h2 className="text-2xl font-bold text-gray-800">Gestión de los Padres</h2>
+        <div className="flex-grow">
             <Input
                 type="text"
-                placeholder="Buscar por nombre o apellido..."
+                placeholder="Buscar por nombre, identidad o estudiante..."
                 value={searchTerm}
                 onChange={(e) => {
                     setSearchTerm(e.target.value);
@@ -85,6 +87,8 @@ function GuardiansPage() {
           <thead className="border-b border-gray-100 bg-gray-50">
             <tr>
               <th className="px-5 py-3 font-medium text-gray-500 text-left">Nombre del Guardián</th>
+              <th className="px-5 py-3 font-medium text-gray-500 text-left">No. de Identidad</th>
+              <th className="px-5 py-3 font-medium text-gray-500 text-left">Parentesco</th>
               <th className="px-5 py-3 font-medium text-gray-500 text-left">Estudiante Asociado</th>
               <th className="px-5 py-3 font-medium text-gray-500 text-left">Teléfono</th>
               <th className="px-5 py-3 font-medium text-gray-500 text-left">Acciones</th>
@@ -97,15 +101,21 @@ function GuardiansPage() {
                 guardians.map((guardian) => (
                   <tr key={guardian.id}>
                     <td className="px-5 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="text-gray-400"><FaUserCircle size={40} /></div>
+                      <Link to={`/guardians/${guardian.id}`} className="flex items-center gap-3 group">
+                        <div className="text-gray-400 group-hover:text-violet-500">
+                          <FaUserCircle size={40} />
+                        </div>
                         <div>
-                          <span className="block font-medium text-gray-800">{guardian.fullName}</span>
+                          <span className="block font-medium text-gray-800 group-hover:underline group-hover:text-violet-600">
+                            {guardian.fullName}
+                          </span>
                           <span className="block text-gray-500 text-xs">ID: {guardian.id}</span>
                         </div>
-                      </div>
+                      </Link>
                     </td>
-                    <td className="px-5 py-4 text-gray-500 font-medium">{guardian.student.fullName}</td>
+                    <td className="px-5 py-4 text-gray-500">{guardian.numeroIdentidad}</td>
+                    <td className="px-5 py-4 text-gray-500">{guardian.parentesco.replace('_', ' ')}</td>
+                    <td className="px-5 py-4 text-gray-500">{guardian.student.fullName}</td>
                     <td className="px-5 py-4 text-gray-500">{guardian.telefono}</td>
                     <td className="px-5 py-4">
                       <div className="flex gap-4">

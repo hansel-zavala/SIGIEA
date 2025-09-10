@@ -11,21 +11,17 @@ export const createRecurringSessions = async (req: Request, res: Response) => {
             return res.status(404).json({ error: 'Terapeuta no encontrado.' });
         }
 
-        // ✅ INICIO DE LA LÓGICA CORREGIDA
         const sessionsToCreate = [];
         const today = new Date();
         const [hour, minute] = startTime.split(':').map(Number);
         const dayMap = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
-        // 1. Iterar por cada día de la semana seleccionado (ej: "Viernes", "Miércoles")
         for (const dayName of daysOfWeek) {
             const dayNumber = dayMap.indexOf(dayName);
 
-            // 2. Encontrar la primera fecha que coincida con ese día de la semana, empezando desde hoy
             let firstDate = new Date(today);
             firstDate.setDate(firstDate.getDate() + (dayNumber - firstDate.getDay() + 7) % 7);
 
-            // 3. Generar las N sesiones futuras para ESE día de la semana
             for (let week = 0; week < weeksToSchedule; week++) {
                 const sessionDate = new Date(firstDate);
                 sessionDate.setDate(sessionDate.getDate() + (week * 7));
@@ -33,7 +29,6 @@ export const createRecurringSessions = async (req: Request, res: Response) => {
 
                 const endTime = new Date(sessionDate.getTime() + duration * 60000);
 
-                // Validaciones de horario (sin cambios)
                 if (startTime < therapist.workStartTime || startTime > therapist.workEndTime) {
                      return res.status(400).json({ error: `El horario ${startTime} está fuera del horario laboral del terapeuta.` });
                 }
@@ -51,9 +46,7 @@ export const createRecurringSessions = async (req: Request, res: Response) => {
                 });
             }
         }
-        // ✅ FIN DE LA LÓGICA CORREGIDA
 
-        // 4. La verificación de conflictos ahora funciona correctamente porque las fechas son precisas
         const conflictingSessions = await prisma.therapySession.findMany({
             where: {
                 therapistId: therapistId,
@@ -82,8 +75,6 @@ export const createRecurringSessions = async (req: Request, res: Response) => {
     }
 };
 
-// --- El resto de las funciones (getSessionsByStudent, updateSession, deleteSession) no cambian ---
-
 export const getSessionsByStudent = async (req: Request, res: Response) => {
     try {
         const { studentId } = req.params;
@@ -104,8 +95,6 @@ export const updateSession = async (req: Request, res: Response) => {
 
         const dataToUpdate: any = {};
 
-        // --- Lógica para REAGENDAR ---
-        // Esta condición ahora es más estricta y solo se activará si se envían datos de reagendamiento
         if (startTime && typeof duration === 'number') {
             const currentSession = await prisma.therapySession.findUnique({ where: { id: parseInt(sessionId) } });
             if (!currentSession) { return res.status(404).json({ error: 'Sesión no encontrada.' }); }
@@ -133,7 +122,6 @@ export const updateSession = async (req: Request, res: Response) => {
             dataToUpdate.duration = duration;
         }
 
-        // --- Lógica para REGISTRAR la sesión ---
         if (leccionId) dataToUpdate.leccionId = parseInt(leccionId);
         if (status) dataToUpdate.status = status;
         if (notes !== undefined) dataToUpdate.notes = notes;

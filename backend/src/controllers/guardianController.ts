@@ -9,12 +9,26 @@ export const getAllGuardians = async (req: Request, res: Response) => {
     const limitNum = parseInt(limit as string, 10);
     const skip = (pageNum - 1) * limitNum;
 
+    const searchTerms = (search as string)?.split(' ').filter(term => term);
+
     const whereCondition = {
       isActive: true,
       ...(search && {
         OR: [
           { nombres: { contains: search as string } },
           { apellidos: { contains: search as string } },
+          { numeroIdentidad: { contains: search as string } },
+          
+          {
+            student: {
+              AND: searchTerms.map(term => ({
+                OR: [
+                  { nombres: { contains: term } },
+                  { apellidos: { contains: term } },
+                ],
+              })),
+            },
+          },
         ],
       }),
     };
@@ -55,13 +69,27 @@ export const getGuardianById = async (req: Request, res: Response) => {
     const { id } = req.params;
     const guardian = await prisma.guardian.findFirst({
       where: { id: parseInt(id), isActive: true },
+      include: {
+        student: true,
+      },
     });
+
     if (!guardian) {
-      return res.status(404).json({ error: 'Guardián no encontrado.' });
+      return res.status(404).json({ error: "Guardián no encontrado." });
     }
-    res.json(guardian);
+
+    const guardianWithDetails = {
+      ...guardian,
+      fullName: `${guardian.nombres} ${guardian.apellidos}`,
+      student: {
+        ...guardian.student,
+        fullName: `${guardian.student.nombres} ${guardian.student.apellidos}`,
+      },
+    };
+
+    res.json(guardianWithDetails);
   } catch (error) {
-    res.status(500).json({ error: 'No se pudo obtener el guardián.' });
+    res.status(500).json({ error: "No se pudo obtener el guardián." });
   }
 };
 

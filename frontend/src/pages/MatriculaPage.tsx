@@ -545,7 +545,7 @@ function MatriculaPage() {
             </div>
 
             <div>
-              <Label htmlFor="zona">Zona</Label>
+              <Label htmlFor="zona">Zona de Residencia</Label>
               <Select
                 instanceId="zona-select"
                 inputId="zona"
@@ -572,7 +572,7 @@ function MatriculaPage() {
 
             <div>
               <Label htmlFor="institucionProcedencia">
-                Institución de Procedencia
+                Nombre del instituto u otro centro donde está incluido
               </Label>
               <Input
                 id="institucionProcedencia"
@@ -587,7 +587,7 @@ function MatriculaPage() {
 
             <div>
               <Label htmlFor="institutoIncluido">
-                Nombre del instituto u otro centro donde está incluido
+                Referencia Medica
               </Label>
               <Input
                 id="institutoIncluido"
@@ -595,6 +595,7 @@ function MatriculaPage() {
                 type="text"
                 value={studentData.institutoIncluido}
                 onChange={handleChange}
+                placeholder="Ingresa la referencia médica"
               />
             </div>
 

@@ -1,14 +1,20 @@
 // frontend/src/services/therapistService.ts
 import api from './api.js';
 
+interface StudentForProfile {
+  id: number;
+  fullName: string;
+  jornada: string;
+}
+
 export interface TherapistProfile {
-  password?: string; // Hacemos la contraseña opcional
+  password?: string;
   id: number;
   nombres: string;
   apellidos: string;
   fullName: string;
   email: string;
-  specialty: string; // Cambiado de enum a string
+  specialty: string;
   phone: string | null;
   identityNumber: string;
   gender: 'Masculino' | 'Femenino' | null;
@@ -23,7 +29,7 @@ export interface TherapistProfile {
   workEndTime?: string;
   lunchStartTime?: string;
   lunchEndTime?: string;
-  // --- FIN DE NUEVOS CAMPOS ---
+  assignedStudents?: StudentForProfile[]; 
 }
 
 const createTherapist = async (therapistData: any) => {

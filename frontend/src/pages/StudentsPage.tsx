@@ -145,17 +145,17 @@ function StudentsPage() {
     students.map((student) => (
       <tr key={student.id}>
         <td className="px-5 py-4">
-          <div className="flex items-center gap-3">
-            <Link to={`/students/${student.id}`} className="block font-medium text-violet-800 hover:underline">
-              <div className="text-gray-400"><FaUserCircle size={40} /></div>
-            </Link>
+          <Link to={`/guardians/${student.id}`} className="flex items-center gap-3 group">
+            <div className="text-gray-400 group-hover:text-violet-500">
+              <FaUserCircle size={40} />
+            </div>
             <div>
-              <Link to={`/students/${student.id}`} className="block font-medium text-violet-800 hover:underline">
+              <span className="block font-medium text-gray-800 group-hover:underline group-hover:text-violet-600">
                 {student.fullName}
-              </Link>
+              </span>
               <span className="block text-gray-500 text-xs">ID: {student.id}</span>
             </div>
-          </div>
+          </Link>
         </td>
         <td className="px-5 py-4 text-gray-500">{student.age} años</td>
         <td className="px-5 py-4 text-gray-500">{student.therapist?.fullName || "No asignado"}</td>

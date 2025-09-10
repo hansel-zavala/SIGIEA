@@ -62,8 +62,15 @@ function TherapistsPage() {
                 placeholder="Buscar por nombre..."
                 value={searchTerm}
                 onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setCurrentPage(1);
+                    const value = e.target.value;
+                    // --- INICIO DE LA CORRECCIÓN ---
+                    // Solo permite letras, espacios y caracteres con tilde
+                    const validCharsRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/;
+                    if (validCharsRegex.test(value)) {
+                      setSearchTerm(value);
+                      setCurrentPage(1);
+                    }
+                    // --- FIN DE LA CORRECCIÓN ---
                 }}
             />
         </div>

@@ -47,7 +47,12 @@ export const getReportById = async (req: Request, res: Response) => {
         const report = await prisma.report.findUnique({
             where: { id: parseInt(reportId) },
             include: {
-                student: { include: { guardians: true } },
+                student: {
+                    include: {
+                        guardians: true,
+                        therapist: true, // <-- CORRECCIÓN AQUÍ: Incluir al terapeuta del estudiante
+                    }
+                },
                 therapist: { select: { name: true } },
                 template: {
                     include: {
@@ -62,6 +67,7 @@ export const getReportById = async (req: Request, res: Response) => {
                     }
                 },
                 itemAnswers: true,
+                textAnswers: true,
             }
         });
         if (!report) {
@@ -76,37 +82,29 @@ export const getReportById = async (req: Request, res: Response) => {
 export const submitReportAnswers = async (req: Request, res: Response) => {
     try {
         const { reportId } = req.params;
-        const { answers, ...reportData } = req.body;
+        const { itemAnswers, textAnswers } = req.body;
 
-        // Inicia una transacción para asegurar que todo se guarde correctamente
         const transaction = await prisma.$transaction(async (tx) => {
-            // 1. Actualiza los campos de texto del reporte principal
-            await tx.report.update({
-                where: { id: parseInt(reportId) },
-                data: {
-                    summary: reportData.summary,
-                    therapyActivities: reportData.therapyActivities,
-                    conclusions: reportData.conclusions,
-                    recommendations: reportData.recommendations,
-                    attendance: reportData.attendance,
-                }
-            });
+            if (itemAnswers && itemAnswers.length > 0) {
+                await Promise.all(itemAnswers.map((answer: any) =>
+                    tx.reportItemAnswer.upsert({
+                        where: { reportId_itemId: { reportId: parseInt(reportId), itemId: answer.itemId } },
+                        update: { level: answer.level },
+                        create: { reportId: parseInt(reportId), itemId: answer.itemId, level: answer.level },
+                    })
+                ));
+            }
 
-            // 2. Borra las respuestas anteriores para este reporte (si existen)
-            await tx.reportItemAnswer.deleteMany({
-                where: { reportId: parseInt(reportId) }
-            });
-
-            // 3. Inserta las nuevas respuestas
-            await tx.reportItemAnswer.createMany({
-                data: answers.map((a: any) => ({
-                    reportId: parseInt(reportId),
-                    itemId: a.itemId,
-                    level: a.level,
-                }))
-            });
-
-            // 4. Devuelve el reporte actualizado
+            if (textAnswers && textAnswers.length > 0) {
+                 await Promise.all(textAnswers.map((answer: any) =>
+                    tx.reportTextAnswer.upsert({
+                        where: { reportId_sectionId: { reportId: parseInt(reportId), sectionId: answer.sectionId } },
+                        update: { content: answer.content },
+                        create: { reportId: parseInt(reportId), sectionId: answer.sectionId, content: answer.content },
+                    })
+                ));
+            }
+            
             return tx.report.findUnique({ where: { id: parseInt(reportId) }});
         });
 

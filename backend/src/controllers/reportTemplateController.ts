@@ -1,9 +1,8 @@
 // backend/src/controllers/reportTemplateController.ts
 import { Request, Response } from 'express';
 import prisma from '../db.js';
-import { Prisma } from '@prisma/client'; // Importamos esto para manejar errores específicos
+import { Prisma } from '@prisma/client';
 
-// --- Gestión de Plantillas ---
 export const createTemplate = async (req: Request, res: Response) => {
   try {
     const { title, description, sections } = req.body;
@@ -15,6 +14,7 @@ export const createTemplate = async (req: Request, res: Response) => {
           create: sections.map((section: any) => ({
             title: section.title,
             order: section.order,
+            type: section.type, // Se guarda el tipo de sección
             items: {
               create: section.items.map((item: any) => ({
                 description: item.description,
@@ -27,18 +27,11 @@ export const createTemplate = async (req: Request, res: Response) => {
     });
     res.status(201).json(newTemplate);
   } catch (error) {
-    // --- INICIO DE LA CORRECCIÓN ---
-    console.error("Error detallado al crear la plantilla:", error); // Log para ver el error en la terminal del backend
-
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      // Error específico de Prisma para "registro duplicado"
-      if (error.code === 'P2002') {
-        return res.status(409).json({ error: 'Ya existe una plantilla con este título. Por favor, elige otro.' });
-      }
+    console.error("Error detallado al crear la plantilla:", error);
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        return res.status(409).json({ error: 'Ya existe una plantilla con este título.' });
     }
-    // Error genérico para cualquier otro problema
     res.status(500).json({ error: 'Ocurrió un error inesperado en el servidor.' });
-    // --- FIN DE LA CORRECCIÓN ---
   }
 };
 

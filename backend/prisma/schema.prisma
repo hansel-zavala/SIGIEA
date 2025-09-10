@@ -24,218 +24,229 @@ model User {
 }
 
 model Student {
-  id                     Int       @id @default(autoincrement())
+  id                     Int              @id @default(autoincrement())
   nombres                String
   apellidos              String
   dateOfBirth            DateTime
-  isActive               Boolean   @default(true)
+  isActive               Boolean          @default(true)
   lugarNacimiento        String?
   direccion              String?
   institucionProcedencia String?
-  recibioEvaluacion      Boolean   @default(false)
+  recibioEvaluacion      Boolean          @default(false)
   resultadoEvaluacionUrl String?
-  anoIngreso             DateTime  @default(now()) @map("año_ingreso")
+  anoIngreso             DateTime         @default(now()) @map("año_ingreso")
   zona                   Zona?
   jornada                Jornada?
   genero                 Genero?
   institutoIncluido      String?
   partidaNacimientoUrl   String?
-  atencionGrupal         Boolean   @default(false)
-  atencionIndividual     Boolean   @default(false)
-  atencionPrevocacional  Boolean   @default(false)
-  atencionDistancia      Boolean   @default(false)
-  terapiaDomicilio       Boolean   @default(false)
-  atencionVocacional     Boolean   @default(false)
-  inclusionEscolar       Boolean   @default(false)
-  educacionFisica        Boolean   @default(false)
+  atencionGrupal         Boolean          @default(false)
+  atencionIndividual     Boolean          @default(false)
+  atencionPrevocacional  Boolean          @default(false)
+  atencionDistancia      Boolean          @default(false)
+  terapiaDomicilio       Boolean          @default(false)
+  atencionVocacional     Boolean          @default(false)
+  inclusionEscolar       Boolean          @default(false)
+  educacionFisica        Boolean          @default(false)
   tipoSangre             TipoSangre?
-  medicamentos           Medicamento[] @relation("MedicamentoToStudent")
-  alergias               Alergia[]     @relation("AlergiaToStudent")
+  medicamentos           Medicamento[]    @relation("MedicamentoToStudent")
+  alergias               Alergia[]        @relation("AlergiaToStudent")
   therapist              TherapistProfile? @relation(fields: [therapistId], references: [id])
   therapistId            Int?
   therapySessions        TherapySession[]
   guardians              Guardian[]
-  reports                Report[] // Relación con los reportes del estudiante
-  createdAt              DateTime          @default(now())
-  updatedAt              DateTime          @updatedAt
+  reports                Report[]
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
 }
 
 model ReportTemplate {
-  id          Int      @id @default(autoincrement())
-  title       String   @unique
-  description String?  @db.Text
-  isActive    Boolean  @default(true)
+  id          Int             @id @default(autoincrement())
+  title       String          @unique
+  description String?         @db.Text
+  isActive    Boolean         @default(true)
   sections    ReportSection[]
   reports     Report[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 }
 
 model ReportSection {
-  id         Int      @id @default(autoincrement())
-  title      String
-  order      Int // Para mantener el orden de las secciones
-  template   ReportTemplate @relation(fields: [templateId], references: [id])
-  templateId Int
-  items      ReportItem[]
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id          Int                @id @default(autoincrement())
+  title       String
+  order       Int
+  type        SectionType        @default(ITEMS) // Campo para el tipo de sección
+  template    ReportTemplate     @relation(fields: [templateId], references: [id])
+  templateId  Int
+  items       ReportItem[]
+  textAnswers ReportTextAnswer[] // Relación a las respuestas de texto
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
 }
 
 model ReportItem {
-  id          Int      @id @default(autoincrement())
-  description String   @db.Text
-  order       Int // Para mantener el orden de los ítems
-  section     ReportSection @relation(fields: [sectionId], references: [id])
+  id          Int                @id @default(autoincrement())
+  description String             @db.Text
+  order       Int
+  section     ReportSection      @relation(fields: [sectionId], references: [id])
   sectionId   Int
   answers     ReportItemAnswer[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
 }
 
 model Report {
-  id              Int      @id @default(autoincrement())
-  student         Student  @relation(fields: [studentId], references: [id])
-  studentId       Int
-  therapist       User     @relation(fields: [therapistId], references: [id])
-  therapistId     Int
-  template        ReportTemplate @relation(fields: [templateId], references: [id])
-  templateId      Int
-  reportDate      DateTime @default(now())
-  attendance      String?  // Asistencia general al semestre
-  summary         String?  @db.Text
-  therapyActivities String? @db.Text
-  conclusions     String?  @db.Text
-  recommendations String?  @db.Text
-  itemAnswers     ReportItemAnswer[]
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id          Int                @id @default(autoincrement())
+  student     Student            @relation(fields: [studentId], references: [id])
+  studentId   Int
+  therapist   User               @relation(fields: [therapistId], references: [id])
+  therapistId Int
+  template    ReportTemplate     @relation(fields: [templateId], references: [id])
+  templateId  Int
+  reportDate  DateTime           @default(now())
+  itemAnswers ReportItemAnswer[]
+  textAnswers ReportTextAnswer[] // Relación a las respuestas de texto
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
 }
 
 model ReportItemAnswer {
-  id         Int      @id @default(autoincrement())
-  report     Report   @relation(fields: [reportId], references: [id])
-  reportId   Int
-  item       ReportItem @relation(fields: [itemId], references: [id])
-  itemId     Int
-  level      AcquisitionLevel
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id       Int              @id @default(autoincrement())
+  report   Report           @relation(fields: [reportId], references: [id])
+  reportId Int
+  item     ReportItem       @relation(fields: [itemId], references: [id])
+  itemId   Int
+  level    AcquisitionLevel
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
 
-  @@unique([reportId, itemId]) // Un ítem solo puede tener una respuesta por reporte
+  @@unique([reportId, itemId])
 }
 
+// Nuevo modelo para las respuestas de texto libre
+model ReportTextAnswer {
+  id        Int           @id @default(autoincrement())
+  report    Report        @relation(fields: [reportId], references: [id])
+  reportId  Int
+  section   ReportSection @relation(fields: [sectionId], references: [id])
+  sectionId Int
+  content   String        @db.Text
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@unique([reportId, sectionId])
+}
 
 model Guardian {
-  id                    Int         @id @default(autoincrement())
-  nombres                 String
-  apellidos               String
-  direccionEmergencia     String?
-  numeroIdentidad         String      @unique
-  telefono                String
-  parentesco              Parentesco
-  copiaIdentidadUrl       String?
-  observaciones           String?     @db.Text
-  isActive                Boolean     @default(true)
-  student                 Student     @relation(fields: [studentId], references: [id])
-  studentId               Int
-  user                    User?       @relation(fields: [userId], references: [id])
-  userId                  Int?        @unique
-  createdAt               DateTime    @default(now())
-  updatedAt               DateTime    @updatedAt
+  id                  Int       @id @default(autoincrement())
+  nombres             String
+  apellidos           String
+  direccionEmergencia String?
+  numeroIdentidad     String    @unique
+  telefono            String
+  parentesco          Parentesco
+  copiaIdentidadUrl   String?
+  observaciones       String?   @db.Text
+  isActive            Boolean   @default(true)
+  student             Student   @relation(fields: [studentId], references: [id])
+  studentId           Int
+  user                User?     @relation(fields: [userId], references: [id])
+  userId              Int?      @unique
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 }
 
 model TherapistProfile {
-  id                Int       @id @default(autoincrement())
-  nombres           String
-  apellidos         String
-  identityNumber    String    @unique @map("numero_identidad")
-  dateOfBirth       DateTime? @map("fecha_nacimiento")
-  lugarNacimiento   String?
-  direccion         String?
-  gender            Genero?
-  phone             String?
-  email             String    @unique
-  specialty         String    @map("tipo_profesional")
-  hireDate          DateTime? @default(now()) @map("fecha_ingreso")
-  identityCardUrl   String?   @map("copia_identidad_url")
-  resumeUrl         String?   @map("curriculum_url")
-  isActive          Boolean   @default(true)
-  workStartTime     String    @default("08:00")
-  workEndTime       String    @default("17:00")
-  lunchStartTime    String    @default("12:00")
-  lunchEndTime      String    @default("13:00")
-  workDays          Json      @default("[1,2,3,4,5]")
-  user              User      @relation(fields: [userId], references: [id])
-  userId            Int       @unique
-  assignedStudents  Student[]
-  therapySessions   TherapySession[]
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id              Int              @id @default(autoincrement())
+  nombres         String
+  apellidos       String
+  identityNumber  String           @unique @map("numero_identidad")
+  dateOfBirth     DateTime?        @map("fecha_nacimiento")
+  lugarNacimiento String?
+  direccion       String?
+  gender          Genero?
+  phone           String?
+  email           String           @unique
+  specialty       String           @map("tipo_profesional")
+  hireDate        DateTime?        @default(now()) @map("fecha_ingreso")
+  identityCardUrl String?          @map("copia_identidad_url")
+  resumeUrl       String?          @map("curriculum_url")
+  isActive        Boolean          @default(true)
+  workStartTime   String           @default("08:00")
+  workEndTime     String           @default("17:00")
+  lunchStartTime  String           @default("12:00")
+  lunchEndTime    String           @default("13:00")
+  workDays        Json             @default("[1,2,3,4,5]")
+  user            User             @relation(fields: [userId], references: [id])
+  userId          Int              @unique
+  assignedStudents Student[]
+  therapySessions TherapySession[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 }
 
 model TherapySession {
-  id          Int      @id @default(autoincrement())
+  id          Int           @id @default(autoincrement())
   startTime   DateTime
   endTime     DateTime
   status      SessionStatus @default(Programada)
-  notes       String?  @db.Text
-  behavior    String?  @db.Text
-  progress    String?  @db.Text
-  duration    Int      @default(45)
-  student     Student  @relation(fields: [studentId], references: [id])
+  notes       String?       @db.Text
+  behavior    String?       @db.Text
+  progress    String?       @db.Text
+  duration    Int           @default(45)
+  student     Student       @relation(fields: [studentId], references: [id])
   studentId   Int
   therapist   TherapistProfile @relation(fields: [therapistId], references: [id])
   therapistId Int
-  leccion     Leccion  @relation(fields: [leccionId], references: [id])
+  leccion     Leccion       @relation(fields: [leccionId], references: [id])
   leccionId   Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 }
 
 model Leccion {
-  id           Int      @id @default(autoincrement())
-  title        String
-  objective    String   @db.Text
-  description  String?  @db.Text
-  category     String?
-  keySkill     String?
-  isActive     Boolean  @default(true)
-  createdBy    User     @relation(fields: [createdById], references: [id])
-  createdById  Int
+  id              Int              @id @default(autoincrement())
+  title           String
+  objective       String           @db.Text
+  description     String?          @db.Text
+  category        String?
+  keySkill        String?
+  isActive        Boolean          @default(true)
+  createdBy       User             @relation(fields: [createdById], references: [id])
+  createdById     Int
   therapySessions TherapySession[]
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 }
 
 model Event {
-  id          Int       @id @default(autoincrement())
+  id          Int           @id @default(autoincrement())
   title       String
-  description String?   @db.Text
+  description String?       @db.Text
   startDate   DateTime
   endDate     DateTime
-  isAllDay    Boolean   @default(false)
+  isAllDay    Boolean       @default(false)
   location    String?
   audience    EventAudience @default(General)
-  isActive    Boolean   @default(true)
+  isActive    Boolean       @default(true)
   categoryId  Int?
-  category    Category? @relation(fields: [categoryId], references: [id])
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  category    Category?     @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 }
 
 model Medicamento {
-  id        Int       @id @default(autoincrement())
-  nombre    String    @unique
-  students  Student[] @relation("MedicamentoToStudent")
+  id       Int       @id @default(autoincrement())
+  nombre   String    @unique
+  students Student[] @relation("MedicamentoToStudent")
 
   @@map("medicamentos")
 }
 
 model Alergia {
-  id        Int       @id @default(autoincrement())
-  nombre    String    @unique
-  students  Student[] @relation("AlergiaToStudent")
+  id       Int       @id @default(autoincrement())
+  nombre   String    @unique
+  students Student[] @relation("AlergiaToStudent")
 
   @@map("alergias")
 }
@@ -300,4 +311,10 @@ enum AcquisitionLevel {
   CON_AYUDA_FISICA
   NO_CONSEGUIDO
   NO_TRABAJADO
+}
+
+// Nuevo Enum para el tipo de sección
+enum SectionType {
+  ITEMS
+  TEXT
 }

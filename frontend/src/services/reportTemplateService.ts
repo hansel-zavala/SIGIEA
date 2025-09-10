@@ -12,6 +12,7 @@ export interface ReportSection {
   id: number;
   title: string;
   order: number;
+  type: 'ITEMS' | 'TEXT'; // <-- CORRECCIÓN AQUÍ
   items: ReportItem[];
 }
 
@@ -27,6 +28,7 @@ interface CreateTemplateData {
   sections: Array<{
     title: string;
     order: number;
+    type: 'ITEMS' | 'TEXT'; // <-- Y CORRECCIÓN AQUÍ
     items: Array<{
       description: string;
       order: number;

@@ -22,11 +22,14 @@ export const getAllGuardians = async (req: Request, res: Response) => {
           { nombres: { contains: search as string } },
           { apellidos: { contains: search as string } },
           { numeroIdentidad: { contains: search as string } },
-          { student: {
-              OR: [
-                { nombres: { contains: search as string } },
-                { apellidos: { contains: search as string } },
-              ],
+          {
+            students: {
+              some: {
+                OR: [
+                  { nombres: { contains: search as string } },
+                  { apellidos: { contains: search as string } },
+                ],
+              },
             },
           },
       ]
@@ -35,7 +38,7 @@ export const getAllGuardians = async (req: Request, res: Response) => {
     const [guardians, totalGuardians] = await prisma.$transaction([
       prisma.guardian.findMany({
         where: whereCondition,
-        include: { student: true },
+        include: { students: true },
         orderBy: [
           { isActive: 'desc' },
           { createdAt: 'desc' },
@@ -49,10 +52,10 @@ export const getAllGuardians = async (req: Request, res: Response) => {
     const guardiansWithFullName = guardians.map(g => ({
         ...g,
         fullName: `${g.nombres} ${g.apellidos}`,
-        student: {
-            ...g.student,
-            fullName: `${g.student.nombres} ${g.student.apellidos}`
-        }
+        students: g.students.map(s => ({
+            ...s,
+            fullName: `${s.nombres} ${s.apellidos}`
+        }))
     }));
 
     res.json({
@@ -72,7 +75,7 @@ export const getGuardianById = async (req: Request, res: Response) => {
     const guardian = await prisma.guardian.findFirst({
       where: { id: parseInt(id), isActive: true },
       include: {
-        student: true,
+        students: true,
       },
     });
 
@@ -83,10 +86,10 @@ export const getGuardianById = async (req: Request, res: Response) => {
     const guardianWithDetails = {
       ...guardian,
       fullName: `${guardian.nombres} ${guardian.apellidos}`,
-      student: {
-        ...guardian.student,
-        fullName: `${guardian.student.nombres} ${guardian.student.apellidos}`,
-      },
+      students: guardian.students.map(s => ({
+        ...s,
+        fullName: `${s.nombres} ${s.apellidos}`,
+      })),
     };
 
     res.json(guardianWithDetails);
@@ -128,16 +131,17 @@ export const reactivateGuardian = async (req: Request, res: Response) => {
 
     const guardian = await prisma.guardian.findUnique({
       where: { id: parseInt(id) },
-      include: { student: true },
+      include: { students: true },
     });
 
     if (!guardian) {
       return res.status(404).json({ error: 'Guardián no encontrado.' });
     }
 
-    if (!guardian.student.isActive) {
-      return res.status(403).json({ 
-        error: `No se puede reactivar al guardián porque el estudiante asociado (${guardian.student.nombres} ${guardian.student.apellidos}) está inactivo.` 
+    const hasActiveStudent = guardian.students.some(s => s.isActive);
+    if (!hasActiveStudent) {
+      return res.status(403).json({
+        error: 'No se puede reactivar al guardián porque ninguno de sus estudiantes asociados está activo.'
       });
     }
 

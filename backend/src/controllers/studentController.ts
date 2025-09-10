@@ -1,10 +1,9 @@
 // backend/src/controllers/studentController.ts
 
 import { Request, Response } from 'express';
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
-
 
 export const createStudent = async (req: Request, res: Response) => {
   try {
@@ -13,22 +12,32 @@ export const createStudent = async (req: Request, res: Response) => {
     if (!studentData.nombres || !studentData.apellidos || !studentData.dateOfBirth) {
         return res.status(400).json({ error: 'Nombres, apellidos y fecha de nacimiento son obligatorios.' });
     }
-    if (!studentData.therapistId) {
+     if (!studentData.therapistId) {
         return res.status(400).json({ error: 'Debe asignar un terapeuta al estudiante.' });
     }
     if (!guardians || !Array.isArray(guardians) || guardians.length === 0) {
         return res.status(400).json({ error: 'Se requiere al menos un padre o tutor.' });
     }
-    for (const guardian of guardians) {
-        if (!guardian.nombres || !guardian.apellidos || !guardian.numeroIdentidad || !guardian.telefono) {
-            return res.status(400).json({ error: 'Nombres, apellidos, DNI y teléfono son obligatorios para cada guardián.' });
+    // Validación orientada a reutilizar acudientes existentes:
+    // - Siempre requiere `numeroIdentidad`.
+    // - Si NO existe en DB, exige los campos mínimos para crear.
+    for (const g of guardians) {
+      if (!g?.numeroIdentidad) {
+        return res.status(400).json({ error: 'Cada guardián debe incluir el número de identidad (DNI).' });
+      }
+      const exists = await prisma.guardian.findUnique({ where: { numeroIdentidad: g.numeroIdentidad } });
+      if (!exists) {
+        const missing: string[] = [];
+        if (!g.nombres) missing.push('nombres');
+        if (!g.apellidos) missing.push('apellidos');
+        if (!g.telefono) missing.push('telefono');
+        if (!g.parentesco) missing.push('parentesco');
+        if (missing.length) {
+          return res.status(400).json({
+            error: `Faltan campos para crear al guardián con DNI ${g.numeroIdentidad}: ${missing.join(', ')}`,
+          });
         }
-        const existingGuardian = await prisma.guardian.findUnique({
-            where: { numeroIdentidad: guardian.numeroIdentidad }
-        });
-        if (existingGuardian) {
-            return res.status(409).json({ error: `El número de identidad ${guardian.numeroIdentidad} ya está registrado.` });
-        }
+      }
     }
 
     if (studentData.dateOfBirth) studentData.dateOfBirth = new Date(studentData.dateOfBirth);
@@ -37,7 +46,22 @@ export const createStudent = async (req: Request, res: Response) => {
     const newStudent = await prisma.student.create({
       data: {
         ...studentData,
-        guardians: { create: guardians },
+        // Reutiliza acudientes existentes por DNI o crea si no existen
+        guardians: {
+          connectOrCreate: guardians.map((g: any) => ({
+            where: { numeroIdentidad: g.numeroIdentidad },
+            create: {
+              nombres: g.nombres,
+              apellidos: g.apellidos,
+              direccionEmergencia: g.direccionEmergencia || null,
+              numeroIdentidad: g.numeroIdentidad,
+              telefono: g.telefono,
+              parentesco: g.parentesco,
+              copiaIdentidadUrl: g.copiaIdentidadUrl || null,
+              observaciones: g.observaciones || null,
+            },
+          })),
+        },
         medicamentos: { connect: medicamentos?.map((id: number) => ({ id })) || [] },
         alergias: { connect: alergias?.map((id: number) => ({ id })) || [] },
       },
@@ -45,21 +69,9 @@ export const createStudent = async (req: Request, res: Response) => {
     });
 
     res.status(201).json(newStudent);
-
   } catch (error) {
-    console.error("Error detallado al crear la matrícula:", error);
-
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      if (error.code === 'P2002') {
-        const fields = (error.meta as { target?: string[] })?.target?.join(', ');
-        return res.status(409).json({ error: `Ya existe un registro con estos datos únicos: ${fields}` });
-      }
-      if (error.code === 'P2003') {
-        const field = (error.meta as { field_name?: string })?.field_name;
-        return res.status(400).json({ error: `Error de clave foránea en el campo: ${field}. El ID proporcionado no existe.` });
-      }
-    }
-    res.status(500).json({ error: 'No se pudo procesar la matrícula. Revisa la consola del servidor para más detalles.' });
+    console.error("Error al crear la matrícula:", error);
+    res.status(500).json({ error: 'No se pudo procesar la matrícula.' });
   }
 };
 
@@ -226,52 +238,70 @@ export const deleteStudent = async (req: Request, res: Response) => {
     const { id } = req.params;
     const studentId = parseInt(id);
 
-    const transaction = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
+      // Desactivar estudiante
       const student = await tx.student.update({
         where: { id: studentId },
         data: { isActive: false },
-        include: { guardians: true },
       });
 
-      for (const guardian of student.guardians) {
-        const activeChildrenCount = await tx.student.count({
-          where: {
-            isActive: true,
-            guardians: {
-              some: {
-                id: guardian.id,
-              },
-            },
-          },
-        });
+      // Obtener todos los acudientes vinculados a este estudiante
+      const guardians = await tx.guardian.findMany({
+        where: { students: { some: { id: studentId } } },
+        select: { id: true },
+      });
 
+      // Para cada acudiente, desactivar si ya no tiene hijos activos
+      for (const g of guardians) {
+        const activeChildrenCount = await tx.student.count({
+          where: { isActive: true, guardians: { some: { id: g.id } } },
+        });
         if (activeChildrenCount === 0) {
-          await tx.guardian.update({
-            where: { id: guardian.id },
-            data: { isActive: false },
-          });
+          await tx.guardian.update({ where: { id: g.id }, data: { isActive: false } });
         }
       }
 
       return student;
     });
 
-    res.json({ message: 'Estudiante y guardianes correspondientes han sido desactivados.', student: transaction });
+    res.json({ message: 'Estudiante desactivado correctamente.', student: result });
   } catch (error) {
-    console.error("Error al desactivar al estudiante:", error);
     res.status(500).json({ error: 'No se pudo desactivar el estudiante.' });
   }
 };
 
-
 export const reactivateStudent = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const student = await prisma.student.update({
-      where: { id: parseInt(id) },
-      data: { isActive: true },
+    const studentId = parseInt(id);
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Reactivar estudiante
+      const student = await tx.student.update({
+        where: { id: studentId },
+        data: { isActive: true },
+      });
+
+      // Buscar acudientes vinculados a este estudiante
+      const guardians = await tx.guardian.findMany({
+        where: { students: { some: { id: studentId } } },
+        select: { id: true, isActive: true },
+      });
+
+      // Reactivar acudiente si ahora tiene al menos un hijo activo
+      for (const g of guardians) {
+        const activeChildrenCount = await tx.student.count({
+          where: { isActive: true, guardians: { some: { id: g.id } } },
+        });
+        if (!g.isActive && activeChildrenCount > 0) {
+          await tx.guardian.update({ where: { id: g.id }, data: { isActive: true } });
+        }
+      }
+
+      return student;
     });
-    res.json({ message: 'Estudiante reactivado correctamente.', student });
+
+    res.json({ message: 'Estudiante reactivado correctamente.', student: result });
   } catch (error) {
     res.status(500).json({ error: 'No se pudo reactivar el estudiante.' });
   }

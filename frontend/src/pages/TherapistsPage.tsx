@@ -62,11 +62,17 @@ function TherapistsPage() {
                 placeholder="Buscar por nombre..."
                 value={searchTerm}
                 onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setCurrentPage(1);
+                    const value = e.target.value;
+                    const validCharsRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/;
+                    if (validCharsRegex.test(value)) {
+                      setSearchTerm(value);
+                      setCurrentPage(1);
+                    }
                 }}
             />
         </div>
+
+
         <Link to="/therapists/new">
           <button className="min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">
             <FaPlus className="text-xl" />

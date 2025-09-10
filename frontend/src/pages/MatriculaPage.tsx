@@ -176,7 +176,6 @@ function MatriculaPage() {
     const { name, value, type } = e.target;
     const isCheckbox = type === "checkbox";
     const checked = isCheckbox ? (e.target as HTMLInputElement).checked : false;
-    const tiposDeAtencionIds = tiposDeAtencion.map((atencion) => atencion.id);
 
     if (name === 'nombres' || name === 'apellidos') {
         const filteredValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
@@ -184,20 +183,10 @@ function MatriculaPage() {
         return;
     }
 
-    if (isCheckbox && tiposDeAtencionIds.includes(name)) {
-      const resetAttentionTypes = Object.fromEntries(tiposDeAtencionIds.map((id) => [id, false]));
-
-      setStudentData((prev) => ({
-        ...prev,
-        ...resetAttentionTypes,
-        [name]: checked,
-      }));
-    } else {
-      setStudentData((prev) => ({
-        ...prev,
-        [name]: isCheckbox ? checked : value,
-      }));
-    }
+    setStudentData((prev) => ({
+      ...prev,
+      [name]: isCheckbox ? checked : value,
+    }));
   };
 
   const handleGuardianChange = ( index: number, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -257,9 +246,11 @@ function MatriculaPage() {
     await medicamentoService.update(id, name);
     setAllMedicamentos(await medicamentoService.getAll());
   };
+
   const handleDeleteMedicamento = async (id: number) => {
     await medicamentoService.remove(id);
     setAllMedicamentos(await medicamentoService.getAll());
+    setSelectedMedicamentos(prev => prev.filter(item => item.id !== id));
   };
 
   const handleAddAlergia = async (name: string) => {
@@ -273,6 +264,7 @@ function MatriculaPage() {
   const handleDeleteAlergia = async (id: number) => {
     await alergiaService.remove(id);
     setAllAlergias(await alergiaService.getAll());
+    setSelectedAlergias(prev => prev.filter(item => item.id !== id));
   };
 
   const validateForm = () => {

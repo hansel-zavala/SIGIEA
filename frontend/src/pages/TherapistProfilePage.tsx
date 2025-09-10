@@ -2,16 +2,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import therapistService, { type TherapistProfile } from '../services/therapistService';
-import { FaUserMd, FaEdit, FaUserGraduate, FaPhone, FaEnvelope, FaIdCard} from 'react-icons/fa';
+import { FaUserMd, FaEdit, FaUserGraduate } from 'react-icons/fa';
 
 
-const InfoField = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | undefined | null }) => (
-  <div className="flex items-start gap-3">
-    <div className="text-blue-500 mt-1">{icon}</div>
-    <div>
-      <p className="text-sm text-gray-500 font-semibold">{label}</p>
-      <p className="text-md text-gray-800">{value || 'No especificado'}</p>
-    </div>
+const InfoField = ({ label, value }: { label: string; value: string | undefined | null }) => (
+  <div className="bg-gray-100 p-3 rounded-lg shadow-sm">
+    <p className="text-sm text-gray-500 font-semibold">{label}</p>
+    <p className="text-lg text-gray-800">{value || 'No especificado'}</p>
   </div>
 );
 
@@ -39,6 +36,15 @@ function TherapistProfilePage() {
   if (loading) return <p>Cargando perfil...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
   if (!therapist) return <p>No se encontró el terapeuta.</p>;
+  
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return 'No especificado';
+    return new Date(dateString).toLocaleDateString('es-HN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md space-y-8">
@@ -54,19 +60,28 @@ function TherapistProfilePage() {
         </div>
         <div className="flex gap-4">
           <Link to={`/therapists/edit/${therapist.id}`}>
-            <button className="py-2 px-5 text-white font-bold rounded-lg bg-yellow-500 hover:bg-yellow-600 transition-all flex items-center gap-2 shadow">
+            <button className="min-w-[220px] py-3 px-4 text-white font-bold rounded-lg bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">
               <FaEdit />
-              <span>Editar Perfil</span>
+              <span>Editar Terapeuta</span>
             </button>
           </Link>
         </div>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <InfoField icon={<FaIdCard />} label="No. de Identidad" value={therapist.identityNumber} />
-        <InfoField icon={<FaEnvelope />} label="Correo Electrónico" value={therapist.email} />
-        <InfoField icon={<FaPhone />} label="Teléfono" value={therapist.phone} />
+      
+      <div className="space-y-4 pt-2">
+        <h3 className="text-xl font-semibold text-gray-700 mb-4">Información Personal</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <InfoField label="Nombre Completo" value={therapist.fullName} />
+            <InfoField label="Cargo / Puesto" value={therapist.specialty} />
+            <InfoField label="Número de Identidad" value={therapist.identityNumber} />
+            <InfoField label="Número de Teléfono" value={therapist.phone} />
+            <InfoField label="Correo Electrónico" value={therapist.email} />
+            <InfoField label="Fecha de Nacimiento" value={formatDate(therapist.dateOfBirth)} />
+            <InfoField label="Lugar de Nacimiento" value={therapist.lugarNacimiento} />
+            <InfoField label="Dirección de Domicilio" value={therapist.direccion} />
+        </div>
       </div>
+
 
       <div>
         <h3 className="text-xl font-semibold text-gray-700 mb-4">Estudiantes Asignados</h3>
@@ -76,7 +91,7 @@ function TherapistProfilePage() {
               <tr>
                 <th className="px-5 py-3 font-medium text-gray-500 text-left">Nombre del Estudiante</th>
                 <th className="px-5 py-3 font-medium text-gray-500 text-left">Jornada</th>
-                <th className="px-5 py-3 font-medium text-gray-500 text-left">Acciones</th>
+                
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -85,11 +100,15 @@ function TherapistProfilePage() {
                   <tr key={student.id}>
                     <td className="px-5 py-4 font-medium text-gray-800">{student.fullName}</td>
                     <td className="px-5 py-4 text-gray-600">{student.jornada}</td>
-                    <td className="px-5 py-4">
-                      <Link to={`/students/${student.id}`} className="text-blue-600 hover:underline flex items-center gap-2">
+                    <td className="px-5 py-4 text-end">
+                      <Link
+                        to={`/students/${student.id}`}
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold text-white rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 shadow-md"
+                      >
                         <FaUserGraduate />
-                        Ver Perfil
+                        Ver Perfil del Estudiante
                       </Link>
+
                     </td>
                   </tr>
                 ))

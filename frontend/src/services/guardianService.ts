@@ -1,12 +1,13 @@
 // frontend/src/services/guardianService.ts
 import api from './api';
 
-const getAllGuardians = async (searchTerm?: string, page: number = 1, limit: number = 10) => {
+const getAllGuardians = async (searchTerm?: string, page: number = 1, limit: number = 10, status: string = 'active') => {
   try {
     const params = {
         search: searchTerm,
         page,
         limit,
+        status,
     };
     const response = await api.get('/guardians', { params });
     return response.data;
@@ -37,9 +38,20 @@ const getGuardianById = async (id: number) => {
     } catch (error) { throw error; }
 };
 
+const reactivateGuardian = async (id: number) => {
+  try {
+    const response = await api.patch(`/guardians/${id}/reactivate`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error al reactivar el guardián con ID ${id}:`, error);
+    throw error;
+  }
+};
+
 export default {
   getAllGuardians,
   updateGuardian,
   deleteGuardian,
   getGuardianById,
+  reactivateGuardian,
 };

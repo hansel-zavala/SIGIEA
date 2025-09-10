@@ -93,12 +93,17 @@ function StudentsPage() {
                 type="text"
                 placeholder="Buscar por nombre, apellido o terapeuta..."
                 value={searchTerm}
-                onChange={(e) => { 
-                    setSearchTerm(e.target.value);
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const validCharsRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/;
+                  if (validCharsRegex.test(value)) {
+                    setSearchTerm(value);
                     setCurrentPage(1);
+                  }
                 }}
             />
         </div>
+
 
         <Link to="/matricula">
           <button className="min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">
@@ -145,7 +150,7 @@ function StudentsPage() {
     students.map((student) => (
       <tr key={student.id}>
         <td className="px-5 py-4">
-          <Link to={`/guardians/${student.id}`} className="flex items-center gap-3 group">
+          <Link to={`/students/${student.id}`} className="flex items-center gap-3 group">
             <div className="text-gray-400 group-hover:text-violet-500">
               <FaUserCircle size={40} />
             </div>

@@ -17,9 +17,7 @@ interface Guardian {
   numeroIdentidad: string;
   parentesco: string;
   isActive: boolean;
-  student: {
-    fullName: string;
-  }
+  students: { id?: number; fullName?: string; nombres?: string; apellidos?: string; isActive?: boolean }[];
 }
 
 function GuardiansPage() {
@@ -36,7 +34,13 @@ function GuardiansPage() {
       setLoading(true);
       guardianService.getAllGuardians(searchTerm, currentPage, itemsPerPage, statusFilter)
           .then(response => {
-              setGuardians(response.data);
+              const normalized = (response.data || []).map((g: any) => ({
+                ...g,
+                students: Array.isArray(g?.students)
+                  ? g.students
+                  : (g && g.student ? [g.student] : []),
+              }));
+              setGuardians(normalized);
               setTotalItems(response.total);
               setError("");
           })
@@ -95,7 +99,8 @@ function GuardiansPage() {
                 value={searchTerm}
                 onChange={(e) => {
                     const value = e.target.value;
-                    const validCharsRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/;
+                    // Permitir letras, espacios, acentos, dígitos y guiones para buscar también por identidad
+                    const validCharsRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s-]*$/;
                     if (validCharsRegex.test(value)) {
                       setSearchTerm(value);
                       setCurrentPage(1);
@@ -136,7 +141,7 @@ function GuardiansPage() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
-                <tr><td colSpan={4} className="text-center p-8 text-gray-500">Cargando...</td></tr>
+                <tr><td colSpan={7} className="text-center p-8 text-gray-500">Cargando...</td></tr>
             ) : guardians.length > 0 ? (
                 guardians.map((guardian) => (
                   <tr key={guardian.id}>
@@ -155,7 +160,28 @@ function GuardiansPage() {
                     </td>
                     <td className="px-5 py-4 text-gray-500">{guardian.numeroIdentidad}</td>
                     <td className="px-5 py-4 text-gray-500">{guardian.parentesco.replace('_', ' ')}</td>
-                    <td className="px-5 py-4 text-gray-500">{guardian.student.fullName}</td>
+                    <td className="px-5 py-4 text-gray-500">
+                      {(() => {
+                        const list = guardian.students || [];
+                        const nameOf = (s: any) => s?.fullName || `${s?.nombres || ''} ${s?.apellidos || ''}`.trim() || 'Sin nombre';
+                        if (list.length === 0) return '—';
+                        return (
+                          <div className="flex flex-wrap gap-1">
+                            {list.map((s, idx) => {
+                              const inactive = s?.isActive === false;
+                              const chipClass = inactive
+                                ? 'bg-gray-100 text-gray-400 px-2 py-0.5 rounded'
+                                : 'bg-violet-50 text-violet-700 px-2 py-0.5 rounded';
+                              return (
+                                <span key={idx} className={chipClass} title={inactive ? 'Estudiante inactivo' : 'Estudiante activo'}>
+                                  {nameOf(s)}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
+                    </td>
                     <td className="px-5 py-4 text-gray-500">{guardian.telefono}</td>
                     <td className="px-5 py-4">
                       <Badge color={guardian.isActive ? "success" : "error"}>{guardian.isActive ? "Activo" : "Inactivo"}</Badge>
@@ -179,7 +205,7 @@ function GuardiansPage() {
                   </tr>
                 ))
             ) : (
-                <tr><td colSpan={4} className="text-center p-8 text-gray-500">No se encontraron guardianes.</td></tr>
+                <tr><td colSpan={7} className="text-center p-8 text-gray-500">No se encontraron guardianes.</td></tr>
             )}
           </tbody>
         </table>

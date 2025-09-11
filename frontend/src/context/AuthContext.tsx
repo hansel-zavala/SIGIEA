@@ -8,10 +8,14 @@ interface User {
   name: string;
 }
 
+interface StoredUser extends User {
+  token: string;
+}
+
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (token: string) => void;
+  login: (data: { token: string }) => void;
   logout: () => void;
 }
 
@@ -24,29 +28,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     try {
-        const storedToken = localStorage.getItem('token');
-        if (storedToken) {
-          const decodedUser: User = jwtDecode(storedToken);
-          setUser(decodedUser);
-          setToken(storedToken);
-        }
+      const storedUserJSON = localStorage.getItem('user');
+      if (storedUserJSON) {
+        const storedUser: StoredUser = JSON.parse(storedUserJSON);
+        const decodedToken: User = jwtDecode(storedUser.token);
+        setUser(decodedToken);
+        setToken(storedUser.token);
+      }
     } catch (error) {
-        console.error("Failed to decode token", error);
-        localStorage.removeItem('token');
+      console.error("Failed to decode token from localStorage", error);
+      localStorage.removeItem('user');
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   }, []);
 
-  const login = (newToken: string) => {
-    localStorage.setItem('token', newToken);
-    const decodedUser: User = jwtDecode(newToken);
+  const login = (data: { token: string }) => {
+    const decodedUser: User = jwtDecode(data.token);
+    const userToStore: StoredUser = { ...decodedUser, token: data.token };
+
+    localStorage.setItem('user', JSON.stringify(userToStore));
     setUser(decodedUser);
-    setToken(newToken);
+    setToken(data.token);
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setUser(null);
     setToken(null);
   };

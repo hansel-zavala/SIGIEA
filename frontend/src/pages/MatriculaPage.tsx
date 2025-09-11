@@ -7,9 +7,11 @@ import therapistService, { type TherapistProfile, } from "../services/therapistS
 import medicamentoService, { type Medicamento, } from "../services/medicamentoService";
 import alergiaService, { type Alergia } from "../services/alergiaService";
 import MultiSelectWithCatalog from "../components/ui/MultiSelectWithCatalog";
+import { SelectWithCatalog } from "../components/ui/SelectWithCatalog";
 import {  departamentos,  municipiosPorDepartamento, } from "../data/honduras-data";
 import { FaPlus, FaTrash } from "react-icons/fa";
 import CustomDatePicker from "../components/ui/DatePicker";
+import { getAllTiposParentesco, createTipoParentesco, deleteTipoParentesco, updateTipoParentesco } from "../services/tipoParentescoService";
 import Label from "../components/ui/Label";
 import Input from "../components/ui/Input";
 import Select from "../components/ui/Select";
@@ -22,6 +24,7 @@ interface Guardian {
   telefono: string;
   parentesco: string;
   direccionEmergencia: string;
+  parentescoEspecifico?: string;
 }
 
 const tiposDeAtencion = [
@@ -81,7 +84,7 @@ function MatriculaPage() {
     dateOfBirth: "",
     lugarNacimiento: "",
     direccion: "",
-    institucionProcedencia: "",
+    //institucionProcedencia: "",
     recibioEvaluacion: false,
     institutoIncluido: "",
     anoIngreso: new Date().toISOString().split("T")[0],
@@ -97,6 +100,7 @@ function MatriculaPage() {
     atencionVocacional: false,
     inclusionEscolar: false,
     educacionFisica: false,
+    referenciaMedica: '',
   });
 
   const [guardians, setGuardians] = useState<Guardian[]>([
@@ -106,6 +110,7 @@ function MatriculaPage() {
       numeroIdentidad: "",
       telefono: "",
       parentesco: "",
+      parentescoEspecifico: '',
       direccionEmergencia: "",
     },
   ]);
@@ -145,6 +150,7 @@ function MatriculaPage() {
   return "";
 };
 
+
   useEffect(() => {
     if (departamento) {
       setMunicipios(municipiosPorDepartamento[departamento] || []);
@@ -168,7 +174,14 @@ function MatriculaPage() {
     value: string | null
   ) => {
     const newGuardians = [...guardians];
-    newGuardians[index] = { ...newGuardians[index], [name]: value || "" };
+    const guardianToUpdate = { ...newGuardians[index], [name]: value || "" };
+
+    // Si el parentesco principal cambia, y no es uno que requiera especificación, se limpia el campo específico.
+    if (name === 'parentesco' && value !== 'Tutor_Legal' && value !== 'Otro') {
+      guardianToUpdate.parentescoEspecifico = '';
+    }
+    
+    newGuardians[index] = guardianToUpdate;
     setGuardians(newGuardians);
   };
 
@@ -218,6 +231,7 @@ function MatriculaPage() {
         numeroIdentidad: "",
         telefono: "",
         parentesco: "",
+        parentescoEspecifico: '',
         direccionEmergencia: "",
       },
     ]);
@@ -295,9 +309,9 @@ function MatriculaPage() {
   if (!studentData.direccion.trim()) errors.direccion = "La dirección es obligatoria.";
   else if (!addressRegex.test(studentData.direccion)) errors.direccion = "La dirección contiene caracteres no permitidos.";
 
-  if (!studentData.institucionProcedencia.trim()) errors.institucionProcedencia = "La institución es obligatoria.";
-  else if (!addressRegex.test(studentData.institucionProcedencia)) errors.institucionProcedencia = "El nombre contiene caracteres no permitidos.";
-  
+  if (!studentData.referenciaMedica.trim()) errors.referenciaMedica = "La referencia médica es obligatoria.";
+  else if (!addressRegex.test(studentData.referenciaMedica)) errors.referenciaMedica = "El nombre contiene caracteres no permitidos.";
+
   // Validar archivos requeridos
   /*if (!partidaFile) errors.partidaFileError = "La partida de nacimiento es obligatoria.";
   else errors.partidaFileError = validateFile(partidaFile);*/
@@ -334,7 +348,11 @@ function MatriculaPage() {
         errors[`guardian_parentesco_${index}`] = `Solo se puede registrar un ${guardian.parentesco}.`;
       }
     }
-    
+
+    if ((guardian.parentesco === 'Tutor_Legal' || guardian.parentesco === 'Otro') && !guardian.parentescoEspecifico) {
+      errors[`guardian_parentescoEspecifico_${index}`] = "Debe especificar el parentesco.";
+    }
+
     // Archivo de Identidad
     /*if (!guardianIdFiles[index]) errors[`guardianIdFile_${index}`] = "La copia de identidad es obligatoria.";
     else errors[`guardianIdFile_${index}`] = validateFile(guardianIdFiles[index]);*/
@@ -416,6 +434,7 @@ function MatriculaPage() {
       dateOfBirth: date ? date.toISOString().split("T")[0] : "",
     }));
   };
+
 
   const acceptedFileTypes = "image/png, image/jpeg, application/pdf, .doc, .docx, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
@@ -570,7 +589,7 @@ function MatriculaPage() {
                 id="institucionProcedencia"
                 name="institucionProcedencia"
                 type="text"
-                value={studentData.institucionProcedencia}
+                value={studentData.institutoIncluido}
                 placeholder="Ingresa su institución de procedencia"
                 onChange={handleChange}
               />
@@ -585,7 +604,7 @@ function MatriculaPage() {
                 id="institutoIncluido"
                 name="institutoIncluido"
                 type="text"
-                value={studentData.institutoIncluido}
+                value={studentData.referenciaMedica}
                 onChange={handleChange}
                 placeholder="Ingresa la referencia médica"
               />
@@ -757,6 +776,10 @@ function MatriculaPage() {
           <legend className="text-xl font-semibold text-gray-700">
             Información de los Padres o Tutores
           </legend>
+          <div className="flex justify-between items-center mb-4 gap-4">
+        <p className="text-xs text-gray-500 mt-1">La primera ficha va a ser para el padre principal. </p>
+        <div/>
+          </div>
           {guardians.map((guardian, index) => (
             <div key={index} className="mt-4 p-4 border border-violet-300 rounded-md relative">
               <h4 className="font-medium mb-2">Ficha {index + 1}</h4>
@@ -787,19 +810,7 @@ function MatriculaPage() {
                   {formErrors[`guardian_apellidos_${index}`] && (<p className="text-red-500 text-sm mt-1">{formErrors[`guardian_apellidos_${index}`]}</p>)}
                 </div>
 
-                <div>
-                  <Label htmlFor={`g-parentesco-${index}`}>Parentesco</Label>
-                  <Select
-                    instanceId={`g-parentesco-select-${index}`}
-                    inputId={`g-parentesco-${index}`}
-                    name="parentesco"
-                    value={parentescoOptions.find((o) => o.value === guardian.parentesco) || null}
-                    onChange={(option) => handleGuardianSelectChange(index,"parentesco",option?.value || null)}
-                    placeholder="Selecciona su parentesco"
-                    options={parentescoOptions}
-                  />
-                  {formErrors[`guardian_parentesco_${index}`] && (<p className="text-red-500 text-sm mt-1">{formErrors[`guardian_parentesco_${index}`]}</p>)}
-                </div>
+                
 
                 <div>
                   <Label htmlFor={`g-numeroIdentidad-${index}`}>
@@ -843,6 +854,42 @@ function MatriculaPage() {
                   />
                   {formErrors[`guardian_direccionEmergencia_${index}`] && (<p className="text-red-500 text-sm mt-1">{formErrors[`guardian_direccionEmergencia_${index}`]}</p>)}
                 </div>
+
+                <div>
+                  <Label htmlFor={`g-parentesco-${index}`}>Parentesco</Label>
+                  <Select
+                    instanceId={`g-parentesco-select-${index}`}
+                    inputId={`g-parentesco-${index}`}
+                    name="parentesco"
+                    value={parentescoOptions.find((o) => o.value === guardian.parentesco) || null}
+                    onChange={(option) => handleGuardianSelectChange(index, "parentesco", option?.value || null)}
+                    placeholder="Selecciona su parentesco"
+                    options={parentescoOptions}
+                  />
+                  {formErrors[`guardian_parentesco_${index}`] && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors[`guardian_parentesco_${index}`]}</p>
+                  )}
+                </div>
+
+                {(guardian.parentesco === 'Tutor_Legal' || guardian.parentesco === 'Otro') && (
+                <div>
+                  <SelectWithCatalog
+                      label="Especifique Parentesco"
+                      catalogName="Tipos de Parentesco"
+                      instanceId={`g-parentesco-especifico-select-${index}`}
+                      value={guardian.parentescoEspecifico || null}
+                      onChange={(value) => handleGuardianSelectChange(index, "parentescoEspecifico", value)}
+                      loadCatalogOptions={getAllTiposParentesco}
+                      createOptionService={createTipoParentesco}
+                      updateOptionService={updateTipoParentesco}
+                      deleteOptionService={deleteTipoParentesco}
+                      placeholder="Seleccione el tipo"
+                    />
+                  {formErrors[`guardian_parentescoEspecifico_${index}`] && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors[`guardian_parentescoEspecifico_${index}`]}</p>
+                  )}
+                </div>
+                )}
 
                 <div className="md:col-span-2">
                   <Label htmlFor={`g-copiaIdentidadUrl-${index}`}>

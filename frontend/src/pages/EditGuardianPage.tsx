@@ -3,9 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import guardianService from '../services/guardianService';
+import { SelectWithCatalog } from "../components/ui/SelectWithCatalog";
+import {getAllTiposParentesco, createTipoParentesco, updateTipoParentesco, deleteTipoParentesco,} from "../services/tipoParentescoService";
 import Label from '../components/ui/Label';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
+
 
 function EditGuardianPage() {
   const [formData, setFormData] = useState({
@@ -14,6 +17,7 @@ function EditGuardianPage() {
     numeroIdentidad: '',
     telefono: '',
     parentesco: 'Padre',
+    parentescoEspecifico: '',
     direccionEmergencia: ''
   });
   const [error, setError] = useState('');
@@ -31,6 +35,7 @@ function EditGuardianPage() {
             numeroIdentidad: data.numeroIdentidad,
             telefono: data.telefono,
             parentesco: data.parentesco,
+            parentescoEspecifico: data.parentescoEspecifico || '',
             direccionEmergencia: data.direccionEmergencia || ''
           });
         })
@@ -39,7 +44,11 @@ function EditGuardianPage() {
   }, [id]);
 
   const handleSelectChange = (name: string, value: string | null) => {
-    setFormData(prev => ({ ...prev, [name]: value || '' }));
+    const newFormData = { ...formData, [name]: value || '' };
+    if (name === 'parentesco' && value !== 'Tutor_Legal' && value !== 'Otro') {
+      newFormData.parentescoEspecifico = '';
+    }
+    setFormData(newFormData);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -71,6 +80,10 @@ function EditGuardianPage() {
 
     if (!formData.telefono.trim()) errors.telefono = "El teléfono es obligatorio.";
     else if (!phoneRegex.test(formData.telefono)) errors.telefono = "El teléfono debe tener 8 dígitos.";
+
+    if ((formData.parentesco === 'Tutor_Legal' || formData.parentesco === 'Otro') && !formData.parentescoEspecifico) {
+        errors.parentescoEspecifico = "Debe especificar el parentesco.";
+    }
     
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -104,8 +117,10 @@ function EditGuardianPage() {
   return (
     <div className=" mx-auto bg-white p-8 rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-6">Editar Datos {formData.parentesco.replace('_', ' ')}</h2>
-      <form onSubmit={handleSubmit} className="space-y-8 bg-white p-8 rounded-lg shadow-md" noValidate>
+      <form onSubmit={handleSubmit} noValidate>
         {error && <p className="text-red-500 bg-red-100 p-3 rounded-md">{error}</p>}
+        <fieldset className="border border-violet-300 p-4 rounded-md">
+          <legend className="text-xl font-semibold text-gray-700">Datos {formData.parentesco.replace('_', ' ')}</legend>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <Label htmlFor="nombres">Nombres</Label>
@@ -129,6 +144,24 @@ function EditGuardianPage() {
             options={parentescoOptions}
           />
         </div>
+
+        {(formData.parentesco === 'Tutor_Legal' || formData.parentesco === 'Otro') && (
+            <div>
+                <SelectWithCatalog
+                    label="Especifique Parentesco"
+                    catalogName="Tipos de Parentesco"
+                    instanceId="parentesco-especifico-select"
+                    value={formData.parentescoEspecifico || null}
+                    onChange={(value) => handleSelectChange("parentescoEspecifico", value)}
+                    loadCatalogOptions={getAllTiposParentesco}
+                    createOptionService={createTipoParentesco}
+                    updateOptionService={updateTipoParentesco}
+                    deleteOptionService={deleteTipoParentesco}
+                    placeholder="Seleccione el tipo"
+                />
+                {formErrors.parentescoEspecifico && <p className="text-red-500 text-sm mt-1">{formErrors.parentescoEspecifico}</p>}
+            </div>
+        )}
         <div>
           <Label htmlFor="numeroIdentidad">Número de Identidad</Label>
           <Input id="numeroIdentidad" name="numeroIdentidad" type="text" value={formData.numeroIdentidad} onChange={handleChange} />
@@ -144,6 +177,8 @@ function EditGuardianPage() {
           <Input id="direccionEmergencia" name="direccionEmergencia" type="text" value={formData.direccionEmergencia} onChange={handleChange} />
         </div>
         </div>
+      </fieldset>
+      
         <div className="pt-6 text-right">
         <button type="submit" className=" py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200">
           Guardar Cambios

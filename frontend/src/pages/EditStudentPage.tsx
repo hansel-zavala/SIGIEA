@@ -294,11 +294,11 @@ function EditStudentPage() {
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
       <h2 className="text-3xl font-bold mb-6 text-gray-800">Editar Ficha del Estudiante</h2>
-      <form onSubmit={handleSubmit} className="space-y-8 bg-white p-8 rounded-lg shadow-md" noValidate>
+      <form onSubmit={handleSubmit} noValidate>
         {error && <p className="text-red-500 bg-red-100 p-3 rounded-md mb-6">{error}</p>}
         
-        <div className="border-b pb-6">
-          <h3 className="text-xl font-semibold text-gray-700">Datos del Alumno</h3>
+        <fieldset className="border border-violet-300 p-4 rounded-md">
+          <legend className="text-xl font-semibold text-gray-700">Datos del Alumno</legend>
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
                 <Label htmlFor="nombres">Nombres</Label>
@@ -497,10 +497,10 @@ function EditStudentPage() {
               {formErrors.evaluacionFileError && <p className="text-red-500 text-sm mt-1">{formErrors.evaluacionFileError}</p>}
             </div>
           </div>
-        </div>
+        </fieldset>
 
-        <div className="border-b pb-6">
-          <h3 className="text-xl font-semibold text-gray-700">Tipos de Atención</h3>
+        <fieldset className="border border-violet-300 p-4 rounded-md mt-6">
+          <legend className="text-xl font-semibold text-gray-700">Tipos de Atención</legend>
           <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
             {tiposDeAtencion.map(atencion => (
               <div key={atencion.id} className="flex items-center">
@@ -517,10 +517,10 @@ function EditStudentPage() {
             ))}
           </div>
           {formErrors.tiposDeAtencion && <p className="text-red-500 text-sm mt-1">{formErrors.tiposDeAtencion}</p>}
-        </div>
+        </fieldset>
         
-        <div className="border-b pb-6">
-          <h3 className="text-xl font-semibold text-gray-700">Información Médica</h3>
+        <fieldset className="border border-violet-300 p-4 rounded-md mt-6">
+          <legend className="text-xl font-semibold text-gray-700 px-2">Información Médica</legend>
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <Label>Medicamentos</Label>
@@ -547,10 +547,10 @@ function EditStudentPage() {
               />
             </div>
           </div>
-        </div>
+        </fieldset>
 
-        <div className="border-b pb-6">
-          <h3 className="text-xl font-semibold text-gray-700">Asignación de Terapeuta</h3>
+        <fieldset className="border border-violet-300 p-4 rounded-md mt-6">
+          <legend className="text-xl font-semibold text-gray-700">Asignación de Terapeuta</legend>
           <div className="mt-4">
             <Label htmlFor="therapistId">Terapeuta Asignado</Label>
             <Select
@@ -564,7 +564,7 @@ function EditStudentPage() {
             />
             {formErrors.therapistId && <p className="text-red-500 text-sm mt-1">{formErrors.therapistId}</p>}
           </div>
-        </div>
+        </fieldset>
 
         <div className="pt-6 text-right">
           <button type="submit" className=" py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200">

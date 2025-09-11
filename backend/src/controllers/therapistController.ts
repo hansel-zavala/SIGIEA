@@ -75,21 +75,26 @@ export const createTherapist = async (req: Request, res: Response) => {
 
 export const getAllTherapists = async (req: Request, res: Response) => {
     try {
-        const { search, page = '1', limit = '10' } = req.query;
+        const { search, page = '1', limit = '10', status } = req.query;
         const pageNum = parseInt(page as string, 10);
         const limitNum = parseInt(limit as string, 10);
         const skip = (pageNum - 1) * limitNum;
 
-        const whereCondition = {
-            isActive: true,
-            ...(search && {
-                OR: [
-                    { nombres: { contains: search as string } },
-                    { apellidos: { contains: search as string } },
-                ],
-            }),
-        };
+        const whereCondition: any = {}; 
 
+        if (status === 'active') {
+            whereCondition.isActive = true;
+        } else if (status === 'inactive') {
+            whereCondition.isActive = false;
+        }
+
+        if (search) {
+            whereCondition.OR = [
+                { nombres: { contains: search as string } },
+                { apellidos: { contains: search as string } },
+            ];
+        }
+        
         const [therapists, totalTherapists] = await prisma.$transaction([
             prisma.therapistProfile.findMany({
                 where: whereCondition,
@@ -196,5 +201,18 @@ export const deleteTherapist = async (req: Request, res: Response) => {
         res.json({ message: 'Terapeuta desactivado correctamente.' });
     } catch (error) {
         res.status(500).json({ error: 'No se pudo desactivar el terapeuta.' });
+    }
+};
+
+export const reactivateTherapist = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        await prisma.therapistProfile.update({
+            where: { id: parseInt(id) },
+            data: { isActive: true },
+        });
+        res.json({ message: 'Terapeuta reactivado correctamente.' });
+    } catch (error) {
+        res.status(500).json({ error: 'No se pudo reactivar al terapeuta.' });
     }
 };

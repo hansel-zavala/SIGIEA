@@ -13,10 +13,13 @@ interface GuardianProfile {
   telefono: string;
   parentesco: string;
   direccionEmergencia: string;
-  student: {
+  students: {
     id: number;
-    fullName: string;
-  };
+    fullName?: string;
+    nombres?: string;
+    apellidos?: string;
+    isActive?: boolean;
+  }[];
 }
 
 const InfoField = ({ label, value }: { label: string; value: string | undefined }) => (
@@ -36,7 +39,13 @@ function GuardianProfilePage() {
     if (id) {
       guardianService.getGuardianById(Number(id))
         .then(data => {
-          setGuardian(data);
+          const normalized = {
+            ...data,
+            students: Array.isArray(data?.students)
+              ? data.students
+              : (data?.student ? [data.student] : []),
+          } as any;
+          setGuardian(normalized);
         })
         .catch(() => {
           setError('No se pudo cargar el perfil del guardián.');
@@ -60,7 +69,25 @@ function GuardianProfilePage() {
           </div>
           <div>
             <h2 className="text-3xl font-bold text-gray-800">{guardian.fullName}</h2>
-            <p className="text-md text-gray-500">{guardian.parentesco.replace('_', ' ')} de {guardian.student.fullName}</p>
+            <p className="text-md text-gray-500">{guardian.parentesco.replace('_', ' ')}</p>
+            <div className="mt-2 flex flex-wrap gap-2 items-center">
+              {guardian.students && guardian.students.length > 0 ? (
+                guardian.students.map((s) => {
+                  const name = s.fullName || `${s.nombres || ''} ${s.apellidos || ''}`.trim() || 'Sin nombre';
+                  const inactive = s.isActive === false;
+                  const chipClass = inactive
+                    ? 'text-gray-400 bg-gray-100 px-2 py-1 rounded'
+                    : 'text-violet-600 hover:underline bg-violet-50 px-2 py-1 rounded';
+                  return inactive ? (
+                    <span key={s.id} className={chipClass} title="Estudiante inactivo">{name}</span>
+                  ) : (
+                    <Link key={s.id} to={`/students/${s.id}`} className={chipClass}>{name}</Link>
+                  );
+                })
+              ) : (
+                <span className="text-gray-400">Sin estudiantes asociados</span>
+              )}
+            </div>
           </div>
         </div>
         
@@ -71,12 +98,18 @@ function GuardianProfilePage() {
               <span>Editar Padre</span>
             </button>
           </Link>
-          <Link to={`/students/${guardian.student.id}`}>
-            <button className="min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">
-              <FaUserGraduate />
-              <span>Ver Perfil del Estudiante</span>
-            </button>
-          </Link>
+          {(() => {
+            const firstActive = guardian.students?.find(s => s.isActive !== false);
+            if (!firstActive) return null;
+            return (
+              <Link to={`/students/${firstActive.id}`}>
+                <button className="min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">
+                  <FaUserGraduate />
+                  <span>Ver Perfil del Estudiante</span>
+                </button>
+              </Link>
+            );
+          })()}
         </div>
       </div>
       
@@ -88,7 +121,28 @@ function GuardianProfilePage() {
             <InfoField label="Número de Identidad" value={guardian.numeroIdentidad} />
             <InfoField label="Número de Teléfono" value={guardian.telefono} />
             <InfoField label="Dirección de Emergencia" value={guardian.direccionEmergencia} />
-            <InfoField label="Estudiante Vinculado" value={guardian.student.fullName} />
+            <div className="bg-gray-100 p-3 rounded-lg shadow-sm">
+              <p className="text-sm text-gray-500 font-semibold">Estudiantes Vinculados</p>
+              {guardian.students && guardian.students.length > 0 ? (
+                <ul className="list-disc list-inside text-lg text-gray-800">
+                  {guardian.students.map(s => {
+                    const name = s.fullName || `${s.nombres || ''} ${s.apellidos || ''}`.trim() || 'Sin nombre';
+                    const inactive = s.isActive === false;
+                    return (
+                      <li key={s.id}>
+                        {inactive ? (
+                          <span className="text-gray-400" title="Estudiante inactivo">{name}</span>
+                        ) : (
+                          <Link to={`/students/${s.id}`} className="text-violet-600 hover:underline">{name}</Link>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <p className="text-lg text-gray-800">Sin estudiantes asociados</p>
+              )}
+            </div>
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import authService from "../services/authService";
-import { FaUserShield, FaEnvelope, FaLock, FaEye, FaEyeSlash, FaGoogle, FaApple, FaFacebookF } from "react-icons/fa";
+import { FaUserShield, FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 
 function LoginPage() {
   const { login } = useAuth();
@@ -17,8 +17,7 @@ function LoginPage() {
     setError("");
     try {
       const data = await authService.login(email, password);
-      login(data.token);
-      console.log("Login exitoso desde la web!");
+      login(data);
     } catch (err) {
       setError("Credenciales inválidas o error de conexión.");
     }
@@ -31,15 +30,8 @@ function LoginPage() {
     const x = e.clientX - rect.left - size / 2;
     const y = e.clientY - rect.top - size / 2;
 
-    const newRipple = {
-      id: Date.now(),
-      x,
-      y,
-      size
-    };
-
+    const newRipple = { id: Date.now(), x, y, size };
     setRipples([...ripples, newRipple]);
-
     setTimeout(() => {
       setRipples(prev => prev.filter(r => r.id !== newRipple.id));
     }, 1000);
@@ -47,11 +39,8 @@ function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 overflow-hidden relative bg-gradient-to-br from-indigo-700 to-bg-blue-800 font-['Poppins']">
-      {/* Background elements */}
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden z-0">
-        
         <div className="absolute w-64 h-64 rounded-full bg-blue-300 opacity-20 -top-32 -left-32 animate-float"></div>
-
         <div className="absolute w-96 h-96 rounded-full bg-indigo-300 opacity-20 -bottom-48 -right-48 animate-float animation-delay-1000"></div>
         <div className="absolute w-80 h-80 rounded-full bg-pink-300 opacity-20 top-1/3 -right-20 animate-float animation-delay-1500"></div>
         <div className="absolute w-72 h-72 rounded-full bg-blue-200 opacity-20 bottom-1/4 left-20 animate-float"></div>
@@ -160,40 +149,6 @@ function LoginPage() {
           <p>Al continuar, aceptas nuestros <a href="#" className="hover:underline">Términos de Servicio</a> y <a href="#" className="hover:underline">Política de Privacidad</a>.</p>
         </div>
       </div>
-
-      {/* Mover las animaciones CSS a un archivo global */}
-      <style>{`
-        @keyframes float {
-          0% { transform: translateY(0px); }
-          50% { transform: translateY(-15px); }
-          100% { transform: translateY(0px); }
-        }
-        @keyframes ripple {
-          to {
-            transform: scale(4);
-            opacity: 0;
-          }
-        }
-        .animate-float {
-          animation: float 6s ease-in-out infinite;
-        }
-        .animation-delay-1000 {
-          animation-delay: 1s;
-        }
-        .animation-delay-1500 {
-          animation-delay: 1.5s;
-        }
-        .animate-ripple {
-          animation: ripple 1s linear;
-        }
-        .animate-fade-in {
-          animation: fadeIn 0.5s ease-out;
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </div>
   );
 }

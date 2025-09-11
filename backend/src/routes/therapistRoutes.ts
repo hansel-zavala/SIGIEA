@@ -4,7 +4,8 @@ import {
     createTherapist,
     getTherapistById,
     updateTherapist,
-    deleteTherapist
+    deleteTherapist,
+    reactivateTherapist
 } from '../controllers/therapistController.js';
 import { protect, isAdmin } from '../middleware/authMiddleware.js';
 
@@ -15,5 +16,6 @@ router.post('/', protect, isAdmin, createTherapist);
 router.get('/:id', protect, isAdmin, getTherapistById);
 router.put('/:id', protect, isAdmin, updateTherapist);
 router.delete('/:id', protect, isAdmin, deleteTherapist);
+router.patch('/:id/reactivate', protect, isAdmin, reactivateTherapist);
 
 export default router;

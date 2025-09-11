@@ -15,6 +15,7 @@ export interface TherapistProfile {
   fullName: string;
   email: string;
   specialty: string;
+  isActive: boolean;
   phone: string | null;
   identityNumber: string;
   gender: 'Masculino' | 'Femenino' | null;
@@ -39,18 +40,18 @@ const createTherapist = async (therapistData: any) => {
   } catch (error) { throw error; }
 };
 
-const getAllTherapists = async (searchTerm?: string, page: number = 1, limit: number = 10): Promise<{ data: TherapistProfile[], total: number }> => {
+const getAllTherapists = async (searchTerm?: string, page: number = 1, limit: number = 10, status: string = 'active'): Promise<{ data: TherapistProfile[], total: number }> => {
   try {
     const params = {
         search: searchTerm,
         page,
         limit,
+        status,
     };
     const response = await api.get('/therapists', { params });
     return response.data;
   } catch (error) { throw error; }
 };
-
 const getTherapistById = async (id: number): Promise<TherapistProfile> => {
   try {
     const response = await api.get(`/therapists/${id}`);
@@ -72,10 +73,21 @@ const deleteTherapist = async (id: number) => {
   } catch (error) { throw error; }
 };
 
+const reactivateTherapist = async (id: number) => {
+  try {
+    const response = await api.patch(`/therapists/${id}/reactivate`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error al reactivar el terapeuta con ID ${id}:`, error);
+    throw error;
+  }
+};
+
 export default {
   createTherapist,
   getAllTherapists,
   getTherapistById,
   updateTherapist,
   deleteTherapist,
+  reactivateTherapist,
 };

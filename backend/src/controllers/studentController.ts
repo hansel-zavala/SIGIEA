@@ -18,9 +18,6 @@ export const createStudent = async (req: Request, res: Response) => {
     if (!guardians || !Array.isArray(guardians) || guardians.length === 0) {
         return res.status(400).json({ error: 'Se requiere al menos un padre o tutor.' });
     }
-    // Validación orientada a reutilizar acudientes existentes:
-    // - Siempre requiere `numeroIdentidad`.
-    // - Si NO existe en DB, exige los campos mínimos para crear.
     for (const g of guardians) {
       if (!g?.numeroIdentidad) {
         return res.status(400).json({ error: 'Cada guardián debe incluir el número de identidad (DNI).' });
@@ -46,7 +43,6 @@ export const createStudent = async (req: Request, res: Response) => {
     const newStudent = await prisma.student.create({
       data: {
         ...studentData,
-        // Reutiliza acudientes existentes por DNI o crea si no existen
         guardians: {
           connectOrCreate: guardians.map((g: any) => ({
             where: { numeroIdentidad: g.numeroIdentidad },
@@ -57,6 +53,7 @@ export const createStudent = async (req: Request, res: Response) => {
               numeroIdentidad: g.numeroIdentidad,
               telefono: g.telefono,
               parentesco: g.parentesco,
+              parentescoEspecifico: g.parentescoEspecifico,
               copiaIdentidadUrl: g.copiaIdentidadUrl || null,
               observaciones: g.observaciones || null,
             },
@@ -239,19 +236,16 @@ export const deleteStudent = async (req: Request, res: Response) => {
     const studentId = parseInt(id);
 
     const result = await prisma.$transaction(async (tx) => {
-      // Desactivar estudiante
       const student = await tx.student.update({
         where: { id: studentId },
         data: { isActive: false },
       });
 
-      // Obtener todos los acudientes vinculados a este estudiante
       const guardians = await tx.guardian.findMany({
         where: { students: { some: { id: studentId } } },
         select: { id: true },
       });
 
-      // Para cada acudiente, desactivar si ya no tiene hijos activos
       for (const g of guardians) {
         const activeChildrenCount = await tx.student.count({
           where: { isActive: true, guardians: { some: { id: g.id } } },
@@ -276,19 +270,16 @@ export const reactivateStudent = async (req: Request, res: Response) => {
     const studentId = parseInt(id);
 
     const result = await prisma.$transaction(async (tx) => {
-      // Reactivar estudiante
       const student = await tx.student.update({
         where: { id: studentId },
         data: { isActive: true },
       });
 
-      // Buscar acudientes vinculados a este estudiante
       const guardians = await tx.guardian.findMany({
         where: { students: { some: { id: studentId } } },
         select: { id: true, isActive: true },
       });
 
-      // Reactivar acudiente si ahora tiene al menos un hijo activo
       for (const g of guardians) {
         const activeChildrenCount = await tx.student.count({
           where: { isActive: true, guardians: { some: { id: g.id } } },

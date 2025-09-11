@@ -2,7 +2,6 @@
 import { Request, Response } from 'express';
 import prisma from '../db.js';
 
-// --- Obtener todas las categorías ---
 export const getAllCategories = async (req: Request, res: Response) => {
   try {
     const categories = await prisma.category.findMany({
@@ -14,7 +13,6 @@ export const getAllCategories = async (req: Request, res: Response) => {
   }
 };
 
-// --- Crear una nueva categoría ---
 export const createCategory = async (req: Request, res: Response) => {
   try {
     const { name, color } = req.body;
@@ -26,7 +24,6 @@ export const createCategory = async (req: Request, res: Response) => {
     });
     res.status(201).json(newCategory);
   } catch (error) {
-    // Manejo de error para nombre duplicado
     if (error instanceof Error && 'code' in error && (error as any).code === 'P2002') {
         return res.status(409).json({ error: 'Ya existe una categoría con ese nombre.' });
     }
@@ -34,7 +31,6 @@ export const createCategory = async (req: Request, res: Response) => {
   }
 };
 
-// --- Actualizar una categoría ---
 export const updateCategory = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -52,12 +48,10 @@ export const updateCategory = async (req: Request, res: Response) => {
   }
 };
 
-// --- Eliminar una categoría ---
 export const deleteCategory = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     
-    // Opcional: Verificar si la categoría está en uso antes de borrar
     const eventsWithCategory = await prisma.event.count({
         where: { categoryId: parseInt(id) }
     });

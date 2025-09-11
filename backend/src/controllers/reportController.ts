@@ -1,8 +1,11 @@
 // backend/src/controllers/reportController.ts
-import { Request, Response } from 'express';
-import prisma from '../db.js';
+import { Response } from 'express';
+import { PrismaClient } from '@prisma/client';
+import { AuthRequest } from '../types/express.js';
 
-export const createReport = async (req: Request, res: Response) => {
+const prisma = new PrismaClient();
+
+export const createReport = async (req: AuthRequest , res: Response) => {
   try {
     const { studentId, templateId } = req.body;
     const therapistId = req.user?.id;
@@ -24,7 +27,7 @@ export const createReport = async (req: Request, res: Response) => {
   }
 };
 
-export const getReportsByStudent = async (req: Request, res: Response) => {
+export const getReportsByStudent = async (req: AuthRequest , res: Response) => {
   try {
     const { studentId } = req.params;
     const reports = await prisma.report.findMany({
@@ -41,7 +44,7 @@ export const getReportsByStudent = async (req: Request, res: Response) => {
   }
 };
 
-export const getReportById = async (req: Request, res: Response) => {
+export const getReportById = async (req: AuthRequest , res: Response) => {
     try {
         const { reportId } = req.params;
         const report = await prisma.report.findUnique({
@@ -73,14 +76,12 @@ export const getReportById = async (req: Request, res: Response) => {
     }
 };
 
-export const submitReportAnswers = async (req: Request, res: Response) => {
+export const submitReportAnswers = async (req: AuthRequest , res: Response) => {
     try {
         const { reportId } = req.params;
         const { answers, ...reportData } = req.body;
 
-        // Inicia una transacción para asegurar que todo se guarde correctamente
         const transaction = await prisma.$transaction(async (tx) => {
-            // 1. Actualiza los campos de texto del reporte principal
             await tx.report.update({
                 where: { id: parseInt(reportId) },
                 data: {
@@ -92,12 +93,10 @@ export const submitReportAnswers = async (req: Request, res: Response) => {
                 }
             });
 
-            // 2. Borra las respuestas anteriores para este reporte (si existen)
             await tx.reportItemAnswer.deleteMany({
                 where: { reportId: parseInt(reportId) }
             });
 
-            // 3. Inserta las nuevas respuestas
             await tx.reportItemAnswer.createMany({
                 data: answers.map((a: any) => ({
                     reportId: parseInt(reportId),
@@ -106,7 +105,6 @@ export const submitReportAnswers = async (req: Request, res: Response) => {
                 }))
             });
 
-            // 4. Devuelve el reporte actualizado
             return tx.report.findUnique({ where: { id: parseInt(reportId) }});
         });
 

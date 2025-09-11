@@ -2,7 +2,6 @@
 import { Request, Response } from 'express';
 import prisma from '../db.js';
 
-// Obtener todas las alergias
 export const getAllAlergias = async (req: Request, res: Response) => {
   try {
     const alergias = await prisma.alergia.findMany({
@@ -14,7 +13,6 @@ export const getAllAlergias = async (req: Request, res: Response) => {
   }
 };
 
-// Crear una nueva alergia
 export const createAlergia = async (req: Request, res: Response) => {
   try {
     const { nombre } = req.body;
@@ -30,7 +28,6 @@ export const createAlergia = async (req: Request, res: Response) => {
   }
 };
 
-// Actualizar una alergia
 export const updateAlergia = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -45,7 +42,6 @@ export const updateAlergia = async (req: Request, res: Response) => {
   }
 };
 
-// Eliminar una alergia
 export const deleteAlergia = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;

@@ -31,14 +31,14 @@ model Student {
   isActive               Boolean   @default(true)
   lugarNacimiento        String?
   direccion              String?
-  institucionProcedencia String?
+  institutoIncluido      String?
   recibioEvaluacion      Boolean   @default(false)
   resultadoEvaluacionUrl String?
   anoIngreso             DateTime  @default(now()) @map("año_ingreso")
   zona                   Zona?
   jornada                Jornada?
   genero                 Genero?
-  institutoIncluido      String?
+  referenciaMedica       String? 
   partidaNacimientoUrl   String?
   atencionGrupal         Boolean   @default(false)
   atencionIndividual     Boolean   @default(false)
@@ -134,6 +134,7 @@ model Guardian {
   numeroIdentidad         String      @unique
   telefono                String
   parentesco              Parentesco
+  parentescoEspecifico    String?
   copiaIdentidadUrl       String?
   observaciones           String?     @db.Text
   isActive                Boolean     @default(true)
@@ -142,6 +143,11 @@ model Guardian {
   userId                  Int?        @unique
   createdAt               DateTime    @default(now())
   updatedAt               DateTime    @updatedAt
+}
+
+model TipoParentesco {
+  id        Int      @id @default(autoincrement())
+  nombre    String   @unique
 }
 
 model TherapistProfile {

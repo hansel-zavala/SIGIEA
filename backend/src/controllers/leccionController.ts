@@ -1,8 +1,12 @@
 // backend/src/controllers/leccionController.ts
-import { Request, Response } from 'express';
-import prisma from '../db.js';
+import { Response } from 'express';
+import { PrismaClient } from '@prisma/client';
+import { AuthRequest } from '../types/express.js';
 
-export const createLeccion = async (req: Request, res: Response) => {
+const prisma = new PrismaClient();
+
+
+export const createLeccion = async (req: AuthRequest, res: Response) => {
   try {
     const { title, objective, description, category, keySkill } = req.body;
     const createdById = req.user?.id;
@@ -20,7 +24,7 @@ export const createLeccion = async (req: Request, res: Response) => {
   }
 };
 
-export const getAllLecciones = async (req: Request, res: Response) => {
+export const getAllLecciones = async (req: AuthRequest, res: Response) => {
   try {
     const lecciones = await prisma.leccion.findMany({ where: { isActive: true } });
     res.json(lecciones);
@@ -29,7 +33,7 @@ export const getAllLecciones = async (req: Request, res: Response) => {
   }
 };
 
-export const getLeccionById = async (req: Request, res: Response) => {
+export const getLeccionById = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const leccion = await prisma.leccion.findFirst({ where: { id: parseInt(id), isActive: true } });
@@ -38,7 +42,7 @@ export const getLeccionById = async (req: Request, res: Response) => {
   } catch (error) { res.status(500).json({ error: 'Error al obtener la lección.' }); }
 };
 
-export const updateLeccion = async (req: Request, res: Response) => {
+export const updateLeccion = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const updatedLeccion = await prisma.leccion.update({
@@ -49,7 +53,7 @@ export const updateLeccion = async (req: Request, res: Response) => {
   } catch (error) { res.status(500).json({ error: 'No se pudo actualizar la lección.' }); }
 };
 
-export const deleteLeccion = async (req: Request, res: Response) => {
+export const deleteLeccion = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     await prisma.leccion.update({

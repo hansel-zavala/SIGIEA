@@ -7,7 +7,7 @@ export const getAllEvents = async (req: Request, res: Response) => {
     const events = await prisma.event.findMany({
       where: { isActive: true },
       include: {
-        category: true, // <-- AÑADE ESTA LÍNEA PARA INCLUIR LOS DATOS DE LA CATEGORÍA
+        category: true, 
       },
       orderBy: { startDate: 'asc' },
     });

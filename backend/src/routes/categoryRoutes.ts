@@ -10,7 +10,6 @@ import { protect, isAdmin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Todas las rutas de categorías requerirán ser administrador
 router.use(protect, isAdmin);
 
 router.get('/', getAllCategories);

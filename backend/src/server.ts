@@ -1,7 +1,8 @@
 // backend/src/server.ts
 
 import 'dotenv/config';
-import express, { Request, Response } from 'express';
+import express from 'express';
+import type { Request, Response } from 'express';
 import cors from 'cors';
 import userRoutes from './routes/userRoutes.js';
 import studentRoutes from './routes/studentRoutes.js';
@@ -16,12 +17,20 @@ import eventRoutes from './routes/eventRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import reportTemplateRoutes from './routes/reportTemplateRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
+import tipoParentescoRoutes from './routes/tipoParentescoRoutes.js';
 
 const app = express();
 const PORT = 3001;
 
-app.use(cors());
+app.use(cors({
+  exposedHeaders: ['X-New-Token'],
+}));
+
+
 app.use(express.json());
+app.get('/', (req: Request, res: Response) => {
+  res.send('API de SIGIEA funcionando correctamente!');
+});
 app.use('/api/users', userRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/lecciones', leccionRoutes);
@@ -35,6 +44,7 @@ app.use('/api/events', eventRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/report-templates', reportTemplateRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api', tipoParentescoRoutes);
 app.use('/public', express.static('public'));
 
 app.listen(PORT, () => {

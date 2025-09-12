@@ -12,6 +12,7 @@ import {  departamentos,  municipiosPorDepartamento, } from "../data/honduras-da
 import { FaPlus, FaTrash } from "react-icons/fa";
 import CustomDatePicker from "../components/ui/DatePicker";
 import { getAllTiposParentesco, createTipoParentesco, deleteTipoParentesco, updateTipoParentesco } from "../services/tipoParentescoService";
+import { ConfirmationDialog } from '../components/ui/ConfirmationDialog';
 import Label from "../components/ui/Label";
 import Input from "../components/ui/Input";
 import Select from "../components/ui/Select";
@@ -127,6 +128,8 @@ function MatriculaPage() {
   const [therapists, setTherapists] = useState<TherapistProfile[]>([]);
   const [therapistId, setTherapistId] = useState("");
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [isConfirmOpen, setConfirmOpen] = useState(false);
+  const [guardianIndexToDelete, setGuardianIndexToDelete] = useState<number | null>(null);
 
   const validateFile = (file: File | null) => {
   if (!file) return "";
@@ -235,6 +238,22 @@ function MatriculaPage() {
         direccionEmergencia: "",
       },
     ]);
+  };
+  
+  const handleRemoveGuardianClick = (index: number) => {
+    setGuardianIndexToDelete(index); // Guardamos el índice de la ficha a eliminar
+    setConfirmOpen(true); // Abrimos el diálogo
+  };
+
+  const handleConfirmDelete = () => {
+    if (guardianIndexToDelete !== null) {
+      // Filtramos el array para quitar la ficha correspondiente
+      setGuardians(guardians.filter((_, i) => i !== guardianIndexToDelete));
+      
+      // Reseteamos los estados del diálogo
+      setGuardianIndexToDelete(null);
+      setConfirmOpen(false);
+    }
   };
 
   const removeGuardian = (index: number) => {
@@ -582,27 +601,27 @@ function MatriculaPage() {
             </div>
 
             <div>
-              <Label htmlFor="institucionProcedencia">
+              <Label htmlFor="institutoIncluido">
                 Nombre del instituto u otro centro donde está incluido
               </Label>
               <Input
-                id="institucionProcedencia"
-                name="institucionProcedencia"
+                id="institutoIncluido"
+                name="institutoIncluido"
                 type="text"
                 value={studentData.institutoIncluido}
-                placeholder="Ingresa su institución de procedencia"
+                placeholder="Ingresa su instituto o centro"
                 onChange={handleChange}
               />
               {formErrors.institucionProcedencia && (<p className="text-red-500 text-sm mt-1"> {formErrors.institucionProcedencia}</p>)}
             </div>
 
             <div>
-              <Label htmlFor="institutoIncluido">
+              <Label htmlFor="referenciaMedica">
                 Referencia Medica
               </Label>
               <Input
-                id="institutoIncluido"
-                name="institutoIncluido"
+                id="referenciaMedica"
+                name="referenciaMedica"
                 type="text"
                 value={studentData.referenciaMedica}
                 onChange={handleChange}
@@ -928,7 +947,7 @@ function MatriculaPage() {
               {guardians.length > 1 && (
                 <button
                   type="button"
-                  onClick={() => removeGuardian(index)}
+                  onClick={() => handleRemoveGuardianClick(index)}
                   className="absolute top-2 right-2 border border-red-500 bg-red-500 text-white hover:bg-red-600 hover:border-red-600 font-semibold py-1 px-3 rounded"
                 >
                   Eliminar
@@ -936,8 +955,8 @@ function MatriculaPage() {
               )}
             </div>
           ))}
-          
         </fieldset>
+
         <div className="pt-6 flex justify-end gap-6">
             <button
               type="button"
@@ -955,6 +974,16 @@ function MatriculaPage() {
             </button>
           </div>
       </form>
+
+      {/* 5. Añadir el componente del diálogo al final del JSX */}
+      <ConfirmationDialog
+        isOpen={isConfirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Eliminar ficha del responsable"
+        description="¿Estás seguro que deseas eliminar esta ficha? Los cambios no guardados se perderán."
+        confirmText="Eliminar "
+      />
     </div>
   );
 }

@@ -7,6 +7,7 @@ import Badge from "../components/ui/Badge";
 import Input from "../components/ui/Input";
 import Pagination from "../components/ui/Pagination";
 import { FaUserCircle, FaPencilAlt, FaTrash, FaCalendarPlus, FaPlus, FaUndo } from "react-icons/fa";
+import { ConfirmationDialog } from "../components/ui/ConfirmationDialog";
 
 interface Student {
   id: number;
@@ -30,6 +31,9 @@ function StudentsPage() {
   const [totalItems, setTotalItems] = useState(0);
   const [itemsPerPage] = useState(10);
   const [statusFilter, setStatusFilter] = useState('active');
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<"deactivate" | "reactivate" | null>(null);
+  const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
 
   const fetchStudents = () => {
       setLoading(true);
@@ -49,13 +53,11 @@ function StudentsPage() {
   }, [searchTerm, currentPage, itemsPerPage, statusFilter]);
 
   const handleDelete = async (studentId: number) => {
-    if (window.confirm("¿Seguro que quieres desactivar a este estudiante?")) {
-      try {
-        await studentService.deleteStudent(studentId);
-        fetchStudents();
-      } catch (err) {
-        setError("No se pudo desactivar el estudiante.");
-      }
+    try {
+      await studentService.deleteStudent(studentId);
+      fetchStudents();
+    } catch (err) {
+      setError("No se pudo desactivar el estudiante.");
     }
   };
   
@@ -67,18 +69,37 @@ function StudentsPage() {
   };
 
   const handleReactivate = async (studentId: number) => {
-    if (window.confirm("¿Seguro que quieres reactivar a este estudiante?")) {
-      try {
-        await studentService.reactivateStudent(studentId);
-        if (statusFilter === 'inactive') {
-          setStatusFilter('active');
-        } else {
-          fetchStudents();
-        }
-      } catch (err) {
-        setError("No se pudo reactivar al estudiante.");
+    try {
+      await studentService.reactivateStudent(studentId);
+      if (statusFilter === 'inactive') {
+        setStatusFilter('active');
+      } else {
+        fetchStudents();
       }
+    } catch (err) {
+      setError("No se pudo reactivar al estudiante.");
     }
+  };
+
+  const openDeactivateDialog = (studentId: number) => {
+    setSelectedStudentId(studentId);
+    setConfirmAction("deactivate");
+    setConfirmOpen(true);
+  };
+
+  const openReactivateDialog = (studentId: number) => {
+    setSelectedStudentId(studentId);
+    setConfirmAction("reactivate");
+    setConfirmOpen(true);
+  };
+
+  const handleConfirm = async () => {
+    if (!selectedStudentId || !confirmAction) return;
+    if (confirmAction === "deactivate") await handleDelete(selectedStudentId);
+    if (confirmAction === "reactivate") await handleReactivate(selectedStudentId);
+    setConfirmOpen(false);
+    setSelectedStudentId(null);
+    setConfirmAction(null);
   };
 
   return (
@@ -88,7 +109,7 @@ function StudentsPage() {
           Gestión de Estudiantes
         </h2>
         
-        <div className="flex-grow ">
+        <div className="flex-grow">
             <Input
                 type="text"
                 placeholder="Buscar por nombre, apellido o terapeuta..."
@@ -177,11 +198,11 @@ function StudentsPage() {
             </Link>
             
             {student.isActive ? (
-              <button onClick={() => handleDelete(student.id)} title="Desactivar Estudiante">
+              <button onClick={() => openDeactivateDialog(student.id)} title="Desactivar Estudiante">
                 <FaTrash className="text-red-500 hover:text-red-700 cursor-pointer" style={{ fontSize: '15px' }} />
               </button>
             ) : (
-              <button onClick={() => handleReactivate(student.id)} title="Reactivar Estudiante">
+              <button onClick={() => openReactivateDialog(student.id)} title="Reactivar Estudiante">
                 <FaUndo className="text-green-500 hover:text-green-700 cursor-pointer" style={{ fontSize: '15px' }} />
               </button>
             )}
@@ -206,6 +227,23 @@ function StudentsPage() {
             onPageChange={handlePageChange}
         />
       </div>
+      <ConfirmationDialog
+        isOpen={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleConfirm}
+        title={confirmAction === 'deactivate' ? 'Desactivar estudiante' : 'Reactivar estudiante'}
+        description={
+          confirmAction === 'deactivate'
+            ? '¿Estás seguro que deseas desactivar a este estudiante? Podrás reactivarlo más adelante.'
+            : '¿Estás seguro que deseas reactivar a este estudiante?'
+        }
+        confirmText={confirmAction === 'deactivate' ? 'Desactivar' : 'Reactivar'}
+        confirmButtonClassName={
+          confirmAction === 'deactivate'
+            ? 'min-w-[100px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-red-400 to-red-500 hover:from-red-500 hover:to-red-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md'
+            : 'min-w-[100px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md'
+        }
+      />
     </div>
   );
 }

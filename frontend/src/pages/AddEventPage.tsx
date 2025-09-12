@@ -199,10 +199,10 @@ function AddEventPage() {
             />
           </div>
         </div>
-        <div className="pt-6 text-right">
+        <div className="pt-6 flex justify-end gap-6">
           <button
             type="submit"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg"
+            className="min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md"
           >
             Guardar Evento
           </button>

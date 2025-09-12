@@ -22,11 +22,11 @@ export const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children }) 
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
       onClick={() => onOpenChange(false)}
     >
       <div
-        className="relative bg-white rounded-lg shadow-xl"
+        className="relative bg-white rounded-xl shadow-2xl border border-violet-200 max-w-md w-[92vw]"
         onClick={(e) => e.stopPropagation()}
       >
         {children}
@@ -40,7 +40,7 @@ export const DialogContent: React.FC<{ children: React.ReactNode; className?: st
 );
 
 export const DialogHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="pb-4 border-b">{children}</div>
+  <div className="pb-4 border-b border-violet-200">{children}</div>
 );
 
 export const DialogTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -48,5 +48,5 @@ export const DialogTitle: React.FC<{ children: React.ReactNode }> = ({ children 
 );
 
 export const DialogFooter: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="pt-4 border-t flex justify-end space-x-2">{children}</div>
+  <div className="pt-4 border-t border-violet-200 flex justify-end space-x-2">{children}</div>
 );

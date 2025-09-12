@@ -14,6 +14,11 @@ import { FaTrash } from 'react-icons/fa';
 
 const dayOptions = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const genderOptions = [{ value: 'Masculino', label: 'Masculino' }, { value: 'Femenino', label: 'Femenino' }];
+const specialtyOptions = [
+  { value: 'Terapeuta', label: 'Terapeuta' },
+  { value: 'Psicologo', label: 'Psicólogo' },
+  { value: 'Ambos', label: 'Ambos' },
+];
 
 function AddTherapistPage() {
   const [formData, setFormData] = useState({
@@ -23,7 +28,7 @@ function AddTherapistPage() {
     password: '',
     identityNumber: '',
     phone: '',
-    specialty: '', // Este es el "Cargo"
+    specialty: '',
     gender: '',
     dateOfBirth: null as Date | null,
     direccion: '',
@@ -347,12 +352,14 @@ function AddTherapistPage() {
         
             <div>
               <Label htmlFor="specialty">Cargo / Puesto</Label>
-              <Input 
-                id="specialty" 
-                name="specialty" 
-                value={formData.specialty} 
-                onChange={handleChange} 
-                placeholder="Ej: Terapeuta, Limpieza" 
+              <Select
+                instanceId="specialty-create-select"
+                inputId="specialty"
+                name="specialty"
+                value={specialtyOptions.find(o => o.value === formData.specialty) || null}
+                onChange={(option) => handleSelectChange('specialty', option?.value || null)}
+                placeholder="Selecciona el cargo"
+                options={specialtyOptions}
               />
               {formErrors.specialty && <p className="text-red-500 text-sm mt-1">{formErrors.specialty}</p>}
             </div>

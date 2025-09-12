@@ -8,6 +8,7 @@ import Input from '../components/ui/Input';
 import Pagination from '../components/ui/Pagination';
 import { FaUserMd, FaPencilAlt, FaTrash, FaPlus, FaUndo } from 'react-icons/fa';
 import Badge from '../components/ui/Badge.js';
+import { ConfirmationDialog } from "../components/ui/ConfirmationDialog";
 
 function TherapistsPage() {
   const [therapists, setTherapists] = useState<TherapistProfile[]>([]);
@@ -18,6 +19,10 @@ function TherapistsPage() {
   const [totalItems, setTotalItems] = useState(0);
   const [itemsPerPage] = useState(10);
   const [statusFilter, setStatusFilter] = useState('active');
+  const [confirmAction, setConfirmAction] = useState<"deactivate" | "reactivate" | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedTherapistId, setSelectedTherapistId] = useState<number | null>(null);
+
 
   const fetchTherapists = () => {
       setLoading(true);
@@ -36,24 +41,20 @@ function TherapistsPage() {
   }, [searchTerm, currentPage, itemsPerPage, statusFilter])
 
   const handleDelete = async (therapistId: number) => {
-    if (window.confirm('¿Seguro que quieres desactivar al terapeuta?')) {
-      try {
-        await therapistService.deleteTherapist(therapistId);
-        fetchTherapists(); // Recargamos la lista
-      } catch (err) {
-        setError('No se pudo desactivar al terapeuta.');
-      }
+    try {
+      await therapistService.deleteTherapist(therapistId);
+      fetchTherapists();
+    } catch (err) {
+      setError('No se pudo desactivar al terapeuta.');
     }
   };
 
   const handleReactivate = async (therapistId: number) => {
-    if (window.confirm('¿Seguro que quieres reactivar a este miembro del personal?')) {
-      try {
-        await therapistService.reactivateTherapist(therapistId);
-        fetchTherapists(); // Recargamos la lista
-      } catch (err: any) {
-        alert(err.response?.data?.error || 'No se pudo reactivar al miembro del personal.');
-      }
+    try {
+      await therapistService.reactivateTherapist(therapistId);
+      fetchTherapists();
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'No se pudo reactivar al miembro del personal.');
     }
   };
 
@@ -67,6 +68,27 @@ function TherapistsPage() {
       setCurrentPage(pageNumber);
   };
 
+  const openDeactivateDialog = (therapistId: number) => {
+    setSelectedTherapistId(therapistId);
+    setConfirmAction("deactivate");
+    setConfirmOpen(true);
+  };
+
+  const openReactivateDialog = (therapistId: number) => {
+    setSelectedTherapistId(therapistId);
+    setConfirmAction("reactivate");
+    setConfirmOpen(true);
+  };
+
+  const handleConfirm = async () => {
+    if (!selectedTherapistId || !confirmAction) return;
+    if (confirmAction === "deactivate") await handleDelete(selectedTherapistId);
+    if (confirmAction === "reactivate") await handleReactivate(selectedTherapistId);
+    setConfirmOpen(false);
+    setSelectedTherapistId(null);
+    setConfirmAction(null);
+  };
+
   if (loading) return <p>Cargando...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
 
@@ -74,7 +96,7 @@ function TherapistsPage() {
     <div className="bg-white p-6 rounded-lg shadow-md">
       <div className="flex justify-between items-center mb-6 gap-4">
         <h2 className="text-2xl font-bold text-gray-800">Gestión de Terapeutas</h2>
-        <div className="flex-grow max-w-md">
+        <div className="flex-grow">
             <Input
                 type="text"
                 placeholder="Buscar por nombre..."
@@ -149,15 +171,15 @@ function TherapistsPage() {
                   <td className="px-5 py-4">
                     <div className="flex gap-4">
                       <Link to={`/therapists/edit/${therapist.id}`} title="Editar">
-                        <FaPencilAlt className="text-blue-500 hover:text-blue-700" />
+                        <FaPencilAlt className="text-blue-500 hover:text-blue-700 cursor-pointer" style={{ fontSize: '15px' }} />
                       </Link>
                       {therapist.isActive ? (
-                        <button onClick={() => handleDelete(therapist.id)} title="Desactivar">
-                          <FaTrash className="text-red-500 hover:text-red-700" />
+                        <button onClick={() => openDeactivateDialog(therapist.id)} title="Desactivar">
+                          <FaTrash className="text-red-500 hover:text-red-700 cursor-pointer" style={{ fontSize: '15px' }} />
                         </button>
                       ) : (
-                        <button onClick={() => handleReactivate(therapist.id)} title="Reactivar">
-                          <FaUndo className="text-green-500 hover:text-green-700" />
+                        <button onClick={() => openReactivateDialog(therapist.id)} title="Reactivar">
+                          <FaUndo className="text-green-500 hover:text-green-700 cursor-pointer" style={{ fontSize: '15px' }} />
                         </button>
                       )}
                     </div>
@@ -180,6 +202,23 @@ function TherapistsPage() {
             currentPage={currentPage}
             onPageChange={handlePageChange}
         />
+      <ConfirmationDialog
+        isOpen={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleConfirm}
+        title={confirmAction === 'deactivate' ? 'Desactivar personal' : 'Reactivar personal'}
+        description={
+          confirmAction === 'deactivate'
+            ? '¿Estás seguro que deseas desactivar a este miembro del personal? Podrás reactivarlo más adelante.'
+            : '¿Estás seguro que deseas reactivar a este miembro del personal?'
+        }
+        confirmText={confirmAction === 'deactivate' ? 'Desactivar' : 'Reactivar'}
+        confirmButtonClassName={
+          confirmAction === 'deactivate'
+            ? 'min-w-[100px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-red-400 to-red-500 hover:from-red-500 hover:to-red-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md'
+            : 'min-w-[100px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md'
+        }
+      />
     </div>
   );
 }

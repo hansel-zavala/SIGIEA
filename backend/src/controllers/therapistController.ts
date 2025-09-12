@@ -98,9 +98,17 @@ export const getAllTherapists = async (req: Request, res: Response) => {
         const [therapists, totalTherapists] = await prisma.$transaction([
             prisma.therapistProfile.findMany({
                 where: whereCondition,
-                orderBy: { nombres: 'asc' },
+                orderBy: [
+                    { isActive: 'desc' }, 
+                    { createdAt: 'desc' }
+                ],
                 skip: skip,
                 take: limitNum,
+                include: {
+                    assignedStudents: {
+                        where: { isActive: true },
+                    },
+                },
             }),
             prisma.therapistProfile.count({ where: whereCondition }),
         ]);

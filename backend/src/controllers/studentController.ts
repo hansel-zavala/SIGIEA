@@ -12,7 +12,7 @@ export const createStudent = async (req: Request, res: Response) => {
     if (!studentData.nombres || !studentData.apellidos || !studentData.dateOfBirth) {
         return res.status(400).json({ error: 'Nombres, apellidos y fecha de nacimiento son obligatorios.' });
     }
-     if (!studentData.therapistId) {
+    if (!studentData.therapistId) {
         return res.status(400).json({ error: 'Debe asignar un terapeuta al estudiante.' });
     }
     if (!guardians || !Array.isArray(guardians) || guardians.length === 0) {
@@ -83,7 +83,7 @@ export const getAllStudents = async (req: Request, res: Response) => {
     
     if (status === 'active') {
       whereCondition.isActive = true;
-    } else if (status === 'inactive') {
+    } else if (status === 'inactive') { 
       whereCondition.isActive = false;
     }
 

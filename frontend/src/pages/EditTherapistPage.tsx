@@ -163,8 +163,16 @@ function EditTherapistPage() {
 
     if (id) {
       try {
-        const dataToUpdate = { ...formData };
-        
+        const dataToUpdate: any = { ...formData };
+        // Limpiar campos calculados o de solo lectura que vienen del GET
+        delete dataToUpdate.fullName;
+        delete dataToUpdate.assignedStudents;
+        delete dataToUpdate.therapySessions;
+        delete dataToUpdate.createdAt;
+        delete dataToUpdate.updatedAt;
+        delete dataToUpdate.userId;
+        delete dataToUpdate.isActive;
+
         if (newIdentityFile) dataToUpdate.identityCardUrl = (await uploadService.uploadFile(newIdentityFile)).filePath;
         if (newResumeFile) dataToUpdate.resumeUrl = (await uploadService.uploadFile(newResumeFile)).filePath;
 
@@ -339,15 +347,16 @@ function EditTherapistPage() {
               />
               {formErrors.password && <p className="text-red-500 text-sm mt-1">{formErrors.password}</p>}
             </div>
-        
             <div>
               <Label htmlFor="specialty">Cargo / Puesto</Label>
-              <Input 
-                id="specialty" 
-                name="specialty" 
-                value={formData.specialty} 
-                onChange={handleChange} 
-                placeholder="Ej: Terapeuta, Limpieza" 
+              <Select
+                instanceId="specialty-edit-select"
+                inputId="specialty"
+                name="specialty"
+                value={specialtyOptions.find(o => o.value === formData.specialty) || null}
+                onChange={(option) => handleSelectChange('specialty', option?.value || null)}
+                placeholder="Selecciona el cargo"
+                options={specialtyOptions}
               />
               {formErrors.specialty && <p className="text-red-500 text-sm mt-1">{formErrors.specialty}</p>}
             </div>

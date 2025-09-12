@@ -21,7 +21,7 @@ type StudentFormData = {
     dateOfBirth: string;
     lugarNacimiento: string;
     direccion: string;
-    institucionProcedencia: string;
+    //institucionProcedencia: string;
     recibioEvaluacion: boolean;
     institutoIncluido: string;
     anoIngreso: string;
@@ -40,6 +40,7 @@ type StudentFormData = {
     educacionFisica: boolean;
     partidaNacimientoUrl?: string;
     resultadoEvaluacionUrl?: string;
+    referenciaMedica: string;
 };
 
 const tiposDeSangre = [
@@ -96,6 +97,8 @@ function EditStudentPage() {
   const [selectedAlergias, setSelectedAlergias] = useState<Alergia[]>([]);
   const [partidaFile, setPartidaFile] = useState<File | null>(null);
   const [evaluacionFile, setEvaluacionFile] = useState<File | null>(null);
+
+
 
   const validateFile = (file: File | null) => {
   if (!file) return "";
@@ -171,31 +174,18 @@ function EditStudentPage() {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-  const { name, value, type } = e.target;
-  const isCheckbox = type === 'checkbox';
-  const checked = isCheckbox ? (e.target as HTMLInputElement).checked : false;
+    const { name, value, type } = e.target;
+    const isCheckbox = type === 'checkbox';
+    const checked = isCheckbox ? (e.target as HTMLInputElement).checked : false;
 
-  if (name === 'nombres' || name === 'apellidos') {
+    if (name === 'nombres' || name === 'apellidos') {
       const filteredValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
       setFormData(prev => ({ ...prev, [name]: filteredValue }));
       return;
     }
 
-  const tiposDeAtencionIds = tiposDeAtencion.map(atencion => atencion.id as keyof StudentFormData);
-
-    if (isCheckbox && tiposDeAtencionIds.includes(name as keyof StudentFormData)) {
-        const resetAttentionTypes = Object.fromEntries(
-            tiposDeAtencionIds.map(id => [id, false])
-        );
-
-        setFormData(prev => ({
-            ...prev,
-            ...resetAttentionTypes,
-            [name]: checked,
-        }));
-    } else {
-        setFormData(prev => ({ ...prev, [name]: isCheckbox ? checked : value }));
-    }
+    // Permitir selección múltiple en Tipos de Atención: no resetear otros checkboxes
+    setFormData(prev => ({ ...prev, [name]: isCheckbox ? checked : value }));
   };
 
   const validateForm = () => {
@@ -215,8 +205,8 @@ function EditStudentPage() {
     if (!formData.direccion?.trim()) errors.direccion = "La dirección es obligatoria.";
     else if (formData.direccion && !addressRegex.test(formData.direccion)) errors.direccion = "La dirección contiene caracteres no permitidos.";
 
-    if (!formData.institucionProcedencia?.trim()) errors.institucionProcedencia = "La institución es obligatoria.";
-    else if (!addressRegex.test(formData.institucionProcedencia)) errors.institucionProcedencia = "El nombre contiene caracteres no permitidos.";
+    if (!formData.institutoIncluido?.trim()) errors.institucionProcedencia = "La institución es obligatoria.";
+    else if (!addressRegex.test(formData.institutoIncluido)) errors.institucionProcedencia = "El nombre contiene caracteres no permitidos.";
 
     if (!departamento) errors.departamento = "Debe seleccionar un departamento.";
     if (!municipio) errors.municipio = "Debe seleccionar un municipio.";
@@ -224,7 +214,7 @@ function EditStudentPage() {
     if (!formData.zona) errors.zona = "Debe seleccionar una zona.";
     if (!formData.jornada) errors.jornada = "Debe seleccionar una jornada.";
     if (!formData.tipoSangre) errors.tipoSangre = "Debe seleccionar un tipo de sangre.";
-    if (!therapists) errors.therapistId = "Debe seleccionar un terapeuta.";
+    if (!formData.therapistId) errors.therapistId = "Debe seleccionar un terapeuta.";
     if (!Object.values(tiposDeAtencion).some((_, index) => formData[tiposDeAtencion[index].id as keyof typeof formData] === true)) {errors.tiposDeAtencion = "Debe seleccionar al menos un tipo de atención.";}
 
     // Validar archivos requeridos
@@ -427,16 +417,30 @@ function EditStudentPage() {
             </div>
 
             <div>
-              <Label htmlFor="institucionProcedencia">Institución de Procedencia</Label>
+              <Label htmlFor="institutoIncluido">Nombre del instituto u otro centro donde está incluido</Label>
               <Input 
-                id="institucionProcedencia" 
-                name="institucionProcedencia" 
+                id="institutoIncluido" 
+                name="institutoIncluido" 
                 type="text" 
-                value={formData.institucionProcedencia || ''} 
+                value={formData.institutoIncluido || ''} 
                 placeholder="Ingresa su institución de procedencia" 
                 onChange={handleChange} 
               />
-              {formErrors.institucionProcedencia && <p className="text-red-500 text-sm mt-1">{formErrors.institucionProcedencia}</p>}
+              {formErrors.institucionProcedencia && <p className="text-red-500 text-sm mt-1">{formErrors.institutoIncluido}</p>}
+            </div>
+
+            <div>
+              <Label htmlFor="referenciaMedica">
+                Referencia Medica
+              </Label>
+              <Input
+                id="referenciaMedica"
+                name="referenciaMedica"
+                type="text"
+                value={formData.referenciaMedica || ''}
+                onChange={handleChange}
+                placeholder="Ingresa la referencia médica"
+              />
             </div>
 
             <div>
@@ -488,8 +492,8 @@ function EditStudentPage() {
                 accept={acceptedFileTypes}
                 onChange={(e) =>  {
                   const file = e.target.files ? e.target.files[0] : null;
-                  setNewPartidaFile(file);
-                  setPartidaFile(file);
+                  setNewEvaluacionFile(file);
+                  setEvaluacionFile(file);
                 }}
                 onClick={() => setEvaluacionFile(null)}
                 className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-200 file:text-violet-700 hover:file:bg-violet-100" 

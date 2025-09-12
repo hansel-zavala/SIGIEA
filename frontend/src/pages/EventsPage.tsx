@@ -3,11 +3,14 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import eventService, { type Event } from "../services/eventService";
 import { FaCalendarAlt, FaPlus, FaPencilAlt, FaTrash, FaTags } from "react-icons/fa";
+import { ConfirmationDialog } from "../components/ui/ConfirmationDialog";
 
 function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchEvents();
@@ -28,14 +31,24 @@ function EventsPage() {
   }
 
   const handleDelete = async (eventId: number) => {
-    if (window.confirm("¿Estás seguro de que quieres desactivar este evento?")) {
-      try {
-        await eventService.deleteEvent(eventId);
-        fetchEvents(); 
-      } catch (err) {
-        setError("No se pudo desactivar el evento.");
-      }
+    try {
+      await eventService.deleteEvent(eventId);
+      fetchEvents(); 
+    } catch (err) {
+      setError("No se pudo desactivar el evento.");
     }
+  };
+
+  const openDeleteDialog = (eventId: number) => {
+    setSelectedEventId(eventId);
+    setConfirmOpen(true);
+  };
+
+  const handleConfirm = async () => {
+    if (!selectedEventId) return;
+    await handleDelete(selectedEventId);
+    setConfirmOpen(false);
+    setSelectedEventId(null);
   };
 
 
@@ -88,7 +101,7 @@ function EventsPage() {
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
                       <div className="text-blue-600"><FaCalendarAlt /></div>
-                      <span className="font-medium text-gray-800">{event.title}</span>
+                      <span className="font-medium text-gray-800 text-x">{event.title}</span>
                     </div>
                   </td>
                   <td className="px-5 py-4 text-gray-600">{formatDate(event.startDate)}</td>
@@ -109,7 +122,7 @@ function EventsPage() {
                       <Link to={`/events/edit/${event.id}`} title="Editar Evento">
                         <FaPencilAlt className="text-blue-500 hover:text-blue-700 cursor-pointer" />
                       </Link>
-                      <button onClick={() => handleDelete(event.id)} title="Desactivar Evento">
+                      <button onClick={() => openDeleteDialog(event.id)} title="Desactivar Evento">
                         <FaTrash className="text-red-500 hover:text-red-700 cursor-pointer" />
                       </button>
                     </div>
@@ -126,6 +139,15 @@ function EventsPage() {
           </tbody>
         </table>
       </div>
+      <ConfirmationDialog
+        isOpen={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleConfirm}
+        title="Desactivar evento"
+        description="¿Estás seguro que deseas desactivar este evento? Esta acción no eliminará los registros históricos."
+        confirmText="Desactivar"
+        confirmButtonClassName="min-w-[100px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-red-400 to-red-500 hover:from-red-500 hover:to-red-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md"
+      />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import leccionService from "../services/leccionService";
 import Badge from "../components/ui/Badge";
 import { FaBook } from "react-icons/fa";
 import { FaPencilAlt, FaTrash, FaPlus } from "react-icons/fa";
+import { ConfirmationDialog } from "../components/ui/ConfirmationDialog";
 
 interface Leccion {
   id: number;
@@ -17,6 +18,8 @@ function LeccionesPage() {
   const [lecciones, setLecciones] = useState<Leccion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchLecciones = async () => {
@@ -33,14 +36,24 @@ function LeccionesPage() {
   }, []);
 
   const handleDelete = async (leccionId: number) => {
-    if (window.confirm("¿Seguro que quieres desactivar esta lección?")) {
-      try {
-        await leccionService.deleteLeccion(leccionId);
-        setLecciones(lecciones.filter((l) => l.id !== leccionId));
-      } catch (err) {
-        setError("No se pudo desactivar la lección.");
-      }
+    try {
+      await leccionService.deleteLeccion(leccionId);
+      setLecciones((prev) => prev.filter((l) => l.id !== leccionId));
+    } catch (err) {
+      setError("No se pudo desactivar la lección.");
     }
+  };
+
+  const openDeleteDialog = (leccionId: number) => {
+    setSelectedLessonId(leccionId);
+    setConfirmOpen(true);
+  };
+
+  const handleConfirm = async () => {
+    if (!selectedLessonId) return;
+    await handleDelete(selectedLessonId);
+    setConfirmOpen(false);
+    setSelectedLessonId(null);
   };
 
   if (loading) return <p>Cargando lecciones...</p>;
@@ -85,10 +98,10 @@ function LeccionesPage() {
                         <FaBook size={30} />
                       </div>
                       <div>
-                        <span className="block font-medium text-gray-800">
+                        <span className="block font-medium text-gray-800 text-x">
                           {leccion.title}
                         </span>
-                        <span className="block text-gray-500 text-xs">
+                        <span className="block text-gray-500">
                           {leccion.objective}
                         </span>
                       </div>
@@ -105,7 +118,7 @@ function LeccionesPage() {
                         <FaPencilAlt className="text-blue-500 hover:text-blue-700 cursor-pointer" />
                       </Link>
                       <button
-                        onClick={() => handleDelete(leccion.id)}
+                        onClick={() => openDeleteDialog(leccion.id)}
                         title="Desactivar"
                       >
                         <FaTrash className="text-red-500 hover:text-red-700 cursor-pointer" />
@@ -118,6 +131,15 @@ function LeccionesPage() {
           </table>
         </div>
       </div>
+      <ConfirmationDialog
+        isOpen={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleConfirm}
+        title="Desactivar lección"
+        description="¿Estás seguro que deseas desactivar esta lección? Podrás reactivarla creando una nueva si es necesario."
+        confirmText="Desactivar"
+        confirmButtonClassName="min-w-[100px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-red-400 to-red-500 hover:from-red-500 hover:to-red-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md"
+      />
     </div>
   );
 }

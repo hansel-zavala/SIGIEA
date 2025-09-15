@@ -1,9 +1,7 @@
 // frontend/src/pages/AddEventPage.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import eventService, {
-  type Event as EventType,
-} from "../services/eventService";
+import eventService, { type Event as EventType,} from "../services/eventService";
 import categoryService, { type Category } from "../services/categoryService"; //
 import Label from "../components/ui/Label";
 import Input from "../components/ui/Input";
@@ -22,6 +20,7 @@ function AddEventPage() {
   });
   const [categories, setCategories] = useState<Category[]>([]);
   const [error, setError] = useState("");
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -44,20 +43,63 @@ function AddEventPage() {
     const isCheckbox = type === "checkbox";
     const checked = isCheckbox ? (e.target as HTMLInputElement).checked : false;
 
+    // Filtros para evitar caracteres no permitidos
+    let processedValue = value;
+    // Permitir letras (incluye acentos), números, espacios y puntuación básica
+    const basicTextRegex = /[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s.,#\-°]/g;
+    const descTextRegex = /[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s.,#\-°()!?:;"'\/]/g;
+
+    if (name === "title" || name === "location") {
+      processedValue = value.replace(basicTextRegex, "");
+    }
+    if (name === "description") {
+      processedValue = value.replace(descTextRegex, "");
+    }
+
     setFormData((prev) => ({
       ...prev,
-      [name]: isCheckbox ? checked : value,
+      [name]: isCheckbox ? checked : processedValue,
     }));
+  };
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    const titleRegex = /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s.,#\-°]+$/;
+    const locationRegex = /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s.,#\-°]+$/;
+    const descriptionRegex = /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s.,#\-°()!?:;"'\/]+$/;
+
+    if (!formData.title.trim()) errors.title = "El título es obligatorio.";
+    else if (!titleRegex.test(formData.title)) errors.title = "El título contiene caracteres no permitidos.";
+
+    if (!formData.startDate) errors.startDate = "La fecha de inicio es obligatoria.";
+    if (!formData.endDate) errors.endDate = "La fecha de fin es obligatoria.";
+
+    if (formData.startDate && formData.endDate) {
+      const start = new Date(formData.startDate);
+      const end = new Date(formData.endDate);
+      if (end < start) errors.endDate = "La fecha de fin no puede ser anterior a la de inicio.";
+    }
+
+    if (formData.location && !locationRegex.test(formData.location)) {
+      errors.location = "La ubicación contiene caracteres no permitidos.";
+    }
+
+    if (formData.description && !descriptionRegex.test(formData.description)) {
+      errors.description = "La descripción contiene caracteres no permitidos.";
+    }
+
+    const finalErrors = Object.fromEntries(Object.entries(errors).filter(([_, v]) => v));
+    setFormErrors(finalErrors);
+    return Object.keys(finalErrors).length === 0;
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setError("");
-
-    if (!formData.title || !formData.startDate || !formData.endDate) {
-      setError("El título y las fechas son campos obligatorios.");
+    if (!validateForm()) {
+      setError("Por favor, corrige los errores marcados.");
       return;
     }
+    setError("");
 
     const dataToSend = {
       ...formData,
@@ -90,7 +132,7 @@ function AddEventPage() {
       <h2 className="text-2xl font-bold mb-6 text-gray-800">
         Crear Nuevo Evento
       </h2>
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6" noValidate>
         {error && (
           <p className="text-red-500 bg-red-100 p-3 rounded-md">{error}</p>
         )}
@@ -104,8 +146,11 @@ function AddEventPage() {
               type="text"
               value={formData.title}
               onChange={handleChange}
-              required
+              placeholder="Ingresa el título del evento"
             />
+            {formErrors.title && (
+              <p className="text-red-500 text-sm mt-1">{formErrors.title}</p>
+            )}
           </div>
           <div>
             <Label htmlFor="categoryId">Categoría</Label>
@@ -121,7 +166,7 @@ function AddEventPage() {
                 handleSelectChange("categoryId", option?.value || null)
               }
               options={categoryOptions}
-              placeholder="-- Selecciona una categoría --"
+              placeholder="Selecciona una categoría"
             />
           </div>
           <div className="md:col-span-2">
@@ -131,9 +176,13 @@ function AddEventPage() {
               name="description"
               value={formData.description}
               onChange={handleChange}
+              placeholder=" Ingresa la descripción del evento"
               rows={4}
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-lg"
             />
+            {formErrors.description && (
+              <p className="text-red-500 text-sm mt-1">{formErrors.description}</p>
+            )}
           </div>
           <div>
             <Label htmlFor="startDate">Fecha de Inicio</Label>
@@ -145,6 +194,9 @@ function AddEventPage() {
               onChange={handleChange}
               required
             />
+            {formErrors.startDate && (
+              <p className="text-red-500 text-sm mt-1">{formErrors.startDate}</p>
+            )}
           </div>
           <div>
             <Label htmlFor="endDate">Fecha de Fin</Label>
@@ -156,21 +208,11 @@ function AddEventPage() {
               onChange={handleChange}
               required
             />
+            {formErrors.endDate && (
+              <p className="text-red-500 text-sm mt-1">{formErrors.endDate}</p>
+            )}
           </div>
 
-          <div className="flex items-center gap-2 pt-5">
-            <input
-              id="isAllDay"
-              name="isAllDay"
-              type="checkbox"
-              checked={formData.isAllDay}
-              onChange={handleChange}
-              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
-            />
-            <Label htmlFor="isAllDay" className="mb-0">
-              El evento dura todo el día
-            </Label>
-          </div>
           <div>
             <Label htmlFor="location">Ubicación</Label>
             <Input
@@ -181,6 +223,9 @@ function AddEventPage() {
               onChange={handleChange}
               placeholder="Ej: Salón Principal, Zoom, etc."
             />
+            {formErrors.location && (
+              <p className="text-red-500 text-sm mt-1">{formErrors.location}</p>
+            )}
           </div>
           <div>
             <Label htmlFor="audience">Dirigido a</Label>
@@ -197,6 +242,19 @@ function AddEventPage() {
               }
               options={audienceOptions}
             />
+          </div>
+          <div className="flex items-center gap-2 pt-5">
+            <input
+              id="isAllDay"
+              name="isAllDay"
+              type="checkbox"
+              checked={formData.isAllDay}
+              onChange={handleChange}
+              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+            />
+            <Label htmlFor="isAllDay" className="mb-0">
+              El evento dura todo el día
+            </Label>
           </div>
         </div>
         <div className="pt-6 flex justify-end gap-6">

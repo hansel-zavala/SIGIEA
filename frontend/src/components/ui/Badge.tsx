@@ -1,7 +1,6 @@
 // frontend/src/components/ui/Badge.tsx
 import React from 'react';
 
-// Definimos los tipos de colores que nuestro Badge aceptará
 type BadgeColor = 'success' | 'warning' | 'error' | 'info';
 
 interface BadgeProps {
@@ -10,7 +9,6 @@ interface BadgeProps {
 }
 
 function Badge({ color, children }: BadgeProps) {
-  // Mapeamos nuestros colores a las clases de Tailwind correspondientes
   const colorClasses = {
     success: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400',
     warning: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400',

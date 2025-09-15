@@ -91,7 +91,7 @@ function CategoriesPage() {
       <div className="bg-white p-6 rounded-lg shadow-md">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-800">Gestionar Categorías de Eventos</h2>
-          <button onClick={() => handleOpenModal()} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2">
+          <button onClick={() => handleOpenModal()} className="min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">
             <FaPlus /> Nueva Categoría
           </button>
         </div>
@@ -107,7 +107,7 @@ function CategoriesPage() {
                 <span className="font-medium">{cat.name}</span>
               </div>
               <div className="flex gap-4">
-                <button onClick={() => handleOpenModal(cat)} title="Editar"><FaPencilAlt className="text-blue-500 hover:text-blue-700" /></button>
+                <button onClick={() => handleOpenModal(cat)} title="Editar"><FaPencilAlt className="text-blue-500 hover:text-blue-700"  /></button>
                 <button onClick={() => handleDelete(cat.id)} title="Eliminar"><FaTrash className="text-red-500 hover:text-red-700" /></button>
               </div>
             </div>

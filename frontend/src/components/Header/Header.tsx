@@ -48,13 +48,11 @@ function Header({ onToggleSidebar, isOpen }: HeaderProps) {
         </button>
 
         {isMenuOpen && (
-          <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20">
+          <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-20 ring-1 ring-black/10">
             <Link to="/profile" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
               <FaUserCircle className="mr-3" /> Mi Perfil
             </Link>
-            <Link to="/settings" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-              <FaCog className="mr-3" /> Configuración
-            </Link>
+            {/* Eliminado enlace de Configuración al quitar modo oscuro */}
             <div className="border-t border-gray-100"></div>
             <button
               onClick={logout}

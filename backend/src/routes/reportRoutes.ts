@@ -4,7 +4,8 @@ import {
     createReport,
     getReportsByStudent,
     getReportById,
-    submitReportAnswers
+    submitReportAnswers, 
+    renderReport
 } from '../controllers/reportController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -12,6 +13,7 @@ const router = express.Router();
 
 router.get('/student/:studentId', protect, getReportsByStudent);
 router.get('/:reportId', protect, getReportById);
+router.get('/:reportId/render', protect, renderReport); // Render PDF/DOCX del reporte
 router.post('/', protect, createReport);
 router.put('/:reportId', protect, submitReportAnswers);
 

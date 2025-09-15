@@ -1,6 +1,22 @@
 // frontend/src/services/reportService.ts
 import api from './api';
 
+export type AcquisitionLevel =
+  | 'CONSEGUIDO'
+  | 'CON_AYUDA_ORAL'
+  | 'CON_AYUDA_GESTUAL'
+  | 'CON_AYUDA_FISICA'
+  | 'NO_CONSEGUIDO'
+  | 'NO_TRABAJADO';
+
+export interface ReportAnswer {
+  itemId: number;
+  // Para items de tipo 'level'
+  level?: AcquisitionLevel | null;
+  // Para el resto de tipos (texto, número, fecha, select, multiselect, checkbox, rich_text)
+  value?: any;
+}
+
 export const getStudentsForReporting = async () => {
   try {
     const response = await api.get('/students?limit=1000'); 
@@ -41,14 +57,36 @@ export const getReportById = async (reportId: number) => {
     }
 };
 
-export const submitReportAnswers = async (reportId: number, data: any) => {
-    try {
-        const response = await api.put(`/reports/${reportId}`, data);
-        return response.data;
-    } catch (error) {
-        console.error("Error al guardar las respuestas del reporte:", error);
-        throw error;
-    }
+export const submitReportAnswers = async (
+  reportId: number,
+  answers: ReportAnswer[]
+) => {
+  try {
+    const response = await api.put(`/reports/${reportId}`, { answers });
+    return response.data;
+  } catch (error) {
+    console.error("Error al guardar las respuestas del reporte:", error);
+    throw error;
+  }
+};
+
+// Descarga/renderiza un reporte en formato y tamaño indicado
+// Llama al endpoint de render para obtener el archivo (PDF/DOCX)
+export const downloadReport = async (
+  reportId: number,
+  format: 'pdf' | 'docx',
+  size: 'A4' | 'OFICIO' = 'A4'
+) => {
+  try {
+    const response = await api.get(`/reports/${reportId}/render`, {
+      params: { format, size },
+      responseType: 'blob',
+    });
+    return response;
+  } catch (error) {
+    console.error('Error al renderizar/descargar el reporte:', error);
+    throw error;
+  }
 };
 
 export default {
@@ -56,5 +94,6 @@ export default {
     createReport,
     submitReportAnswers,
     getReportsByStudent,
-    getReportById
+  getReportById
+  ,downloadReport
 };

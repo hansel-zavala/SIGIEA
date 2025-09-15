@@ -2,6 +2,7 @@
 import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../types/express.js';
+import { renderReportById } from '../services/reportRenderService.js';
 
 const prisma = new PrismaClient();
 
@@ -14,11 +15,15 @@ export const createReport = async (req: AuthRequest , res: Response) => {
       return res.status(401).json({ error: 'Usuario no autenticado.' });
     }
     
+    const template = await prisma.reportTemplate.findUnique({ where: { id: parseInt(templateId) } });
+    if (!template) return res.status(404).json({ error: 'Plantilla no encontrada.' });
+
     const newReport = await prisma.report.create({
       data: {
         studentId: parseInt(studentId),
         therapistId,
         templateId: parseInt(templateId),
+        templateVersion: template.version ?? 1,
       },
     });
     res.status(201).json(newReport);
@@ -50,7 +55,7 @@ export const getReportById = async (req: AuthRequest , res: Response) => {
         const report = await prisma.report.findUnique({
             where: { id: parseInt(reportId) },
             include: {
-                student: { include: { guardians: true } },
+                student: { include: { guardians: true, therapist: true } },
                 therapist: { select: { name: true } },
                 template: {
                     include: {
@@ -79,20 +84,9 @@ export const getReportById = async (req: AuthRequest , res: Response) => {
 export const submitReportAnswers = async (req: AuthRequest , res: Response) => {
     try {
         const { reportId } = req.params;
-        const { answers, ...reportData } = req.body;
+        const { answers } = req.body;
 
         const transaction = await prisma.$transaction(async (tx) => {
-            await tx.report.update({
-                where: { id: parseInt(reportId) },
-                data: {
-                    summary: reportData.summary,
-                    therapyActivities: reportData.therapyActivities,
-                    conclusions: reportData.conclusions,
-                    recommendations: reportData.recommendations,
-                    attendance: reportData.attendance,
-                }
-            });
-
             await tx.reportItemAnswer.deleteMany({
                 where: { reportId: parseInt(reportId) }
             });
@@ -101,7 +95,8 @@ export const submitReportAnswers = async (req: AuthRequest , res: Response) => {
                 data: answers.map((a: any) => ({
                     reportId: parseInt(reportId),
                     itemId: a.itemId,
-                    level: a.level,
+                    level: a.level ?? null,
+                    valueJson: a.value !== undefined ? a.value : (a.valueJson !== undefined ? a.valueJson : null),
                 }))
             });
 
@@ -114,4 +109,30 @@ export const submitReportAnswers = async (req: AuthRequest , res: Response) => {
         console.error("Error al guardar el reporte:", error)
         res.status(500).json({ error: 'No se pudo guardar el reporte.' });
     }
+};
+
+// Renderiza un reporte a PDF o DOCX con tamaño A4 u OFICIO
+export const renderReport = async (req: AuthRequest, res: Response) => {
+  try {
+    const { reportId } = req.params;
+    const format = (String(req.query.format || 'pdf').toLowerCase() as 'pdf' | 'docx'); // pdf por defecto
+    const sizeQ = String(req.query.size || 'A4').toUpperCase();
+    const size = (sizeQ === 'OFICIO' ? 'OFICIO' : 'A4') as 'A4' | 'OFICIO';
+
+    // Genera el archivo en memoria
+    const { buffer, mime, filename } = await renderReportById(parseInt(reportId), format, size);
+
+    // Headers para descarga inline
+    res.setHeader('Content-Type', mime);
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    return res.status(200).send(buffer);
+  } catch (error: any) {
+    console.error('Error al renderizar el reporte:', error);
+    const msg = error?.message || 'No se pudo renderizar el reporte';
+    // Si faltan dependencias, responde 501 (Not Implemented) para indicar acción requerida
+    if (typeof msg === 'string' && msg.includes('Dependencia faltante')) {
+      return res.status(501).json({ error: msg });
+    }
+    return res.status(500).json({ error: msg });
+  }
 };

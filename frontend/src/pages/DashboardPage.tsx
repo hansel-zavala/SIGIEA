@@ -1,19 +1,16 @@
-// frontend/src/pages/DashboardPage.tsx
 import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.js';
+import { useLocation, Link } from 'react-router-dom'; // Se agregó Link aquí
 import dashboardService, { type DashboardStats } from '../services/dashboardService.js';
 import eventService, { type Event as EventType } from '../services/eventService.js';
 import categoryService, { type Category } from '../services/categoryService.js';
 import StatCard from '../components/ui/StatCard.js';
-import { FaUserGraduate, FaUserMd, FaUsers, FaBook } from 'react-icons/fa';
+import { FaUserGraduate, FaUserMd, FaUsers, FaBook, FaCalendarAlt } from 'react-icons/fa';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import EventDetailModal from '../components/modals/EventDetailModal.js';
 
 function DashboardPage() {
-  const { user } = useAuth();
   const location = useLocation();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [events, setEvents] = useState<EventType[]>([]);
@@ -23,7 +20,6 @@ function DashboardPage() {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
-  const [currentDate, setCurrentDate] = useState(new Date());
 
   useEffect(() => {
     const loadDashboardData = () => {
@@ -69,89 +65,141 @@ function DashboardPage() {
     setSelectedEvent(null);
   };
 
+  // util para ordenar y formatear próximos eventos
+  const upcomingEvents = [...events]
+    .filter(e => new Date(e.endDate || e.startDate) >= new Date(new Date().toDateString()))
+    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+    .slice(0, 6);
+
+  const formatDate = (iso: string, allDay?: boolean) => {
+    const d = new Date(iso);
+    const date = d.toLocaleDateString('es-ES', { weekday: 'short', day: '2-digit', month: 'short' });
+    const time = allDay ? '' : ` • ${d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
+    return `${date}${time}`;
+  };
+
   return (
     <div className="space-y-8">
-      {/*<div>
-        <h2 className="text-2xl font-bold">Dashboard del {user?.role}</h2>
-        <p className="mt-2 text-gray-600">Bienvenido, {user?.name}. Aquí tienes un resumen del sistema.</p>
-      </div>*/}
+      {loading ? (
+        <p>Cargando...</p>
+      ) : error ? (
+        <p className="text-red-500">{error}</p>
+      ) : (
+        <>
+          {/* Tarjetas superiores */}
+          {stats && (
+            <section aria-label="Resumen" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+              <Link to="/students" className="cursor-pointer">
+                <StatCard
+                  title="Alumnos Matriculados"
+                  value={stats.students}
+                  icon={<FaUserGraduate size={24} />}
+                  color="pink"
+                  growth={stats.studentGrowthPercentage}
+                />
+              </Link>
+              <Link to="/therapists" className="cursor-pointer">
+                <StatCard
+                  title="Terapeutas Activos"
+                  value={stats.therapists}
+                  icon={<FaUserMd size={24} />}
+                  color="blue"
+                />
+              </Link>
+              <Link to="/guardians" className="cursor-pointer">
+                <StatCard
+                  title="Padres Registrados"
+                  value={stats.parents}
+                  icon={<FaUsers size={24} />}
+                  color="green"
+                />
+              </Link>
+              <Link to="/lecciones" className="cursor-pointer">
+                <StatCard
+                  title="Lecciones Creadas"
+                  value={stats.lecciones}
+                  icon={<FaBook size={24} />}
+                  color="purple"
+                />
+              </Link>
+            </section>
+          )}
 
-      {loading ? ( <p>Cargando...</p> ) : 
-       error ? ( <p className="text-red-500">{error}</p> ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          
-          <div className="lg:col-span-1 space-y-6">
-            {stats && (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-        <StatCard 
-            title="Alumnos Matriculados" 
-            value={stats.students} 
-            icon={<FaUserGraduate size={24} />}
-            color="pink"
-            growth={stats.studentGrowthPercentage}
-        />
-        <StatCard 
-            title="Terapeutas Activos" 
-            value={stats.therapists} 
-            icon={<FaUserMd size={24} />}
-            color="blue"
-        />
-        <StatCard 
-            title="Padres Registrados" 
-            value={stats.parents} 
-            icon={<FaUsers size={24} />}
-            color="green"
-        />
-        <StatCard 
-            title="Lecciones Creadas" 
-            value={stats.lecciones} 
-            icon={<FaBook size={24} />}
-            color="purple"
-        />
-    </div>
-)}
-          </div>
-
-          <div className="lg:col-span-1 bg-violet-100 rounded-lg p-2">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-2xl font-bold">{"Calendario de Eventos"}</h3>
-              <div className="flex items-center gap-4">
-                 <div className="flex flex-wrap gap-x-4 gap-y-2">
+          {/* Calendario y lateral */}
+          <section className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            {/* Calendario */}
+            <div className="xl:col-span-2">
+              <div className="mb-4">
+                <div className="flex items-center justify-between bg-white rounded-xl shadow-sm ring-1 ring-gray-100 px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <FaCalendarAlt className="text-[var(--brand-primary)]" />
+                    <h3 className="text-lg font-semibold tracking-tight">Calendario de Eventos</h3>
+                  </div>
+                  <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
                     {categories.map(cat => (
-                      <div key={cat.id} className="flex items-center gap-2 text-sm">
-                        <div style={{ backgroundColor: cat.color }} className="w-4 h-4 rounded-full"></div>
-                        <span>{cat.name}</span>
-                      </div>
+                      <span
+                        key={cat.id}
+                        className="inline-flex items-center gap-2 bg-violet-50/70 text-gray-700 px-2.5 py-1 rounded-full text-xs ring-1 ring-black/5 whitespace-nowrap"
+                      >
+                        <span style={{ backgroundColor: cat.color }} className="w-2.5 h-2.5 rounded-full inline-block"></span>
+                        {cat.name}
+                      </span>
                     ))}
                   </div>
+                </div>
+              </div>
+              <div className="bg-white p-4 rounded-xl shadow-md ring-1 ring-gray-100 custom-calendar-container">
+                <FullCalendar
+                  plugins={[dayGridPlugin, interactionPlugin]}
+                  initialView="dayGridMonth"
+                  headerToolbar={{
+                    left: '',
+                    center: 'title',
+                    right: 'prev,next'
+                  }}
+                  events={calendarEvents}
+                  locale="es"
+                  height="auto"
+                  eventClick={handleEventClick}
+                  eventDidMount={(info) => {
+                    if (info.event.extendedProps.categoryColor) {
+                      info.el.style.setProperty('--fc-event-border-color', info.event.extendedProps.categoryColor);
+                    }
+                  }}
+                />
               </div>
             </div>
-            
-            <div className="bg-white p-4 rounded-lg shadow-md custom-calendar-container">
-              <FullCalendar
-                plugins={[dayGridPlugin, interactionPlugin]}
-                initialView="dayGridMonth"
-                headerToolbar={{
-                  left: '',
-                  center: 'title',
-                  right: 'prev,next'
-                }}
-                datesSet={(arg) => {
-                  setCurrentDate(arg.view.currentStart);
-                }}
-                events={calendarEvents}
-                locale='es'
-                height="auto"
-                eventClick={handleEventClick}
-                eventDidMount={(info) => {
-                  if (info.event.extendedProps.categoryColor) {
-                    info.el.style.setProperty('--fc-event-border-color', info.event.extendedProps.categoryColor);
-                  }
-                }}
-              />
-            </div>
-          </div>
-        </div>
+
+            {/* Lateral: Próximos eventos */}
+            <aside className="space-y-4">
+              <div className="bg-white rounded-xl shadow-md ring-1 ring-gray-100 p-5">
+                <h4 className="text-lg font-semibold mb-4">Próximos eventos</h4>
+                {upcomingEvents.length === 0 ? (
+                  <p className="text-sm text-gray-500">No hay eventos próximos.</p>
+                ) : (
+                  <ul className="divide-y divide-gray-100">
+                    {upcomingEvents.map(ev => (
+                      <li key={ev.id} className="py-3 flex items-start gap-3">
+                        <span
+                          className="mt-1 w-2.5 h-2.5 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: ev.category?.color || '#7c3aed' }}
+                          aria-hidden
+                        />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{ev.title}</p>
+                          <p className="text-xs text-gray-500">
+                            {formatDate(ev.startDate, ev.isAllDay)}
+                            {ev.endDate && ev.endDate !== ev.startDate ? ` – ${formatDate(ev.endDate, ev.isAllDay)}` : ''}
+                          </p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </aside>
+          </section>
+        </>
       )}
 
       <EventDetailModal event={selectedEvent} isOpen={isModalOpen} onClose={handleCloseModal} />
@@ -159,4 +207,4 @@ function DashboardPage() {
   );
 }
 
-export default DashboardPage;
+export default DashboardPage;

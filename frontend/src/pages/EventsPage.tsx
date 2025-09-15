@@ -65,10 +65,15 @@ function EventsPage() {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
+      <div className="flex justify-between items-center mb-4 gap-4">
+        <p className="text-xs text-gray-500 mt-1"> </p>
+        <p className="text-xs text-gray-500 mt-1">El boton de GESTIONAR CATEGORIAS espara asignarle un color a una categoria, Ejemplo: Rojo para reuniones con padres...</p>
+      </div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">
+        <h2 className="text-2xl font-bold mb-6 text-gray-800">
           Gestión de Eventos
         </h2>
+        <div className="flex items-center gap-2 mb-4">
         <Link to="/categories">
           <button className="min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-gray-300 to-gray-500 hover:from-gray-500 hover:to-gray-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">
             <FaTags className="text-xl" />
@@ -81,6 +86,12 @@ function EventsPage() {
               <span className="text-lg">Crear Nuevo Evento</span>
             </button>
         </Link>
+        </div>
+      </div>
+
+      <div className="flex justify-between items-center mb-4 gap-4">
+        <p className="text-xs text-gray-500 mt-1"> </p>
+        <p className="text-xs text-gray-500 mt-1">ACCIONES: El lápiz es para editar, el bote es para eliminar.</p>
       </div>
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">

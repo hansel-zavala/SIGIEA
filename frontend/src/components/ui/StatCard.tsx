@@ -20,19 +20,21 @@ function StatCard({ title, value, icon, color, growth }: StatCardProps) {
   const growthText = growth !== null && growth !== undefined ? (growth >= 0 ? `Incrementado en ${growth}%` : `Disminuido en ${Math.abs(growth)}%`) : null;
 
   return (
-    <div className={`relative overflow-hidden text-white rounded-2xl shadow-lg p-6 bg-gradient-to-br ${gradientClasses[color]}`}>
+    <div className={`relative overflow-hidden text-white rounded-2xl shadow-lg ring-1 ring-black/5 p-6 h-32 bg-gradient-to-br ${gradientClasses[color]}`}>
       {/* Círculos decorativos */}
       <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/20 rounded-full"></div>
       <div className="absolute -bottom-16 -right-2 w-32 h-32 bg-white/10 rounded-full"></div>
 
-      <div className="relative z-10">
+      <div className="relative z-10 h-full flex flex-col justify-between">
         <div className="flex justify-between items-start">
           <span className="text-sm font-medium uppercase tracking-wider">{title}</span>
           <span className="text-white/80">{icon}</span>
         </div>
         <p className="text-4xl font-bold mt-2">{value}</p>
-        {growthText && (
-          <p className="text-xs mt-4 opacity-90">{growthText}</p>
+        {growthText ? (
+          <p className="text-xs opacity-90">{growthText}</p>
+        ) : (
+          <p className="text-xs opacity-0 select-none">placeholder</p>
         )}
       </div>
     </div>

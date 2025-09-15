@@ -16,6 +16,7 @@ import alergiaRoutes from './routes/alergiaRoutes.js';
 import eventRoutes from './routes/eventRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import reportTemplateRoutes from './routes/reportTemplateRoutes.js';
+import reportTemplatePublicRoutes from './routes/reportTemplatePublicRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
 import tipoParentescoRoutes from './routes/tipoParentescoRoutes.js';
 
@@ -23,7 +24,7 @@ const app = express();
 const PORT = 3001;
 
 app.use(cors({
-  exposedHeaders: ['X-New-Token'],
+  exposedHeaders: ['X-New-Token', 'Content-Disposition'], // exponer nombre de archivo para descargas
 }));
 
 
@@ -42,6 +43,7 @@ app.use('/api/medicamentos', medicamentoRoutes);
 app.use('/api/alergias', alergiaRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/report-templates-public', reportTemplatePublicRoutes);
 app.use('/api/report-templates', reportTemplateRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api', tipoParentescoRoutes);

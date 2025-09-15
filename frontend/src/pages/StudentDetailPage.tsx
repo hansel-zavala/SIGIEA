@@ -4,7 +4,7 @@ import { useParams, Link } from "react-router-dom";
 import studentService from "../services/studentService";
 import therapySessionService from "../services/therapySessionService";
 import reportService from "../services/reportService";
-import { FaCalendarAlt, FaFileAlt, FaPrint, FaPencilAlt, FaEye } from "react-icons/fa";
+import { FaCalendarAlt, FaFileAlt, FaPrint, FaPencilAlt, FaEye, FaFilePdf, FaFileWord } from "react-icons/fa";
 import Badge from "../components/ui/Badge";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -79,6 +79,7 @@ function StudentDetailPage() {
   const [sessionsPerPage] = useState(5);
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [exportSize, setExportSize] = useState<'A4' | 'OFICIO'>('A4'); // Tamaño de exportación para PDF/DOCX
   const [sessionToLog, setSessionToLog] = useState<TherapySession | null>(null);
   const [logFormData, setLogFormData] = useState({
     status: "Completada",
@@ -109,6 +110,37 @@ function StudentDetailPage() {
   const handlePrint = () => {
     if (studentId) {
       window.open(`/students/${studentId}/print`, "_blank");
+    }
+  };
+
+  // Descarga un reporte como PDF o DOCX usando la API con auth y abre/descarga
+  const handleDownloadReport = async (reportId: number, format: 'pdf' | 'docx') => {
+    try {
+      const resp = await reportService.downloadReport(reportId, format, exportSize);
+      const blob = new Blob([resp.data], { type: resp.headers['content-type'] || (format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') });
+      const url = window.URL.createObjectURL(blob);
+
+      // Try to extract filename from Content-Disposition
+      const cd = resp.headers['content-disposition'] as string | undefined;
+      let filename = `reporte-${reportId}.${format}`;
+      if (cd) {
+        const match = cd.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i);
+        const name = decodeURIComponent(match?.[1] || match?.[2] || '');
+        if (name) filename = name;
+      }
+
+      // Descargar siempre (evita errores del visor del navegador)
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    } catch (e: any) {
+      const msg = e?.response?.data?.error || 'No se pudo descargar el reporte.';
+      alert(msg);
+      console.error('Descarga de reporte falló:', e);
     }
   };
 
@@ -213,59 +245,61 @@ function StudentDetailPage() {
             </h2>
             <div className="flex gap-2">
               <Link to={`/students/edit/${studentId}`}>
-                <button className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 border border-yellow-600 rounded shadow-sm flex items-center gap-2">
+                <button className="min-w-[100px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">
                   <FaPencilAlt /> Editar
                 </button>
               </Link>
               <button
                 onClick={() => setIsDetailModalOpen(true)}
-                className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-300 rounded shadow-sm flex items-center gap-2"
+                className="py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-blue-400 to-blue-500 hover:from-blue-500 hover:to-blue-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md"
               >
                 <FaFileAlt /> Ver Ficha Completa
               </button>
               <button
                 onClick={handlePrint}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 border border-blue-700 rounded shadow-sm flex items-center gap-2"
+                className="py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-purple-400 to-purple-500 hover:from-purple-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md"
               >
-                <FaPrint /> Imprimir Ficha
+                <FaPrint /> Imprimir Matricula
               </button>
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200 grid grid-cols-1 md:grid-cols-5 gap-6">
-            <div>
-              <h3 className="font-semibold text-gray-400">
-                Terapeuta Asignado
-              </h3>
-              <p>{student?.therapist?.fullName || "No especificado"}</p>
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-400">Edad</h3>
-              <p>{studentAge !== null ? `${studentAge} años` : "N/A"}</p>
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-400">Género</h3>
-              <p>{student?.genero || "No asignado"}</p>
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-400">Padre de Familia</h3>
-              <p>{father?.fullName || "No especificado"}</p>
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-400">Fecha de Ingreso</h3>
-              <p>{admissionDate || "N/A"}</p>
-            </div>
+          
+          <div className="overflow-hidden rounded-xl bg-white shadow-md border border-gray-200">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr className="text-left">
+                  <th className="px-6 py-3 font-medium text-gray-600">Terapeuta Asignado</th>
+                  <th className="px-6 py-3 font-medium text-gray-600">Edad</th>
+                  <th className="px-6 py-3 font-medium text-gray-600">Género</th>
+                  <th className="px-6 py-3 font-medium text-gray-600">Padre de Familia</th>
+                  <th className="px-6 py-3 font-medium text-gray-600">Fecha de Ingreso</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white">
+                <tr>
+                  <td className="px-6 py-4 text-gray-700">{student?.therapist?.fullName || "No especificado"}</td>
+                  <td className="px-6 py-4 text-gray-700">{studentAge !== null ? `${studentAge} años` : "N/A"}</td>
+                  <td className="px-6 py-4 text-gray-700">{student?.genero || "No asignado"}</td>
+                  <td className="px-6 py-4 text-gray-700">{(father?.fullName || student?.guardians?.[0]?.fullName) || "No especificado"}</td>
+                  <td className="px-6 py-4 text-gray-700">{admissionDate || "N/A"}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
+        
 
         <div>
-          <h3 className="text-xl font-bold text-gray-800 mb-4">
+          <h3 className="text-2xl font-bold text-gray-800 mb-4">
             Historial de Sesiones
           </h3>
           <div className="overflow-hidden rounded-xl bg-white shadow-md">
             <table className="w-full text-sm">
               <thead className="bg-gray-50">
                 <tr className="text-left">
-                  <th className="px-5 py-3 font-medium text-gray-500">Fecha</th>
+                  <th className="px-5 py-3 font-medium text-gray-500">
+                    Fecha
+                  </th>
                   <th className="px-5 py-3 font-medium text-gray-500">
                     Lección
                   </th>
@@ -329,9 +363,16 @@ function StudentDetailPage() {
           </div>
         </div>
          <div>
-          <h3 className="text-xl font-bold text-gray-800 mb-4">
-            Historial de Reportes
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-2xl font-bold text-gray-800">Historial de Reportes</h3>
+            <div className="flex items-center gap-2 text-sm">
+              <label className="text-gray-600">Tamaño:</label>
+              <select value={exportSize} onChange={(e) => setExportSize(e.target.value as 'A4' | 'OFICIO')} className="border rounded px-2 py-1">
+                <option value="A4">A4</option>
+                <option value="OFICIO">Oficio</option>
+              </select>
+            </div>
+          </div>
           <div className="overflow-hidden rounded-xl bg-white shadow-md">
             <table className="w-full text-sm">
               <thead className="bg-gray-50">
@@ -349,13 +390,27 @@ function StudentDetailPage() {
                     <td className="px-5 py-4">{report.template.title}</td>
                     <td className="px-5 py-4">{report.therapist.name}</td>
                     <td className="px-5 py-4">
-                      <div className="flex gap-4">
-                          <Link to={`/reports/view/${report.id}`} title="Ver Reporte" className="flex items-center gap-1 text-blue-600 hover:underline">
-                              <FaEye /> Ver
-                          </Link>
-                          <Link to={`/reports/edit/${report.id}`} title="Editar Reporte" className="flex items-center gap-1 text-green-600 hover:underline">
-                              <FaPencilAlt /> Editar
-                          </Link>
+                      <div className="flex gap-4 items-center">
+                        <Link to={`/reports/view/${report.id}`} title="Ver Reporte" className="flex items-center gap-1 text-blue-600 hover:underline">
+                          <FaEye /> Ver
+                        </Link>
+                        <Link to={`/reports/edit/${report.id}`} title="Editar Reporte" className="flex items-center gap-1 text-green-600 hover:underline">
+                          <FaPencilAlt /> Editar
+                        </Link>
+                        <button
+                          onClick={() => handleDownloadReport(report.id, 'pdf')}
+                          title="Exportar PDF"
+                          className="flex items-center gap-1 text-red-600 hover:underline"
+                        >
+                          <FaFilePdf /> PDF
+                        </button>
+                        <button
+                          onClick={() => handleDownloadReport(report.id, 'docx')}
+                          title="Exportar Word"
+                          className="flex items-center gap-1 text-indigo-600 hover:underline"
+                        >
+                          <FaFileWord /> DOCX
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -376,9 +431,9 @@ function StudentDetailPage() {
 
       <div>
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold text-gray-800">Próximas Sesiones</h3>
+          <h3 className="text-2xl font-bold text-gray-800">Próximas Sesiones</h3>
           <Link to={`/students/${student.id}/schedule`}>
-            <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2">
+            <button className="py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-purple-400 to-purple-500 hover:from-purple-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-m">
               <FaCalendarAlt /> Gestionar Horario
             </button>
           </Link>

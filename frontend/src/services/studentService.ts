@@ -85,6 +85,15 @@ const reactivateStudent = async (id: number) => {
   }
 };
 
+const addGuardian = async (studentId: number, guardianData: any) => {
+  try {
+    const response = await api.post(`/students/${studentId}/guardians`, guardianData);
+    return response.data;
+  } catch (error) {
+    console.error(`Error al agregar guardián al estudiante ${studentId}:`, error);
+    throw error;
+  }
+};
 
 
 export default {
@@ -95,4 +104,5 @@ export default {
   updateStudent,
   assignTherapyPlan,
   reactivateStudent,
+  addGuardian,
 };

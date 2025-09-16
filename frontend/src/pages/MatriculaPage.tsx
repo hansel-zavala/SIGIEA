@@ -26,6 +26,8 @@ interface Guardian {
   parentesco: string;
   direccionEmergencia: string;
   parentescoEspecifico?: string;
+  email?: string;
+  password?: string;
 }
 
 const tiposDeAtencion = [
@@ -113,6 +115,8 @@ function MatriculaPage() {
       parentesco: "",
       parentescoEspecifico: '',
       direccionEmergencia: "",
+      email: "",
+      password: "",
     },
   ]);
 
@@ -218,6 +222,10 @@ function MatriculaPage() {
     const numericValue = value.replace(/[^0-9]/g, '');
     const maxLength = name === 'numeroIdentidad' ? 13 : 8;
     processedValue = numericValue.slice(0, maxLength);
+  } else if (name === 'email') {
+    processedValue = value.trim();
+  } else if (name === 'password') {
+    processedValue = value;
   }
 
   guardianToUpdate[name as keyof Guardian] = processedValue as any;
@@ -236,6 +244,8 @@ function MatriculaPage() {
         parentesco: "",
         parentescoEspecifico: '',
         direccionEmergencia: "",
+        email: "",
+        password: "",
       },
     ]);
   };
@@ -256,9 +266,7 @@ function MatriculaPage() {
     }
   };
 
-  const removeGuardian = (index: number) => {
-    setGuardians(guardians.filter((_, i) => i !== index));
-  };
+  // removeGuardian ya no se usa; eliminada para evitar warnings
 
   const handleGuardianFileChange = (
     index: number,
@@ -306,6 +314,7 @@ function MatriculaPage() {
   const addressRegex = /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s.,#\-°]+$/;
   const dniRegex = /^\d{13}$/;
   const phoneRegex = /^\d{8}$/;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   if (!studentData.nombres.trim()) errors.nombres = "Los nombres son obligatorios.";
   else if (!nameRegex.test(studentData.nombres)) errors.nombres = "Los nombres solo deben contener letras.";
@@ -343,6 +352,7 @@ function MatriculaPage() {
   const guardianDNIs = new Set<string>();
   const parentescoCount = { Padre: 0, Madre: 0 };
 
+  const emailsSet = new Set<string>();
   guardians.forEach((guardian, index) => {
     if (!guardian.nombres.trim()) errors[`guardian_nombres_${index}`] = "Los nombres son obligatorios.";
     else if (!nameRegex.test(guardian.nombres)) errors[`guardian_nombres_${index}`] = "Solo debe contener letras.";
@@ -370,6 +380,22 @@ function MatriculaPage() {
 
     if ((guardian.parentesco === 'Tutor_Legal' || guardian.parentesco === 'Otro') && !guardian.parentescoEspecifico) {
       errors[`guardian_parentescoEspecifico_${index}`] = "Debe especificar el parentesco.";
+    }
+
+    // Validación de credenciales opcionales del padre
+    const hasEmail = !!guardian.email && guardian.email.trim().length > 0;
+    const hasPassword = !!guardian.password && guardian.password.trim().length > 0;
+    if (hasEmail || hasPassword) {
+      if (!hasEmail) errors[`guardian_email_${index}`] = 'Debes ingresar el correo.';
+      if (!hasPassword) errors[`guardian_password_${index}`] = 'Debes ingresar la contraseña.';
+    }
+    if (hasEmail) {
+      if (!emailRegex.test(guardian.email!)) errors[`guardian_email_${index}`] = 'Correo inválido.';
+      if (emailsSet.has(guardian.email!)) errors[`guardian_email_${index}`] = 'Este correo ya está repetido.';
+      emailsSet.add(guardian.email!);
+    }
+    if (hasPassword) {
+      if ((guardian.password || '').length < 6) errors[`guardian_password_${index}`] = 'Mínimo 6 caracteres.';
     }
 
     // Archivo de Identidad
@@ -857,6 +883,36 @@ function MatriculaPage() {
                     onChange={(e) => handleGuardianChange(index, e)}
                   />
                   {formErrors[`guardian_telefono_${index}`] && (<p className="text-red-500 text-sm mt-1">{formErrors[`guardian_telefono_${index}`]}</p>)}
+                </div>
+
+                <div>
+                  <Label htmlFor={`g-email-${index}`}>Correo electrónico</Label>
+                  <Input
+                    id={`g-email-${index}`}
+                    name="email"
+                    type="email"
+                    value={guardian.email || ''}
+                    placeholder="correo@ejemplo.com"
+                    onChange={(e) => handleGuardianChange(index, e)}
+                  />
+                  {formErrors[`guardian_email_${index}`] && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors[`guardian_email_${index}`]}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor={`g-password-${index}`}>Contraseña</Label>
+                  <Input
+                    id={`g-password-${index}`}
+                    name="password"
+                    type="password"
+                    value={guardian.password || ''}
+                    placeholder="Mínimo 6 caracteres"
+                    onChange={(e) => handleGuardianChange(index, e)}
+                  />
+                  {formErrors[`guardian_password_${index}`] && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors[`guardian_password_${index}`]}</p>
+                  )}
                 </div>
 
                 <div>

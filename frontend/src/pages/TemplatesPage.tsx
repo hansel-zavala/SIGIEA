@@ -55,17 +55,8 @@ function TemplatesPage() {
     }
   };
 
-  const handleClone = async (tpl: ReportTemplate) => {
-    try {
-      const cloned = await reportTemplateService.cloneTemplate(tpl.id);
-      setTemplates(prev => [cloned, ...prev]);
-      if (!cloned.publishedAt) {
-        const goEdit = confirm('Plantilla clonada como borrador. ¿Deseas editarla ahora?');
-        if (goEdit) navigate(`/templates/new?id=${cloned.id}`);
-      }
-    } catch {
-      alert('No se pudo clonar la plantilla.');
-    }
+  const handleEdit = (tpl: ReportTemplate) => {
+    navigate(`/templates/new?id=${tpl.id}`);
   };
 
   const handleDelete = async (tpl: ReportTemplate) => {
@@ -117,7 +108,6 @@ function TemplatesPage() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Título</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Versión</th>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actualizado</th>
                 <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
@@ -132,7 +122,6 @@ function TemplatesPage() {
                       <div className="text-xs text-gray-500 line-clamp-1">{t.description}</div>
                     )}
                   </td>
-                  <td className="px-4 py-2">v{t.version}</td>
                   <td className="px-4 py-2">
                     {t.publishedAt ? (
                       <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">Publicada</span>
@@ -150,9 +139,9 @@ function TemplatesPage() {
                       >{t.publishedAt ? 'Despublicar' : 'Publicar'}</button>
                       <button
                         className="px-3 py-1 rounded-md bg-blue-600 hover:bg-blue-700 text-white"
-                        onClick={() => handleClone(t)}
-                        title="Clonar"
-                      >Clonar</button>
+                        onClick={() => handleEdit(t)}
+                        title="Editar"
+                      >Editar</button>
                       <button
                         className="px-3 py-1 rounded-md bg-red-600 hover:bg-red-700 text-white"
                         onClick={() => handleDelete(t)}
@@ -174,4 +163,3 @@ function TemplatesPage() {
 }
 
 export default TemplatesPage;
-

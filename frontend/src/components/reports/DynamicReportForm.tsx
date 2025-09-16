@@ -7,6 +7,7 @@ import type { ReportTemplate, ReportItem, ReportItemType, ReportItemWidth } from
 import type { ReportAnswer, AcquisitionLevel } from '../../services/reportService';
 
 type AnswersState = Record<number, any>;
+type SelectOption = { value: string; label: string };
 
 const acquisitionLevelOptions = [
   { value: 'CONSEGUIDO', label: 'Conseguido' },
@@ -128,14 +129,14 @@ export default function DynamicReportForm({ template, initialAnswers = [], onSub
         const opts = Array.isArray(item.options)
           ? item.options
           : (item.options?.options || []);
-        const sel = opts.map((o: any) => ({ value: String(o.value ?? o), label: String(o.label ?? o) }));
+        const sel: SelectOption[] = opts.map((o: any) => ({ value: String(o.value ?? o), label: String(o.label ?? o) }));
         return (
           <div className={widthToColSpan[item.width]} key={item.id}>
             <Label>{item.label}{item.required ? ' *' : ''}</Label>
             <Select
               instanceId={`item-${item.id}-select`}
               options={sel}
-              value={sel.find(o => o.value === value) || null}
+              value={sel.find((o: SelectOption) => o.value === value) || null}
               onChange={(opt) => handleChange(item, opt?.value || null)}
               placeholder={item.placeholder || 'Selecciona una opción'}
             />
@@ -247,4 +248,3 @@ export default function DynamicReportForm({ template, initialAnswers = [], onSub
     </form>
   );
 }
-

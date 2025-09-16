@@ -1,10 +1,11 @@
 // frontend/src/pages/ManageTemplatesPage.tsx
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import reportTemplateService from '../services/reportTemplateService';
+import type { CreateTemplateData, ReportItemType, ReportItemWidth } from '../services/reportTemplateService';
 import Label from '../components/ui/Label';
 import Input from '../components/ui/Input';
-import { FaPlus, FaTrash, FaArrowUp, FaArrowDown } from 'react-icons/fa';
+import { FaPlus, FaTrash } from 'react-icons/fa';
 
 type ItemKind = 'level' | 'long_text';
 
@@ -22,11 +23,35 @@ interface SectionState {
 
 function ManageTemplatesPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get('id') ? parseInt(searchParams.get('id') as string) : undefined;
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [sections, setSections] = useState<SectionState[]>([]);
   const [publish, setPublish] = useState(false);
   const [error, setError] = useState('');
+
+  // Cargar datos si estamos en modo edición
+  useEffect(() => {
+    if (!editId) return;
+    reportTemplateService
+      .getTemplateById(editId)
+      .then((tpl) => {
+        setTitle(tpl.title || '');
+        setDescription((tpl.description as string) || '');
+        setPublish(!!tpl.publishedAt);
+        const mapped: SectionState[] = (tpl.sections || []).map((s) => ({
+          title: s.title,
+          description: (s.description as string) || undefined,
+          items: (s.items || []).map((it) => ({
+            label: it.label,
+            kind: (it.type === 'level' ? 'level' : 'long_text') as ItemKind,
+          })),
+        }));
+        setSections(mapped);
+      })
+      .catch(() => setError('No se pudo cargar la plantilla para editar.'));
+  }, [editId]);
 
   const addSection = () => {
     setSections([...sections, { title: '', description: '', items: [] }]);
@@ -74,7 +99,7 @@ function ManageTemplatesPage() {
     }
     setError('');
 
-    const templateData = {
+    const templateData: CreateTemplateData = {
         title,
         description,
         publish,
@@ -84,26 +109,31 @@ function ManageTemplatesPage() {
             order: sectionIndex + 1,
             items: section.items.map((item, itemIndex) => ({
                 label: item.label,
-                type: item.kind, // 'level' o 'long_text'
-                width: 'FULL',
+                type: item.kind as ReportItemType, // 'level' o 'long_text'
+                width: 'FULL' as ReportItemWidth,
                 order: itemIndex + 1,
             }))
         }))
     };
     
     try {
-        await reportTemplateService.createTemplate(templateData);
-        alert('¡Plantilla creada exitosamente!');
+        if (editId) {
+          await reportTemplateService.updateTemplateFull(editId, templateData);
+          alert('¡Plantilla actualizada exitosamente!');
+        } else {
+          await reportTemplateService.createTemplate(templateData); 
+          alert('¡Plantilla creada exitosamente!');
+        }
         navigate('/');
     } catch (err) {
-        setError('No se pudo crear la plantilla. Inténtalo de nuevo.');
+        setError('No se pudo guardar la plantilla. Inténtalo de nuevo.');
     }
   };
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-3xl font-bold text-gray-800">Constructor de Plantillas de Reporte</h2>
+        <h2 className="text-3xl font-bold text-gray-800">{editId ? 'Editar Plantilla de Reporte' : 'Constructor de Plantillas de Reporte'}</h2>
         <button
           type="button"
           onClick={() => navigate('/templates?status=draft')}

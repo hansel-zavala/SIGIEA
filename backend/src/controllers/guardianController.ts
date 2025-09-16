@@ -1,6 +1,7 @@
 // backend/src/controllers/guardianController.ts
 import { Request, Response } from 'express';
 import prisma from '../db.js';
+import bcrypt from 'bcrypt';
 
 export const getAllGuardians = async (req: Request, res: Response) => {
   try {
@@ -18,21 +19,26 @@ export const getAllGuardians = async (req: Request, res: Response) => {
     }
 
     if (search) {
-      whereCondition.OR = [
-          { nombres: { contains: search as string } },
-          { apellidos: { contains: search as string } },
-          { numeroIdentidad: { contains: search as string } },
+      const raw = String(search).trim();
+      const terms = raw.split(/\s+/).filter(Boolean);
+      // Cada término debe aparecer en algún campo del guardián o de sus estudiantes
+      whereCondition.AND = terms.map((term: string) => ({
+        OR: [
+          { nombres: { contains: term } },
+          { apellidos: { contains: term } },
+          { numeroIdentidad: { contains: term } },
           {
             students: {
               some: {
                 OR: [
-                  { nombres: { contains: search as string } },
-                  { apellidos: { contains: search as string } },
+                  { nombres: { contains: term } },
+                  { apellidos: { contains: term } },
                 ],
               },
             },
           },
-      ]
+        ],
+      }));
     }
 
     const [guardians, totalGuardians] = await prisma.$transaction([
@@ -76,6 +82,7 @@ export const getGuardianById = async (req: Request, res: Response) => {
       where: { id: parseInt(id), isActive: true },
       include: {
         students: true,
+        user: true,
       },
     });
 
@@ -101,7 +108,45 @@ export const getGuardianById = async (req: Request, res: Response) => {
 export const updateGuardian = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { fullName, ...guardianData } = req.body;
+    const { fullName, email, password, ...guardianData } = req.body as any;
+
+    // Si vienen credenciales, crear/actualizar el user asociado con rol 'padre'
+    if (email || password) {
+      const guardian = await prisma.guardian.findUnique({ where: { id: parseInt(id) } });
+      if (!guardian) return res.status(404).json({ error: 'Guardián no encontrado.' });
+
+      // Validar email único si se cambia/crea
+      if (email) {
+        const existing = await prisma.user.findUnique({ where: { email } });
+        if (existing && existing.id !== guardian.userId) {
+          return res.status(409).json({ error: 'El correo electrónico ya está en uso.' });
+        }
+      }
+
+      if (guardian.userId) {
+        // Actualizar usuario
+        await prisma.user.update({
+          where: { id: guardian.userId },
+          data: {
+            ...(email ? { email } : {}),
+            ...(password ? { password: await bcrypt.hash(String(password), 10) } : {}),
+            ...(guardianData.nombres || guardianData.apellidos ? { name: `${guardianData.nombres ?? guardian.nombres} ${guardianData.apellidos ?? guardian.apellidos}` } : {}),
+          }
+        });
+      } else if (email && password) {
+        // Crear usuario y asociar
+        const newUser = await prisma.user.create({
+          data: {
+            email,
+            password: await bcrypt.hash(String(password), 10),
+            role: 'padre',
+            name: `${guardianData.nombres ?? guardian?.nombres ?? ''} ${guardianData.apellidos ?? guardian?.apellidos ?? ''}`.trim(),
+          }
+        });
+        guardianData.userId = newUser.id;
+      }
+    }
+
     const updatedGuardian = await prisma.guardian.update({
       where: { id: parseInt(id) },
       data: guardianData,

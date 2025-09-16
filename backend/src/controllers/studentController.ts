@@ -2,6 +2,7 @@
 
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -37,8 +38,46 @@ export const createStudent = async (req: Request, res: Response) => {
       }
     }
 
+    // Validar correos únicos para guardianes con credenciales
+    const guardianCreds = guardians.filter((g: any) => g.email && g.password);
+    if (guardianCreds.length) {
+      const emails = guardianCreds.map((g: any) => g.email);
+      const duplicates = emails.filter((e: string, i: number) => emails.indexOf(e) !== i);
+      if (duplicates.length) {
+        return res.status(400).json({ error: `Correos duplicados en tutores: ${Array.from(new Set(duplicates)).join(', ')}` });
+      }
+
+      // Verificar que no existan ya como usuarios
+      const existingUsers = await prisma.user.findMany({ where: { email: { in: emails } }, select: { email: true } });
+      if (existingUsers.length) {
+        return res.status(409).json({ error: `El correo ya está en uso: ${existingUsers.map(u => u.email).join(', ')}` });
+      }
+    }
+
     if (studentData.dateOfBirth) studentData.dateOfBirth = new Date(studentData.dateOfBirth);
     if (studentData.anoIngreso) studentData.anoIngreso = new Date(studentData.anoIngreso);
+
+    // Prepara datos de creación (hash contraseñas si vienen)
+    const hashedMap: Record<string, string> = {};
+    await Promise.all(guardianCreds.map(async (g: any) => {
+      hashedMap[g.email] = await bcrypt.hash(String(g.password), 10);
+    }));
+
+    // Si el guardián ya existe y se proporcionaron credenciales, crear usuario y asociarlo
+    for (const g of guardianCreds) {
+      const existing = await prisma.guardian.findUnique({ where: { numeroIdentidad: g.numeroIdentidad } });
+      if (existing && !existing.userId) {
+        const newUser = await prisma.user.create({
+          data: {
+            email: g.email,
+            password: hashedMap[g.email],
+            role: 'padre',
+            name: `${g.nombres} ${g.apellidos}`,
+          }
+        });
+        await prisma.guardian.update({ where: { id: existing.id }, data: { userId: newUser.id } });
+      }
+    }
 
     const newStudent = await prisma.student.create({
       data: {
@@ -56,6 +95,16 @@ export const createStudent = async (req: Request, res: Response) => {
               parentescoEspecifico: g.parentescoEspecifico,
               copiaIdentidadUrl: g.copiaIdentidadUrl || null,
               observaciones: g.observaciones || null,
+              ...(g.email && g.password ? {
+                user: {
+                  create: {
+                    email: g.email,
+                    password: hashedMap[g.email],
+                    role: 'padre',
+                    name: `${g.nombres} ${g.apellidos}`,
+                  }
+                }
+              } : {}),
             },
           })),
         },
@@ -72,6 +121,106 @@ export const createStudent = async (req: Request, res: Response) => {
   }
 };
 
+export const addGuardianToStudent = async (req: Request, res: Response) => {
+  try {
+    const studentId = parseInt(req.params.id);
+    const body: any = req.body;
+
+    const required = ['numeroIdentidad', 'parentesco'];
+    for (const f of required) if (!body[f]) return res.status(400).json({ error: `Campo requerido: ${f}` });
+
+    const student = await prisma.student.findUnique({ where: { id: studentId }, include: { guardians: true } });
+    if (!student) return res.status(404).json({ error: 'Estudiante no encontrado.' });
+
+    // Validar que no existan dos Padres/Madres asociados al mismo estudiante
+    if (body.parentesco === 'Padre' && student.guardians.some(g => g.parentesco === 'Padre')) {
+      return res.status(400).json({ error: 'Ya existe un Padre registrado para este estudiante.' });
+    }
+    if (body.parentesco === 'Madre' && student.guardians.some(g => g.parentesco === 'Madre')) {
+      return res.status(400).json({ error: 'Ya existe una Madre registrada para este estudiante.' });
+    }
+
+    // Email único si se envía
+    if (body.email) {
+      const existingUser = await prisma.user.findUnique({ where: { email: body.email } });
+      if (existingUser) return res.status(409).json({ error: 'El correo electrónico ya está en uso.' });
+    }
+
+    // Buscar guardián por DNI
+    const existingGuardian = await prisma.guardian.findUnique({ where: { numeroIdentidad: body.numeroIdentidad } });
+
+    let guardianId: number;
+    if (existingGuardian) {
+      // si ya está vinculado, error
+      const alreadyLinked = await prisma.student.findFirst({ where: { id: studentId, guardians: { some: { id: existingGuardian.id } } } });
+      if (alreadyLinked) return res.status(409).json({ error: 'Este guardián ya está asociado al estudiante.' });
+
+      // Actualizar datos básicos opcionales
+      const updated = await prisma.guardian.update({
+        where: { id: existingGuardian.id },
+        data: {
+          nombres: body.nombres ?? existingGuardian.nombres,
+          apellidos: body.apellidos ?? existingGuardian.apellidos,
+          telefono: body.telefono ?? existingGuardian.telefono,
+          parentesco: body.parentesco ?? existingGuardian.parentesco,
+          parentescoEspecifico: body.parentescoEspecifico ?? existingGuardian.parentescoEspecifico,
+          direccionEmergencia: body.direccionEmergencia ?? existingGuardian.direccionEmergencia,
+          copiaIdentidadUrl: body.copiaIdentidadUrl ?? existingGuardian.copiaIdentidadUrl,
+        }
+      });
+      guardianId = updated.id;
+
+      // Crear user si viene email+password y aún no tiene
+      if (!updated.userId && body.email && body.password) {
+        const newUser = await prisma.user.create({
+          data: {
+            email: body.email,
+            password: await bcrypt.hash(String(body.password), 10),
+            role: 'padre',
+            name: `${updated.nombres} ${updated.apellidos}`,
+          }
+        });
+        await prisma.guardian.update({ where: { id: guardianId }, data: { userId: newUser.id } });
+      }
+    } else {
+      // Crear guardián y asociar usuario si corresponde
+      const createData: any = {
+        nombres: body.nombres,
+        apellidos: body.apellidos,
+        numeroIdentidad: body.numeroIdentidad,
+        telefono: body.telefono,
+        parentesco: body.parentesco,
+        parentescoEspecifico: body.parentescoEspecifico,
+        direccionEmergencia: body.direccionEmergencia,
+        copiaIdentidadUrl: body.copiaIdentidadUrl,
+      };
+      if (body.email && body.password) {
+        createData.user = {
+          create: {
+            email: body.email,
+            password: await bcrypt.hash(String(body.password), 10),
+            role: 'padre',
+            name: `${body.nombres} ${body.apellidos}`,
+          }
+        };
+      }
+      const created = await prisma.guardian.create({ data: createData });
+      guardianId = created.id;
+    }
+
+    // Vincular al estudiante
+    const updatedStudent = await prisma.student.update({
+      where: { id: studentId },
+      data: { guardians: { connect: { id: guardianId } } },
+      include: { guardians: true }
+    });
+
+    res.status(201).json(updatedStudent);
+  } catch (error) {
+    console.error('Error al agregar guardián:', error);
+    res.status(500).json({ error: 'No se pudo agregar el guardián.' });
+  }
+};
 export const getAllStudents = async (req: Request, res: Response) => {
   try {
     const { search, page = '1', limit = '10', status } = req.query;

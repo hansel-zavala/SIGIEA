@@ -4,7 +4,7 @@ import { useParams, Link } from "react-router-dom";
 import studentService from "../services/studentService";
 import therapySessionService from "../services/therapySessionService";
 import reportService from "../services/reportService";
-import { FaCalendarAlt, FaFileAlt, FaPrint, FaPencilAlt, FaEye, FaFilePdf, FaFileWord } from "react-icons/fa";
+import { FaCalendarAlt, FaFileAlt, FaPrint, FaPencilAlt, FaEye, FaFilePdf, FaFileWord, FaPlus } from "react-icons/fa";
 import Badge from "../components/ui/Badge";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -87,6 +87,7 @@ function StudentDetailPage() {
     behavior: "",
     progress: "",
   });
+
 
   useEffect(() => {
     if (studentId) {
@@ -261,6 +262,13 @@ function StudentDetailPage() {
               >
                 <FaPrint /> Imprimir Matricula
               </button>
+              <Link to={`/students/${studentId}/guardians/new`}>
+                <button
+                  className="py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md"
+                >
+                  <FaPlus /> Nuevo Padre/Tutor
+                </button>
+              </Link>
             </div>
           </div>
           
@@ -541,6 +549,8 @@ function StudentDetailPage() {
           </form>
         )}
       </Modal>
+
+      {/* Modal removido; ahora se usa AddGuardionPage */}
 
       <StudentDetailModal
         isOpen={isDetailModalOpen}

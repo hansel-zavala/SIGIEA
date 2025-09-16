@@ -15,7 +15,7 @@ function AddEventPage() {
     endDate: "",
     isAllDay: false,
     location: "",
-    audience: "General",
+    audience: "",
     categoryId: "",
   });
   const [categories, setCategories] = useState<Category[]>([]);
@@ -73,6 +73,12 @@ function AddEventPage() {
 
     if (!formData.startDate) errors.startDate = "La fecha de inicio es obligatoria.";
     if (!formData.endDate) errors.endDate = "La fecha de fin es obligatoria.";
+    if (!formData.location.trim()) errors.location = "La ubicación es obligatoria.";
+    if (!formData.description.trim()) errors.description = "La descripción es obligatoria.";
+    if (!formData.categoryId) errors.category = "La categoría es obligatoria.";
+    if (!formData.audience) errors.audience = "El público dirigido es obligatorio.";
+
+
 
     if (formData.startDate && formData.endDate) {
       const start = new Date(formData.startDate);
@@ -133,9 +139,7 @@ function AddEventPage() {
         Crear Nuevo Evento
       </h2>
       <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-        {error && (
-          <p className="text-red-500 bg-red-100 p-3 rounded-md">{error}</p>
-        )}
+        {error && (<p className="text-red-500 bg-red-100 p-3 rounded-md">{error}</p>)}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
@@ -148,9 +152,7 @@ function AddEventPage() {
               onChange={handleChange}
               placeholder="Ingresa el título del evento"
             />
-            {formErrors.title && (
-              <p className="text-red-500 text-sm mt-1">{formErrors.title}</p>
-            )}
+            {formErrors.title && (<p className="text-red-500 text-sm mt-1">{formErrors.title}</p>)}
           </div>
           <div>
             <Label htmlFor="categoryId">Categoría</Label>
@@ -158,17 +160,86 @@ function AddEventPage() {
               instanceId="category-select"
               inputId="categoryId"
               name="categoryId"
-              value={
-                categoryOptions.find((o) => o.value === formData.categoryId) ||
-                null
-              }
-              onChange={(option) =>
-                handleSelectChange("categoryId", option?.value || null)
-              }
+              value={categoryOptions.find((o) => o.value === formData.categoryId) ||null}
+              onChange={(option) =>handleSelectChange("categoryId", option?.value || null)}
               options={categoryOptions}
               placeholder="Selecciona una categoría"
             />
+            {formErrors.title && (<p className="text-red-500 text-sm mt-1">{formErrors.category}</p>)}
           </div>
+
+          <div className="pt-5">
+              <p className="text-xs text-gray-500 mb-2">
+                Si seleccionas este boton el evento durara todo el día.
+              </p>
+            <div className="flex items-center gap-2">
+              <input
+                id="isAllDay"
+                name="isAllDay"
+                type="checkbox"
+                checked={formData.isAllDay}
+                onChange={handleChange}
+                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+              />
+              <Label htmlFor="isAllDay" className="mb-0">
+                El evento dura todo el día
+              </Label>
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="location">Ubicación</Label>
+            <Input
+              id="location"
+              name="location"
+              type="text"
+              value={formData.location}
+              onChange={handleChange}
+              placeholder="Ej: Salón Principal, Zoom, etc."
+            />
+            {formErrors.location && (<p className="text-red-500 text-sm mt-1">{formErrors.location}</p>)}
+          </div>
+
+          <div>
+            <Label htmlFor="startDate">Fecha de Inicio</Label>
+            <Input
+              id="startDate"
+              name="startDate"
+              type={formData.isAllDay ? "date" : "datetime-local"}
+              value={formData.startDate}
+              onChange={handleChange}
+              required
+            />
+            {formErrors.startDate && (<p className="text-red-500 text-sm mt-1">{formErrors.startDate}</p> )}
+          </div>
+          <div>
+            <Label htmlFor="endDate">Fecha de Fin</Label>
+            <Input
+              id="endDate"
+              name="endDate"
+              type={formData.isAllDay ? "date" : "datetime-local"}
+              value={formData.endDate}
+              onChange={handleChange}
+              required
+            />
+            {formErrors.endDate && (<p className="text-red-500 text-sm mt-1">{formErrors.endDate}</p>)}
+          </div>
+
+          
+          <div>
+            <Label htmlFor="audience">Dirigido a</Label>
+            <Select
+              instanceId="audience-select"
+              inputId="audience"
+              name="audience"
+              value={audienceOptions.find((o) => o.value === formData.audience) || null}
+              onChange={(option) =>handleSelectChange("audience", option?.value || null)}
+              options={audienceOptions}
+              placeholder="Selecciona el público dirigido"
+            />
+            {formErrors.audience && (<p className="text-red-500 text-sm mt-1">{formErrors.audience}</p>)}
+          </div>
+          
           <div className="md:col-span-2">
             <Label htmlFor="description">Descripción</Label>
             <textarea
@@ -183,78 +254,6 @@ function AddEventPage() {
             {formErrors.description && (
               <p className="text-red-500 text-sm mt-1">{formErrors.description}</p>
             )}
-          </div>
-          <div>
-            <Label htmlFor="startDate">Fecha de Inicio</Label>
-            <Input
-              id="startDate"
-              name="startDate"
-              type={formData.isAllDay ? "date" : "datetime-local"}
-              value={formData.startDate}
-              onChange={handleChange}
-              required
-            />
-            {formErrors.startDate && (
-              <p className="text-red-500 text-sm mt-1">{formErrors.startDate}</p>
-            )}
-          </div>
-          <div>
-            <Label htmlFor="endDate">Fecha de Fin</Label>
-            <Input
-              id="endDate"
-              name="endDate"
-              type={formData.isAllDay ? "date" : "datetime-local"}
-              value={formData.endDate}
-              onChange={handleChange}
-              required
-            />
-            {formErrors.endDate && (
-              <p className="text-red-500 text-sm mt-1">{formErrors.endDate}</p>
-            )}
-          </div>
-
-          <div>
-            <Label htmlFor="location">Ubicación</Label>
-            <Input
-              id="location"
-              name="location"
-              type="text"
-              value={formData.location}
-              onChange={handleChange}
-              placeholder="Ej: Salón Principal, Zoom, etc."
-            />
-            {formErrors.location && (
-              <p className="text-red-500 text-sm mt-1">{formErrors.location}</p>
-            )}
-          </div>
-          <div>
-            <Label htmlFor="audience">Dirigido a</Label>
-            <Select
-              instanceId="audience-select"
-              inputId="audience"
-              name="audience"
-              value={
-                audienceOptions.find((o) => o.value === formData.audience) ||
-                null
-              }
-              onChange={(option) =>
-                handleSelectChange("audience", option?.value || null)
-              }
-              options={audienceOptions}
-            />
-          </div>
-          <div className="flex items-center gap-2 pt-5">
-            <input
-              id="isAllDay"
-              name="isAllDay"
-              type="checkbox"
-              checked={formData.isAllDay}
-              onChange={handleChange}
-              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
-            />
-            <Label htmlFor="isAllDay" className="mb-0">
-              El evento dura todo el día
-            </Label>
           </div>
         </div>
         <div className="pt-6 flex justify-end gap-6">

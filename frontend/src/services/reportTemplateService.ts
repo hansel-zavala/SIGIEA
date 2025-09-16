@@ -98,8 +98,8 @@ const createTemplate = async (data: CreateTemplateData): Promise<ReportTemplate>
   return response.data;
 };
 
-const cloneTemplate = async (id: number): Promise<ReportTemplate> => {
-  const response = await api.post(`/report-templates/${id}/clone`);
+const updateTemplateFull = async (id: number, data: CreateTemplateData): Promise<ReportTemplate> => {
+  const response = await api.put(`/report-templates/${id}/full`, data);
   return response.data;
 };
 
@@ -126,7 +126,7 @@ export default {
   getTemplateById,
   getTemplateByIdPublic,
   createTemplate,
-  cloneTemplate,
+  updateTemplateFull,
   publishTemplate,
   deleteTemplate,
   updateTemplateMeta,

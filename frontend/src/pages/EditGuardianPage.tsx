@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import guardianService from '../services/guardianService';
+import uploadService from "../services/uploadService";
 import { SelectWithCatalog } from "../components/ui/SelectWithCatalog";
 import {getAllTiposParentesco, createTipoParentesco, updateTipoParentesco, deleteTipoParentesco,} from "../services/tipoParentescoService";
 import Label from '../components/ui/Label';
@@ -18,8 +19,12 @@ function EditGuardianPage() {
     telefono: '',
     parentesco: 'Padre',
     parentescoEspecifico: '',
-    direccionEmergencia: ''
+    direccionEmergencia: '',
+    email: '',
+    password: '',
+    copiaIdentidadUrl: ''
   });
+  const [copiaIdentidadFile, setCopiaIdentidadFile] = useState<File | null>(null);
   const [error, setError] = useState('');
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const navigate = useNavigate();
@@ -36,7 +41,10 @@ function EditGuardianPage() {
             telefono: data.telefono,
             parentesco: data.parentesco,
             parentescoEspecifico: data.parentescoEspecifico || '',
-            direccionEmergencia: data.direccionEmergencia || ''
+            direccionEmergencia: data.direccionEmergencia || '',
+            email: data.user?.email || '',
+            password: '',
+            copiaIdentidadUrl: data.copiaIdentidadUrl || ''
           });
         })
         .catch(() => setError('No se pudieron cargar los datos del guardián.'));
@@ -68,6 +76,7 @@ function EditGuardianPage() {
     const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
     const dniRegex = /^\d{13}$/;
     const phoneRegex = /^\d{8}$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!formData.nombres.trim()) errors.nombres = "Los nombres son obligatorios.";
     else if (!nameRegex.test(formData.nombres)) errors.nombres = "Los nombres solo deben contener letras.";
@@ -84,6 +93,16 @@ function EditGuardianPage() {
     if ((formData.parentesco === 'Tutor_Legal' || formData.parentesco === 'Otro') && !formData.parentescoEspecifico) {
         errors.parentescoEspecifico = "Debe especificar el parentesco.";
     }
+
+    // Si uno de email/contraseña se rellena, exigir ambos y validar
+    const hasEmail = !!formData.email?.trim();
+    const hasPassword = !!formData.password?.trim();
+    if (hasEmail || hasPassword) {
+      if (!hasEmail) errors.email = 'Debe ingresar el correo.';
+      if (!hasPassword) errors.password = 'Debe ingresar la contraseña.';
+    }
+    if (hasEmail && !emailRegex.test(formData.email)) errors.email = 'Correo inválido.';
+    if (hasPassword && formData.password.length < 6) errors.password = 'Mínimo 6 caracteres.';
     
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -99,7 +118,16 @@ function EditGuardianPage() {
 
     if (id) {
         try {
-            await guardianService.updateGuardian(Number(id), formData);
+            let copiaUrl = formData.copiaIdentidadUrl || '';
+            if (copiaIdentidadFile) {
+              const up = await uploadService.uploadFile(copiaIdentidadFile);
+              copiaUrl = up.filePath;
+            }
+
+            await guardianService.updateGuardian(Number(id), {
+              ...formData,
+              copiaIdentidadUrl: copiaUrl,
+            });
             navigate('/guardians');
         } catch (err) {
             setError('No se pudo actualizar el guardián.');
@@ -172,9 +200,33 @@ function EditGuardianPage() {
           <Input id="telefono" name="telefono" type="text" value={formData.telefono} onChange={handleChange} />
           {formErrors.telefono && <p className="text-red-500 text-sm mt-1">{formErrors.telefono}</p>}
         </div>
+        
+        <div>
+          <Label htmlFor="email">Correo electrónico</Label>
+          <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} placeholder="correo@ejemplo.com" />
+          {formErrors.email && <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>}
+        </div>
+        <div>
+          <Label htmlFor="password">Contraseña</Label>
+          <Input id="password" name="password" type="password" value={formData.password} onChange={handleChange} placeholder="Mínimo 6 caracteres" />
+          {formErrors.password && <p className="text-red-500 text-sm mt-1">{formErrors.password}</p>}
+        </div>
         <div>
           <Label htmlFor="direccionEmergencia">Dirección de Emergencia</Label>
           <Input id="direccionEmergencia" name="direccionEmergencia" type="text" value={formData.direccionEmergencia} onChange={handleChange} />
+        </div>
+        
+        <div className="md:col-span-2">
+          <Label>Copía de Identidad</Label>
+          {formData.copiaIdentidadUrl && !copiaIdentidadFile && (
+            <p className="text-sm text-gray-600 mb-2">Actualmente cargada. Puedes subir una nueva para reemplazarla.</p>
+          )}
+          <input
+            type="file"
+            accept="image/png, image/jpeg, application/pdf"
+            onChange={(e) => setCopiaIdentidadFile(e.target.files?.[0] || null)}
+            className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-200 file:text-violet-700 hover:file:bg-violet-100"
+          />
         </div>
         </div>
       </fieldset>

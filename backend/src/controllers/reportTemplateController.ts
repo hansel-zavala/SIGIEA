@@ -203,3 +203,87 @@ export const updateTemplateMeta = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'No se pudo actualizar la plantilla.' });
   }
 };
+
+export const updateTemplateFull = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const templateId = parseInt(id);
+    const { title, description, sections, publish } = req.body as {
+      title?: string;
+      description?: string;
+      publish?: boolean;
+      sections: Array<{
+        title: string;
+        description?: string | null;
+        order: number;
+        items: Array<any>;
+      }>;
+    };
+
+    await prisma.$transaction(async (tx) => {
+      // Meta básica
+      await tx.reportTemplate.update({
+        where: { id: templateId },
+        data: {
+          ...(title !== undefined ? { title } : {}),
+          ...(description !== undefined ? { description } : {}),
+          ...(publish !== undefined ? { publishedAt: publish ? new Date() : null } : {}),
+        },
+      });
+
+      // Eliminar contenido previo
+      await tx.reportItem.deleteMany({ where: { section: { templateId } } });
+      await tx.reportSection.deleteMany({ where: { templateId } });
+
+      // Recrear secciones e ítems
+      if (Array.isArray(sections) && sections.length > 0) {
+        await tx.reportTemplate.update({
+          where: { id: templateId },
+          data: {
+            sections: {
+              create: sections.map((section) => ({
+                title: section.title,
+                description: section.description ?? null,
+                order: section.order,
+                items: {
+                  create: (section.items || []).map((item: any) => {
+                    const mapped: any = {
+                      label: item.label,
+                      description: item.description ?? null,
+                      placeholder: item.placeholder ?? null,
+                      helpText: item.helpText ?? null,
+                      required: !!item.required,
+                      maxLength: item.maxLength ?? null,
+                      type: item.type,
+                      width: item.width || 'FULL',
+                      key: item.key ?? null,
+                      order: item.order,
+                    };
+                    if (item.options !== undefined) mapped.options = item.options as any;
+                    if (item.defaultValue !== undefined) mapped.defaultValue = item.defaultValue as any;
+                    return mapped;
+                  }),
+                },
+              })),
+            },
+          },
+        });
+      }
+    });
+
+    const updated = await prisma.reportTemplate.findUnique({
+      where: { id: templateId },
+      include: {
+        sections: {
+          orderBy: { order: 'asc' },
+          include: { items: { orderBy: { order: 'asc' } } },
+        },
+      },
+    });
+
+    res.json(updated);
+  } catch (error) {
+    console.error('Error al actualizar completamente la plantilla:', error);
+    res.status(500).json({ error: 'No se pudo actualizar la plantilla.' });
+  }
+};

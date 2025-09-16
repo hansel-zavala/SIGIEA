@@ -83,7 +83,7 @@ function AddLeccionPage() {
       <div className="max-w-8xl mx-auto">
         <h2 className="text-2xl font-bold mb-6">Crear Nueva Lección</h2>
         <form onSubmit={handleSubmit} >
-          {error && <p className="text-red-500">{error}</p>}
+          {error && (<p className="text-red-500 bg-red-100 p-3 rounded-md mb-6">{error}</p>)}
           <fieldset className="border border-violet-300 p-4 rounded-md">
           <legend className="text-xl font-semibold text-gray-700">
             Datos de la Lección

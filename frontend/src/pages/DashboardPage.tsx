@@ -1,6 +1,15 @@
+
 import { useState, useEffect } from 'react';
-import { useLocation, Link } from 'react-router-dom'; // Se agregó Link aquí
-import dashboardService, { type DashboardStats } from '../services/dashboardService.js';
+import { useLocation, Link } from 'react-router-dom';
+import dashboardService, {
+  type DashboardStats,
+  type TherapyAttendance,
+  type StudentAgeDistribution,
+  type DiagnosisDistribution,
+  type TherapistWorkload,
+  type FrequentTherapies,
+  type SessionComparison,
+} from '../services/dashboardService.js';
 import eventService, { type Event as EventType } from '../services/eventService.js';
 import categoryService, { type Category } from '../services/categoryService.js';
 import StatCard from '../components/ui/StatCard.js';
@@ -9,6 +18,9 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import EventDetailModal from '../components/modals/EventDetailModal.js';
+import ChartContainer from '../components/charts/ChartContainer.js';
+import GaugeChart from '../components/charts/GaugeChart.js';
+import BarChart from '../components/charts/BarChart.js';
 
 function DashboardPage() {
   const location = useLocation();
@@ -17,9 +29,16 @@ function DashboardPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
+
+  const [therapyAttendance, setTherapyAttendance] = useState<TherapyAttendance | null>(null);
+  const [studentAgeDistribution, setStudentAgeDistribution] = useState<StudentAgeDistribution[]>([]);
+  const [diagnosisDistribution, setDiagnosisDistribution] = useState<DiagnosisDistribution[]>([]);
+  const [therapistWorkload, setTherapistWorkload] = useState<TherapistWorkload[]>([]);
+  const [frequentTherapies, setFrequentTherapies] = useState<FrequentTherapies[]>([]);
+  const [sessionComparison, setSessionComparison] = useState<SessionComparison[]>([]);
 
   useEffect(() => {
     const loadDashboardData = () => {
@@ -27,18 +46,30 @@ function DashboardPage() {
       Promise.all([
         dashboardService.getStats(),
         eventService.getAllEvents(),
-        categoryService.getAllCategories()
-      ]).then(([statsData, eventsData, categoriesData]) => {
+        categoryService.getAllCategories(),
+        dashboardService.getTherapyAttendance(),
+        dashboardService.getStudentAgeDistribution(),
+        dashboardService.getDiagnosisDistribution(),
+        dashboardService.getTherapistWorkload(),
+        dashboardService.getMostFrequentTherapies(),
+        dashboardService.getSessionComparison(),
+      ]).then(([statsData, eventsData, categoriesData, therapyAttendanceData, studentAgeDistributionData, diagnosisDistributionData, therapistWorkloadData, frequentTherapiesData, sessionComparisonData]) => {
         setStats(statsData);
         setEvents(eventsData);
         setCategories(categoriesData);
+        setTherapyAttendance(therapyAttendanceData);
+        setStudentAgeDistribution(studentAgeDistributionData);
+        setDiagnosisDistribution(diagnosisDistributionData);
+        setTherapistWorkload(therapistWorkloadData);
+        setFrequentTherapies(frequentTherapiesData);
+        setSessionComparison(sessionComparisonData);
       }).catch(() => {
         setError('No se pudo cargar la información del dashboard.');
       }).finally(() => {
         setLoading(false);
       });
     };
-    
+
     loadDashboardData();
 
   }, [location]);
@@ -49,7 +80,7 @@ function DashboardPage() {
     start: event.startDate,
     end: event.endDate,
     allDay: event.isAllDay,
-    extendedProps: { 
+    extendedProps: {
       ...event,
       categoryColor: event.category?.color || '#808080'
     }
@@ -65,7 +96,6 @@ function DashboardPage() {
     setSelectedEvent(null);
   };
 
-  // util para ordenar y formatear próximos eventos
   const upcomingEvents = [...events]
     .filter(e => new Date(e.endDate || e.startDate) >= new Date(new Date().toDateString()))
     .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
@@ -86,7 +116,6 @@ function DashboardPage() {
         <p className="text-red-500">{error}</p>
       ) : (
         <>
-          {/* Tarjetas superiores */}
           {stats && (
             <section aria-label="Resumen" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
               <Link to="/students" className="cursor-pointer">
@@ -125,9 +154,7 @@ function DashboardPage() {
             </section>
           )}
 
-          {/* Calendario y lateral */}
           <section className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-            {/* Calendario */}
             <div className="xl:col-span-2">
               <div className="mb-4">
                 <div className="flex items-center justify-between bg-white rounded-xl shadow-sm ring-1 ring-gray-100 px-4 py-3">
@@ -170,7 +197,6 @@ function DashboardPage() {
               </div>
             </div>
 
-            {/* Lateral: Próximos eventos */}
             <aside className="space-y-4">
               <div className="bg-white rounded-xl shadow-md ring-1 ring-gray-100 p-5">
                 <h4 className="text-lg font-semibold mb-4">Próximos eventos</h4>
@@ -199,6 +225,38 @@ function DashboardPage() {
               </div>
             </aside>
           </section>
+
+          <section aria-label='Pulso del Centro' className='grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6'>
+            {therapyAttendance && (
+              <ChartContainer title='Tasa de Asistencia a Terapias (Últimos 7 días)'>
+                <GaugeChart value={therapyAttendance.attendanceRate} />
+              </ChartContainer>
+            )}
+          </section>
+
+          <section aria-label='Nuestros Estudiantes' className='grid grid-cols-1 xl:grid-cols-2 gap-8'>
+            <ChartContainer title='Distribución de Estudiantes por Rango de Edad'>
+              <BarChart data={studentAgeDistribution} barKey='count' xAxisKey='range' />
+            </ChartContainer>
+            <ChartContainer title='Distribución por Diagnóstico'>
+              <BarChart data={diagnosisDistribution} barKey='count' xAxisKey='diagnosis' />
+            </ChartContainer>
+          </section>
+
+          <section aria-label='Gestión de Terapeutas y Terapias' className='grid grid-cols-1 xl:grid-cols-2 gap-8'>
+            <ChartContainer title='Carga de Trabajo por Terapeuta'>
+              <BarChart data={therapistWorkload} barKey='load' xAxisKey='therapist' />
+            </ChartContainer>
+            <ChartContainer title='Terapias Más Frecuentes'>
+              <BarChart data={frequentTherapies} barKey='count' xAxisKey='therapy' />
+            </ChartContainer>
+          </section>
+
+          <section aria-label='Seguimiento y Progreso' className='grid grid-cols-1 xl:grid-cols-1 gap-8'>
+            <ChartContainer title='Comparativa de Sesiones: Planificadas vs. Realizadas'>
+              <BarChart data={sessionComparison} barKey='planned' xAxisKey='month' />
+            </ChartContainer>
+          </section>
         </>
       )}
 
@@ -207,4 +265,4 @@ function DashboardPage() {
   );
 }
 
-export default DashboardPage;
+export default DashboardPage;

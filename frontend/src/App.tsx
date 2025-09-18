@@ -33,6 +33,7 @@ import ViewReportPage from './pages/ViewReportPage';
 import GuardianProfilePage from './pages/GuardianProfilePage';
 import ProfilePage from './pages/ProfilePage';
 import AddGuardionPage from './pages/AddGuardionPage';
+import AnalisisDeGraficasPage from './pages/AnalisisDeGraficasPage';
 
 function App() {
   const { user } = useAuth();
@@ -73,6 +74,7 @@ function App() {
               <Route path="reports/edit/:reportId" element={<FillReportPage />} />
               <Route path="profile" element={<ProfilePage />} />
               <Route path="students/:id/guardians/new" element={<AddGuardionPage />} />
+              <Route path="analisis-de-graficas" element={<AnalisisDeGraficasPage />} />
             </Route>
 
             <Route path="/students/:id/print" element={<PrintMatriculaPage />} />

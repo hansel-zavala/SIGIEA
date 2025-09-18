@@ -14,7 +14,7 @@ export interface TherapyAttendance {
 }
 
 export interface StudentAgeDistribution {
-  range: string;
+  age: number;
   count: number;
 }
 
@@ -40,13 +40,8 @@ export interface SessionComparison {
 }
 
 const getStats = async (): Promise<DashboardStats> => {
-  try {
-    const response = await api.get('/dashboard/stats');
-    return response.data;
-  } catch (error) {
-    console.error("Error al obtener las estadísticas:", error);
-    throw error;
-  }
+  const response = await api.get('/dashboard/stats');
+  return response.data;
 };
 
 const getTherapyAttendance = async (): Promise<TherapyAttendance> => {
@@ -55,11 +50,8 @@ const getTherapyAttendance = async (): Promise<TherapyAttendance> => {
 };
 
 const getStudentAgeDistribution = async (): Promise<StudentAgeDistribution[]> => {
-  return Promise.resolve([
-    { range: '3-5', count: 10 },
-    { range: '6-8', count: 15 },
-    { range: '9-12', count: 20 },
-  ]);
+  const response = await api.get('/dashboard/student-age-distribution');
+  return response.data;
 };
 
 const getDiagnosisDistribution = async (): Promise<DiagnosisDistribution[]> => {
@@ -71,27 +63,23 @@ const getDiagnosisDistribution = async (): Promise<DiagnosisDistribution[]> => {
 };
 
 const getTherapistWorkload = async (): Promise<TherapistWorkload[]> => {
-  return Promise.resolve([
-    { therapist: 'Ana', load: 10 },
-    { therapist: 'Juan', load: 12 },
-    { therapist: 'Maria', load: 8 },
-  ]);
+  const response = await api.get('/dashboard/therapist-workload');
+  return response.data;
 };
 
 const getMostFrequentTherapies = async (): Promise<FrequentTherapies[]> => {
-  return Promise.resolve([
-    { therapy: 'Lenguaje', count: 30 },
-    { therapy: 'Ocupacional', count: 25 },
-    { therapy: 'Física', count: 15 },
-  ]);
+  const response = await api.get('/dashboard/most-frequent-therapies');
+  return response.data;
 };
 
 const getSessionComparison = async (): Promise<SessionComparison[]> => {
-  return Promise.resolve([
-    { month: 'Enero', planned: 50, completed: 45 },
-    { month: 'Febrero', planned: 60, completed: 55 },
-    { month: 'Marzo', planned: 70, completed: 65 },
-  ]);
+  const response = await api.get('/dashboard/session-comparison');
+  return response.data;
+};
+
+const getTherapistAttendanceById = async (therapistId: number, range: string): Promise<TherapyAttendance> => {
+  const response = await api.get(`/dashboard/therapist-attendance/${therapistId}?range=${range}`);
+  return response.data;
 };
 
 export default {
@@ -102,4 +90,5 @@ export default {
   getTherapistWorkload,
   getMostFrequentTherapies,
   getSessionComparison,
+  getTherapistAttendanceById,
 };

@@ -35,7 +35,7 @@ app.get('/', (req: Request, res: Response) => {
 app.use('/api/users', userRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/lecciones', leccionRoutes);
-app.use('/api/upload', uploadRoutes);
+// app.use('/api/upload', uploadRoutes);
 app.use('/api/guardians', guardianRoutes);
 app.use('/api/therapists', therapistRoutes);
 app.use('/api/dashboard', dashboardRoutes);

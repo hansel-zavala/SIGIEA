@@ -191,7 +191,7 @@ model TherapistProfile {
   dateOfBirth       DateTime? @map("fecha_nacimiento")
   lugarNacimiento   String?
   direccion         String?
-  gender            Genero?
+  genero            Genero?
   phone             String?
   email             String    @unique
   specialty         String    @map("tipo_profesional")

@@ -1,14 +1,7 @@
-
 import { useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import dashboardService, {
   type DashboardStats,
-  type TherapyAttendance,
-  type StudentAgeDistribution,
-  type DiagnosisDistribution,
-  type TherapistWorkload,
-  type FrequentTherapies,
-  type SessionComparison,
 } from '../services/dashboardService.js';
 import eventService, { type Event as EventType } from '../services/eventService.js';
 import categoryService, { type Category } from '../services/categoryService.js';
@@ -18,9 +11,6 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import EventDetailModal from '../components/modals/EventDetailModal.js';
-import ChartContainer from '../components/charts/ChartContainer.js';
-import GaugeChart from '../components/charts/GaugeChart.js';
-import BarChart from '../components/charts/BarChart.js';
 
 function DashboardPage() {
   const location = useLocation();
@@ -33,13 +23,6 @@ function DashboardPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
 
-  const [therapyAttendance, setTherapyAttendance] = useState<TherapyAttendance | null>(null);
-  const [studentAgeDistribution, setStudentAgeDistribution] = useState<StudentAgeDistribution[]>([]);
-  const [diagnosisDistribution, setDiagnosisDistribution] = useState<DiagnosisDistribution[]>([]);
-  const [therapistWorkload, setTherapistWorkload] = useState<TherapistWorkload[]>([]);
-  const [frequentTherapies, setFrequentTherapies] = useState<FrequentTherapies[]>([]);
-  const [sessionComparison, setSessionComparison] = useState<SessionComparison[]>([]);
-
   useEffect(() => {
     const loadDashboardData = () => {
       setLoading(true);
@@ -47,22 +30,10 @@ function DashboardPage() {
         dashboardService.getStats(),
         eventService.getAllEvents(),
         categoryService.getAllCategories(),
-        dashboardService.getTherapyAttendance(),
-        dashboardService.getStudentAgeDistribution(),
-        dashboardService.getDiagnosisDistribution(),
-        dashboardService.getTherapistWorkload(),
-        dashboardService.getMostFrequentTherapies(),
-        dashboardService.getSessionComparison(),
-      ]).then(([statsData, eventsData, categoriesData, therapyAttendanceData, studentAgeDistributionData, diagnosisDistributionData, therapistWorkloadData, frequentTherapiesData, sessionComparisonData]) => {
+      ]).then(([statsData, eventsData, categoriesData]) => {
         setStats(statsData);
         setEvents(eventsData);
         setCategories(categoriesData);
-        setTherapyAttendance(therapyAttendanceData);
-        setStudentAgeDistribution(studentAgeDistributionData);
-        setDiagnosisDistribution(diagnosisDistributionData);
-        setTherapistWorkload(therapistWorkloadData);
-        setFrequentTherapies(frequentTherapiesData);
-        setSessionComparison(sessionComparisonData);
       }).catch(() => {
         setError('No se pudo cargar la información del dashboard.');
       }).finally(() => {
@@ -224,38 +195,6 @@ function DashboardPage() {
                 )}
               </div>
             </aside>
-          </section>
-
-          <section aria-label='Pulso del Centro' className='grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6'>
-            {therapyAttendance && (
-              <ChartContainer title='Tasa de Asistencia a Terapias (Últimos 7 días)'>
-                <GaugeChart value={therapyAttendance.attendanceRate} />
-              </ChartContainer>
-            )}
-          </section>
-
-          <section aria-label='Nuestros Estudiantes' className='grid grid-cols-1 xl:grid-cols-2 gap-8'>
-            <ChartContainer title='Distribución de Estudiantes por Rango de Edad'>
-              <BarChart data={studentAgeDistribution} barKey='count' xAxisKey='range' />
-            </ChartContainer>
-            <ChartContainer title='Distribución por Diagnóstico'>
-              <BarChart data={diagnosisDistribution} barKey='count' xAxisKey='diagnosis' />
-            </ChartContainer>
-          </section>
-
-          <section aria-label='Gestión de Terapeutas y Terapias' className='grid grid-cols-1 xl:grid-cols-2 gap-8'>
-            <ChartContainer title='Carga de Trabajo por Terapeuta'>
-              <BarChart data={therapistWorkload} barKey='load' xAxisKey='therapist' />
-            </ChartContainer>
-            <ChartContainer title='Terapias Más Frecuentes'>
-              <BarChart data={frequentTherapies} barKey='count' xAxisKey='therapy' />
-            </ChartContainer>
-          </section>
-
-          <section aria-label='Seguimiento y Progreso' className='grid grid-cols-1 xl:grid-cols-1 gap-8'>
-            <ChartContainer title='Comparativa de Sesiones: Planificadas vs. Realizadas'>
-              <BarChart data={sessionComparison} barKey='planned' xAxisKey='month' />
-            </ChartContainer>
           </section>
         </>
       )}

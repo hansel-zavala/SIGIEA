@@ -2,6 +2,7 @@
 import Modal from 'react-modal';
 import Label from '../components/ui/Label';
 import Badge from '../components/ui/Badge';
+import React from 'react';
 
 const modalStyles = {
   content: {
@@ -16,10 +17,10 @@ const modalStyles = {
 
 Modal.setAppElement('#root');
 
-const InfoField = ({ label, value }: { label: string, value: any }) => (
+const InfoField = ({ label, value, style }: { label: string, value: any, style?: React.CSSProperties }) => (
   <div>
     <Label as="h3" className="text-xs font-semibold text-gray-500">{label}</Label>
-    <p className="text-gray-800 text-sm">{value ?? 'No especificado'}</p>
+    <p className="text-gray-800 text-sm" style={style}>{value ?? 'No especificado'}</p>
   </div>
 );
 

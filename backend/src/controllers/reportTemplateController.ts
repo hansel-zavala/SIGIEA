@@ -231,6 +231,8 @@ export const updateTemplateFull = async (req: Request, res: Response) => {
         },
       });
 
+      // Eliminar respuestas e items previos para evitar conflictos de FK
+      await tx.reportItemAnswer.deleteMany({ where: { item: { section: { templateId } } } });
       // Eliminar contenido previo
       await tx.reportItem.deleteMany({ where: { section: { templateId } } });
       await tx.reportSection.deleteMany({ where: { templateId } });

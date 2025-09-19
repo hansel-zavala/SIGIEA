@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { FaBars, FaTimes, FaUserCircle, FaCog, FaSignOutAlt, FaChevronDown } from 'react-icons/fa';
+import { FaBars, FaTimes, FaUserCircle, FaSignOutAlt, FaChevronDown } from 'react-icons/fa';
 
 interface HeaderProps {
   onToggleSidebar: () => void;

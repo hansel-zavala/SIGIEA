@@ -1,19 +1,29 @@
 // frontend/src/pages/ReportsListPage.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import reportService from '../services/reportService';
 import { FaUserCircle, FaFileMedicalAlt } from 'react-icons/fa';
+import Pagination from '../components/ui/Pagination';
 
 interface Student {
   id: number;
   fullName: string;
-  therapist: { fullName: string } | null;
+  therapist: { id: number; fullName: string } | null;
 }
+
+const REPORTS_LIST_PAGE_SIZE_KEY = 'reports-list-page-size';
 
 function ReportsListPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(() => {
+    if (typeof window === 'undefined') return 10;
+    const stored = window.localStorage.getItem(REPORTS_LIST_PAGE_SIZE_KEY);
+    const parsed = stored ? Number(stored) : NaN;
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 10;
+  });
 
   useEffect(() => {
     reportService.getStudentsForReporting()
@@ -21,6 +31,33 @@ function ReportsListPage() {
       .catch(() => setError('No se pudo cargar la lista de estudiantes.'))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && itemsPerPage > 0) {
+      window.localStorage.setItem(REPORTS_LIST_PAGE_SIZE_KEY, String(itemsPerPage));
+    }
+  }, [itemsPerPage]);
+
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(students.length / Math.max(itemsPerPage, 1)));
+    setCurrentPage((prev) => Math.min(prev, totalPages));
+  }, [students.length, itemsPerPage]);
+
+  const currentStudents = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    return students.slice(start, end);
+  }, [students, currentPage, itemsPerPage]);
+
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+  };
+
+  const handleItemsPerPageChange = (size: number) => {
+    if (size <= 0) return;
+    setItemsPerPage(size);
+    setCurrentPage(1);
+  };
 
   if (loading) return <p>Cargando...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
@@ -30,6 +67,11 @@ function ReportsListPage() {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800">Generar Reporte de Estudiante</h2>
       </div>
+
+      <div className="flex justify-between items-center mb-4 gap-4">
+        <p className="text-xs text-gray-500 mt-1">Hacer click en la foto o nombre del estudiante para ver perfil y editar el reporte. </p>
+      </div>
+
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <table className="w-full text-sm">
@@ -41,16 +83,22 @@ function ReportsListPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {students.map((student) => (
+            {currentStudents.length > 0 ? currentStudents.map((student) => (
               <tr key={student.id}>
                 <td className="px-5 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="text-gray-400"><FaUserCircle size={40} /></div>
-                    <div>
-                      <span className="block font-medium text-gray-800">{student.fullName}</span>
-                      <span className="block text-gray-500 text-xs">ID: {student.id}</span>
+                  <Link
+                    to={`/students/${student.id}`}
+                    className="flex items-center gap-3 group"
+                  >
+                    <div className="text-gray-400 group-hover:text-violet-500 transition-colors">
+                      <FaUserCircle size={40} />
                     </div>
-                  </div>
+                    <div>
+                      <span className="block font-medium text-gray-800 group-hover:text-violet-600 group-hover:underline">
+                        {student.fullName}
+                      </span>
+                    </div>
+                  </Link>
                 </td>
                 <td className="px-5 py-4 text-gray-600">{student.therapist?.fullName || 'No asignado'}</td>
                 <td className="px-5 py-4">
@@ -62,10 +110,27 @@ function ReportsListPage() {
                   </Link>
                 </td>
               </tr>
-            ))}
+            )) : (
+              <tr>
+                <td colSpan={3} className="px-5 py-8 text-center text-gray-500">
+                  {students.length === 0 ? 'No hay estudiantes disponibles para reportes.' : 'No hay resultados en esta página.'}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
+      {students.length > 0 && (
+        <div className="border-t border-gray-200 bg-white px-4 py-3">
+          <Pagination
+            itemsPerPage={itemsPerPage}
+            totalItems={students.length}
+            currentPage={currentPage}
+            onPageChange={handlePageChange}
+            onItemsPerPageChange={handleItemsPerPageChange}
+          />
+        </div>
+      )}
     </div>
   );
 }

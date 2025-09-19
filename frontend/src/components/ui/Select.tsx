@@ -1,5 +1,4 @@
 // frontend/src/components/ui/Select.tsx
-import React from 'react';
 import Select, { type Props as SelectProps } from 'react-select';
 
 // Definimos la "forma" que tendrá cada objeto en la lista de opciones

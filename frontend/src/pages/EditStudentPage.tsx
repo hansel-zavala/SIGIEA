@@ -14,6 +14,7 @@ import MultiSelectWithCatalog from '../components/ui/MultiSelectWithCatalog';
 import { departamentos, municipiosPorDepartamento } from '../data/honduras-data';
 import { FaExternalLinkAlt, FaTrash } from 'react-icons/fa';
 import CustomDatePicker from '../components/ui/DatePicker';
+import { useToast } from '../context/ToastContext';
 
 type StudentFormData = {
     nombres: string;
@@ -97,6 +98,8 @@ function EditStudentPage() {
   const [selectedAlergias, setSelectedAlergias] = useState<Alergia[]>([]);
   const [partidaFile, setPartidaFile] = useState<File | null>(null);
   const [evaluacionFile, setEvaluacionFile] = useState<File | null>(null);
+
+  const { showToast } = useToast();
 
 
 
@@ -270,6 +273,8 @@ function EditStudentPage() {
         };
 
         await studentService.updateStudent(parseInt(id, 10), finalData);
+        const fullName = `${(formData.nombres ?? '').trim()} ${(formData.apellidos ?? '').trim()}`.trim() || 'el estudiante';
+        showToast({ message: `Se actualizó correctamente la ficha de ${fullName}.` });
         navigate('/students');
       } catch (err) {
         setError('No se pudo actualizar el estudiante.');

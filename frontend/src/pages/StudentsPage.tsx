@@ -8,6 +8,7 @@ import Input from "../components/ui/Input";
 import Pagination from "../components/ui/Pagination";
 import { FaUserCircle, FaPencilAlt, FaTrash, FaCalendarPlus, FaPlus, FaUndo } from "react-icons/fa";
 import { ConfirmationDialog } from "../components/ui/ConfirmationDialog";
+import { useToast } from '../context/ToastContext';
 
 interface Student {
   id: number;
@@ -22,6 +23,8 @@ interface Student {
   isActive: boolean;
 }
 
+const STUDENTS_PAGE_SIZE_KEY = 'students-list-page-size';
+
 function StudentsPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,11 +32,17 @@ function StudentsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(() => {
+    if (typeof window === 'undefined') return 10;
+    const stored = window.localStorage.getItem(STUDENTS_PAGE_SIZE_KEY);
+    const parsed = stored ? Number(stored) : NaN;
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 10;
+  });
   const [statusFilter, setStatusFilter] = useState('active');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"deactivate" | "reactivate" | null>(null);
   const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
+  const { showToast } = useToast();
 
   const fetchStudents = () => {
       setLoading(true);
@@ -52,16 +61,29 @@ function StudentsPage() {
     return () => clearTimeout(timerId);
   }, [searchTerm, currentPage, itemsPerPage, statusFilter]);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined' && itemsPerPage > 0) {
+      window.localStorage.setItem(STUDENTS_PAGE_SIZE_KEY, String(itemsPerPage));
+    }
+  }, [itemsPerPage]);
+
   const handleDelete = async (studentId: number) => {
     try {
       await studentService.deleteStudent(studentId);
+      showToast({ message: 'Se eliminó correctamente.', type: 'error' });
       fetchStudents();
     } catch (err) {
       setError("No se pudo desactivar el estudiante.");
     }
   };
   
-  const handlePageChange = (pageNumber: number) => {setCurrentPage(pageNumber);};
+  const handlePageChange = (pageNumber: number) => { setCurrentPage(pageNumber); };
+
+  const handleItemsPerPageChange = (size: number) => {
+    if (size <= 0) return;
+    setItemsPerPage(size);
+    setCurrentPage(1);
+  };
 
   const handleFilterChange = (newStatus: string) => {
     setStatusFilter(newStatus);
@@ -76,6 +98,7 @@ function StudentsPage() {
       } else {
         fetchStudents();
       }
+      showToast({ message: 'Se reactivó correctamente.' });
     } catch (err) {
       setError("No se pudo reactivar al estudiante.");
     }
@@ -143,6 +166,8 @@ function StudentsPage() {
         <button onClick={() => handleFilterChange('inactive')} className={`px-4 py-2 text-sm rounded-md ${statusFilter === 'inactive' ? 'text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md' : 'bg-gray-200'}`}>Inactivos</button>
         <button onClick={() => handleFilterChange('all')} className={`px-4 py-2 text-sm rounded-md ${statusFilter === 'all' ? 'text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md' : 'bg-gray-200'}`}>Todos</button>
       </div>
+
+      {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
 
       <div className="flex justify-between items-center mb-4 gap-4">
         <p className="text-xs text-gray-500 mt-1">Hacer click en la foto o nombre de estudiante para ver perfil. </p>
@@ -220,12 +245,17 @@ function StudentsPage() {
 </tbody>
           </table>
         </div>
+        {students.length > 0 && (
+          <div className="border-t border-gray-200 bg-white px-4 py-3">
         <Pagination
             itemsPerPage={itemsPerPage}
-            totalItems={totalItems}
+            totalItems={students.length}
             currentPage={currentPage}
             onPageChange={handlePageChange}
+            onItemsPerPageChange={handleItemsPerPageChange}
         />
+        </div>
+      )}
       </div>
       <ConfirmationDialog
         isOpen={confirmOpen}

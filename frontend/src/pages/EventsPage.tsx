@@ -1,9 +1,13 @@
 // frontend/src/pages/EventsPage.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import eventService, { type Event } from "../services/eventService";
 import { FaCalendarAlt, FaPlus, FaPencilAlt, FaTrash, FaTags } from "react-icons/fa";
 import { ConfirmationDialog } from "../components/ui/ConfirmationDialog";
+import { useToast } from '../context/ToastContext';
+import Pagination from "../components/ui/Pagination";
+
+const EVENTS_PAGE_SIZE_KEY = 'events-page-size';
 
 function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -11,6 +15,14 @@ function EventsPage() {
   const [error, setError] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(() => {
+    if (typeof window === 'undefined') return 10;
+    const stored = window.localStorage.getItem(EVENTS_PAGE_SIZE_KEY);
+    const parsed = stored ? Number(stored) : NaN;
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 10;
+  });
+  const { showToast } = useToast();
 
   useEffect(() => {
     fetchEvents();
@@ -32,7 +44,8 @@ function EventsPage() {
 
   const handleDelete = async (eventId: number) => {
     try {
-      await eventService.deleteEvent(eventId);
+    await eventService.deleteEvent(eventId);
+    showToast({ message: 'Se eliminó correctamente.', type: 'error' });
       fetchEvents(); 
     } catch (err) {
       setError("No se pudo desactivar el evento.");
@@ -49,6 +62,33 @@ function EventsPage() {
     await handleDelete(selectedEventId);
     setConfirmOpen(false);
     setSelectedEventId(null);
+  };
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && itemsPerPage > 0) {
+      window.localStorage.setItem(EVENTS_PAGE_SIZE_KEY, String(itemsPerPage));
+    }
+  }, [itemsPerPage]);
+
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(events.length / Math.max(itemsPerPage, 1)));
+    setCurrentPage((prev) => Math.min(prev, totalPages));
+  }, [events.length, itemsPerPage]);
+
+  const currentEvents = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    return events.slice(start, end);
+  }, [events, currentPage, itemsPerPage]);
+
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+  };
+
+  const handleItemsPerPageChange = (size: number) => {
+    if (size <= 0) return;
+    setItemsPerPage(size);
+    setCurrentPage(1);
   };
 
 
@@ -100,22 +140,24 @@ function EventsPage() {
             <tr>
               <th className="px-5 py-3 font-medium text-gray-500 text-left">Título del Evento</th>
               <th className="px-5 py-3 font-medium text-gray-500 text-left">Fecha de Inicio</th>
+              <th className="px-5 py-3 font-medium text-gray-500 text-left">Fecha de Finalizacion</th>
               <th className="px-5 py-3 font-medium text-gray-500 text-left">Audiencia</th>
               <th className="px-5 py-3 font-medium text-gray-500 text-left">Categoría</th>
               <th className="px-5 py-3 font-medium text-gray-500 text-left">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {events.length > 0 ? (
-              events.map((event) => (
+            {currentEvents.length > 0 ? (
+              currentEvents.map((event) => (
                 <tr key={event.id}>
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
                       <div className="text-blue-600"><FaCalendarAlt /></div>
-                      <span className="font-medium text-gray-800 text-x">{event.title}</span>
+                      <span className="font-medium text-gray-800">{event.title}</span>
                     </div>
                   </td>
                   <td className="px-5 py-4 text-gray-600">{formatDate(event.startDate)}</td>
+                  <td className="px-5 py-4 text-gray-600">{formatDate(event.endDate || event.startDate)}</td>
                   <td className="px-5 py-4 text-gray-600">{event.audience}</td>
                   <td className="px-5 py-4 text-gray-600 flex items-center gap-2">
                     {event.category?.color && (
@@ -142,14 +184,25 @@ function EventsPage() {
               ))
             ) : (
               <tr>
-                <td colSpan={4} className="text-center p-8 text-gray-500">
-                  No hay eventos creados.
+                <td colSpan={6} className="text-center p-8 text-gray-500">
+                  {events.length === 0 ? 'No hay eventos creados.' : 'No hay eventos en esta página.'}
                 </td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
+      {events.length > 0 && (
+        <div className="border-t border-gray-200 bg-white px-4 py-3">
+          <Pagination
+            itemsPerPage={itemsPerPage}
+            totalItems={events.length}
+            currentPage={currentPage}
+            onPageChange={handlePageChange}
+            onItemsPerPageChange={handleItemsPerPageChange}
+          />
+        </div>
+      )}
       <ConfirmationDialog
         isOpen={confirmOpen}
         onClose={() => setConfirmOpen(false)}

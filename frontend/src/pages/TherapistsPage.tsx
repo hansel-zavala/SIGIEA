@@ -3,12 +3,22 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import therapistService from '../services/therapistService.js';
-import type { TherapistProfile } from '../services/therapistService.js';
 import Input from '../components/ui/Input';
 import Pagination from '../components/ui/Pagination';
 import { FaUserMd, FaPencilAlt, FaTrash, FaPlus, FaUndo } from 'react-icons/fa';
 import Badge from '../components/ui/Badge.js';
 import { ConfirmationDialog } from "../components/ui/ConfirmationDialog";
+import { useToast } from '../context/ToastContext';
+
+interface TherapistProfile {
+  id: number;
+  fullName: string;
+  email: string;
+  specialty: string;
+  isActive: boolean;
+}
+
+const THERAPISTS_PAGE_SIZE_KEY = 'therapists-list-page-size';
 
 function TherapistsPage() {
   const [therapists, setTherapists] = useState<TherapistProfile[]>([]);
@@ -17,11 +27,17 @@ function TherapistsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(() => {
+    if (typeof window === 'undefined') return 10;
+    const stored = window.localStorage.getItem(THERAPISTS_PAGE_SIZE_KEY);
+    const parsed = stored ? Number(stored) : NaN;
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 10;
+  });
   const [statusFilter, setStatusFilter] = useState('active');
   const [confirmAction, setConfirmAction] = useState<"deactivate" | "reactivate" | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectedTherapistId, setSelectedTherapistId] = useState<number | null>(null);
+  const { showToast } = useToast();
 
 
   const fetchTherapists = () => {
@@ -40,9 +56,16 @@ function TherapistsPage() {
     return () => clearTimeout(timerId);
   }, [searchTerm, currentPage, itemsPerPage, statusFilter])
 
+  useEffect(() => {
+    if (typeof window !== 'undefined' && itemsPerPage > 0) {
+      window.localStorage.setItem(THERAPISTS_PAGE_SIZE_KEY, String(itemsPerPage));
+    }
+  }, [itemsPerPage]);
+
   const handleDelete = async (therapistId: number) => {
     try {
-      await therapistService.deleteTherapist(therapistId);
+    await therapistService.deleteTherapist(therapistId);
+    showToast({ message: 'Se eliminó correctamente.', type: 'error' });
       fetchTherapists();
     } catch (err) {
       setError('No se pudo desactivar al terapeuta.');
@@ -52,6 +75,7 @@ function TherapistsPage() {
   const handleReactivate = async (therapistId: number) => {
     try {
       await therapistService.reactivateTherapist(therapistId);
+      showToast({ message: 'Se reactivó correctamente.' });
       fetchTherapists();
     } catch (err: any) {
       setError(err.response?.data?.error || 'No se pudo reactivar al miembro del personal.');
@@ -66,6 +90,12 @@ function TherapistsPage() {
 
   const handlePageChange = (pageNumber: number) => {
       setCurrentPage(pageNumber);
+  };
+
+  const handleItemsPerPageChange = (size: number) => {
+      if (size <= 0) return;
+      setItemsPerPage(size);
+      setCurrentPage(1);
   };
 
   const openDeactivateDialog = (therapistId: number) => {
@@ -196,12 +226,17 @@ function TherapistsPage() {
           </tbody>
         </table>
       </div>
+      {therapists.length > 0 && (
+          <div className="border-t border-gray-200 bg-white px-4 py-3">
        <Pagination
             itemsPerPage={itemsPerPage}
-            totalItems={totalItems}
+            totalItems={therapists.length}
             currentPage={currentPage}
             onPageChange={handlePageChange}
+            onItemsPerPageChange={handleItemsPerPageChange}
         />
+        </div>
+      )}
       <ConfirmationDialog
         isOpen={confirmOpen}
         onClose={() => setConfirmOpen(false)}

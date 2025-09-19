@@ -2,8 +2,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import reportTemplateService, { type ReportTemplate } from '../services/reportTemplateService';
+import { useToast } from '../context/ToastContext';
+import Pagination from '../components/ui/Pagination';
 
 type StatusFilter = 'all' | 'draft' | 'published';
+
+const TEMPLATES_PAGE_SIZE_KEY = 'templates-page-size';
 
 function TemplatesPage() {
   const navigate = useNavigate();
@@ -11,9 +15,17 @@ function TemplatesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [templates, setTemplates] = useState<ReportTemplate[]>([]);
+  const { showToast } = useToast();
 
   const statusParam = (searchParams.get('status') as StatusFilter) || 'all';
   const [status, setStatus] = useState<StatusFilter>(statusParam);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(() => {
+    if (typeof window === 'undefined') return 10;
+    const stored = window.localStorage.getItem(TEMPLATES_PAGE_SIZE_KEY);
+    const parsed = stored ? Number(stored) : NaN;
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 10;
+  });
 
   useEffect(() => {
     setLoading(true);
@@ -32,26 +44,44 @@ function TemplatesPage() {
     }, { replace: true });
   }, [status, setSearchParams]);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined' && itemsPerPage > 0) {
+      window.localStorage.setItem(TEMPLATES_PAGE_SIZE_KEY, String(itemsPerPage));
+    }
+  }, [itemsPerPage]);
+
   const counts = useMemo(() => {
     const all = templates.length;
     const drafts = templates.filter(t => !t.publishedAt).length;
     const published = templates.filter(t => !!t.publishedAt).length;
     return { all, drafts, published };
   }, [templates]);
-
+ 
   const filtered = useMemo(() => {
     if (status === 'draft') return templates.filter(t => !t.publishedAt);
     if (status === 'published') return templates.filter(t => !!t.publishedAt);
     return templates;
   }, [templates, status]);
 
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(filtered.length / Math.max(itemsPerPage, 1)));
+    setCurrentPage((prev) => Math.min(prev, totalPages));
+  }, [filtered.length, itemsPerPage]);
+
+  const currentTemplates = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    return filtered.slice(start, end);
+  }, [filtered, currentPage, itemsPerPage]);
+
   const handlePublishToggle = async (tpl: ReportTemplate) => {
     try {
       const willPublish = !tpl.publishedAt;
       const updated = await reportTemplateService.publishTemplate(tpl.id, willPublish);
       setTemplates(prev => prev.map(t => t.id === tpl.id ? updated : t));
+      showToast({ message: willPublish ? 'Plantilla publicada correctamente.' : 'Plantilla pasada a borrador.' });
     } catch {
-      alert('No se pudo cambiar el estado de publicación.');
+      setError('No se pudo cambiar el estado de publicación.');
     }
   };
 
@@ -65,9 +95,20 @@ function TemplatesPage() {
     try {
       await reportTemplateService.deleteTemplate(tpl.id);
       setTemplates(prev => prev.filter(t => t.id !== tpl.id));
+      showToast({ message: 'Se eliminó correctamente.', type: 'error' });
     } catch {
-      alert('No se pudo eliminar la plantilla.');
+      setError('No se pudo eliminar la plantilla.');
     }
+  };
+
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+  };
+
+  const handleItemsPerPageChange = (size: number) => {
+    if (size <= 0) return;
+    setItemsPerPage(size);
+    setCurrentPage(1);
   };
 
   const formatDate = (d?: string | null) => {
@@ -103,9 +144,9 @@ function TemplatesPage() {
       {loading ? (
         <p>Cargando...</p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        <div className="max-w-full overflow-x-auto rounded-xl border border-gray-200 bg-white">
+          <table className="w-full text-sm">
+            <thead className="border-b border-gray-100 bg-gray-50">
               <tr>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Título</th>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
@@ -114,7 +155,7 @@ function TemplatesPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filtered.map((t) => (
+              {currentTemplates.length > 0 ? currentTemplates.map((t) => (
                 <tr key={t.id} className="hover:bg-gray-50">
                   <td className="px-4 py-2">
                     <div className="font-semibold text-gray-800">{t.title}</div>
@@ -150,11 +191,25 @@ function TemplatesPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
+              )) : (
+                <tr>
+                  <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
+                    {filtered.length === 0 ? 'No hay plantillas para este filtro.' : 'No hay plantillas en esta página.'}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
-          {filtered.length === 0 && (
-            <p className="text-center text-gray-500 py-6">No hay plantillas para este filtro.</p>
+          {filtered.length > 0 && (
+            <div className="border-t border-gray-200 bg-white px-4 py-3">
+              <Pagination
+                itemsPerPage={itemsPerPage}
+                totalItems={filtered.length}
+                currentPage={currentPage}
+                onPageChange={handlePageChange}
+                onItemsPerPageChange={handleItemsPerPageChange}
+              />
+            </div>
           )}
         </div>
       )}

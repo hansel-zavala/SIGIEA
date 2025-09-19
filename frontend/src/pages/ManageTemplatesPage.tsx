@@ -6,6 +6,7 @@ import type { CreateTemplateData, ReportItemType, ReportItemWidth } from '../ser
 import Label from '../components/ui/Label';
 import Input from '../components/ui/Input';
 import { FaPlus, FaTrash } from 'react-icons/fa';
+import { useToast } from '../context/ToastContext';
 
 type ItemKind = 'level' | 'long_text';
 
@@ -30,6 +31,7 @@ function ManageTemplatesPage() {
   const [sections, setSections] = useState<SectionState[]>([]);
   const [publish, setPublish] = useState(false);
   const [error, setError] = useState('');
+  const { showToast } = useToast();
 
   // Cargar datos si estamos en modo edición
   useEffect(() => {
@@ -117,12 +119,13 @@ function ManageTemplatesPage() {
     };
     
     try {
+        const safeTitle = title.trim() || 'la plantilla';
         if (editId) {
           await reportTemplateService.updateTemplateFull(editId, templateData);
-          alert('¡Plantilla actualizada exitosamente!');
+          showToast({ message: `Plantilla "${safeTitle}" actualizada correctamente.` });
         } else {
           await reportTemplateService.createTemplate(templateData); 
-          alert('¡Plantilla creada exitosamente!');
+          showToast({ message: `Plantilla "${safeTitle}" creada correctamente.` });
         }
         navigate('/');
     } catch (err) {

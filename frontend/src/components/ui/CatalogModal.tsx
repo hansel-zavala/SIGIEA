@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import Modal from 'react-modal';
 import Input from './Input';
-import Label from './Label';
 import { FaPlus, FaTrash, FaEdit, FaSave } from 'react-icons/fa';
 
 // Estilos para el modal, para mantener la consistencia

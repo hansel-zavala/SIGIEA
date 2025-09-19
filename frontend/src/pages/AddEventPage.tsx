@@ -1,11 +1,23 @@
 // frontend/src/pages/AddEventPage.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import eventService, { type Event as EventType,} from "../services/eventService";
+import eventService from "../services/eventService";
 import categoryService, { type Category } from "../services/categoryService"; //
 import Label from "../components/ui/Label";
 import Input from "../components/ui/Input";
 import Select from "../components/ui/Select";
+import EventDateTimePicker from "../components/events/EventDateTimePicker";
+import { useToast } from "../context/ToastContext";
+import {
+  parseDateValue,
+  toDateOnlyString,
+  toDateTimeString,
+  ensureEndNotBeforeStart,
+  DEFAULT_EVENT_START_TIME,
+  DEFAULT_EVENT_END_TIME,
+  areDatesValidRange,
+  isBeforeToday,
+} from "../utils/eventDateUtils";
 
 function AddEventPage() {
   const [formData, setFormData] = useState({
@@ -22,6 +34,7 @@ function AddEventPage() {
   const [error, setError] = useState("");
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   useEffect(() => {
     categoryService
@@ -43,6 +56,37 @@ function AddEventPage() {
     const isCheckbox = type === "checkbox";
     const checked = isCheckbox ? (e.target as HTMLInputElement).checked : false;
 
+    if (isCheckbox && name === "isAllDay") {
+      setFormData(prev => {
+        const nextIsAllDay = checked;
+        const normalizedStart = nextIsAllDay
+          ? toDateOnlyString(prev.startDate)
+          : toDateTimeString(prev.startDate || '', DEFAULT_EVENT_START_TIME);
+
+        let normalizedEnd = nextIsAllDay
+          ? toDateOnlyString(prev.endDate || prev.startDate)
+          : toDateTimeString(prev.endDate || prev.startDate, DEFAULT_EVENT_END_TIME);
+
+        normalizedEnd = ensureEndNotBeforeStart(normalizedStart, normalizedEnd);
+
+        return {
+          ...prev,
+          isAllDay: nextIsAllDay,
+          startDate: normalizedStart,
+          endDate: normalizedEnd,
+        };
+      });
+
+      setFormErrors(prev => {
+        const next = { ...prev };
+        delete next.startDate;
+        delete next.endDate;
+        return next;
+      });
+
+      return;
+    }
+
     // Filtros para evitar caracteres no permitidos
     let processedValue = value;
     // Permitir letras (incluye acentos), números, espacios y puntuación básica
@@ -60,6 +104,27 @@ function AddEventPage() {
       ...prev,
       [name]: isCheckbox ? checked : processedValue,
     }));
+  };
+
+  const handleDateValueChange = (field: 'startDate' | 'endDate', newValue: string) => {
+    setFormData(prev => {
+      const updated = { ...prev, [field]: newValue };
+
+      if (field === 'startDate' && newValue && updated.endDate) {
+        updated.endDate = ensureEndNotBeforeStart(newValue, updated.endDate);
+      }
+
+      return updated;
+    });
+
+    setFormErrors(prev => {
+      const next = { ...prev };
+      delete next[field];
+      if (field === 'startDate') {
+        delete next.endDate;
+      }
+      return next;
+    });
   };
 
   const validateForm = () => {
@@ -80,10 +145,16 @@ function AddEventPage() {
 
 
 
-    if (formData.startDate && formData.endDate) {
-      const start = new Date(formData.startDate);
-      const end = new Date(formData.endDate);
-      if (end < start) errors.endDate = "La fecha de fin no puede ser anterior a la de inicio.";
+    if (formData.startDate && formData.endDate && !areDatesValidRange(formData.startDate, formData.endDate)) {
+      errors.endDate = "La fecha de fin no puede ser anterior a la de inicio.";
+    }
+
+    if (formData.startDate && isBeforeToday(formData.startDate, formData.isAllDay)) {
+      errors.startDate = "La fecha de inicio no puede ser anterior a hoy.";
+    }
+
+    if (formData.endDate && isBeforeToday(formData.endDate, formData.isAllDay)) {
+      errors.endDate = "La fecha de fin no puede ser anterior a hoy.";
     }
 
     if (formData.location && !locationRegex.test(formData.location)) {
@@ -116,6 +187,8 @@ function AddEventPage() {
 
     try {
       await eventService.createEvent(dataToSend as any);
+      const eventTitle = formData.title.trim() || 'el evento';
+      showToast({ message: `Evento "${eventTitle}" creado correctamente.` });
       navigate("/events");
     } catch (err) {
       setError("No se pudo crear el evento. Verifica los datos.");
@@ -133,14 +206,21 @@ function AddEventPage() {
     { value: "Personal", label: "Personal Interno" },
   ];
 
+  const startDateObj = parseDateValue(formData.startDate, formData.isAllDay);
+  const endDateObj = parseDateValue(formData.endDate, formData.isAllDay);
+  const minSelectableDate = new Date();
+  minSelectableDate.setHours(0, 0, 0, 0);
+
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-6 text-gray-800">
-        Crear Nuevo Evento
-      </h2>
+    <div className="bg-white rounded-lg shadow-md p-6">
+      <h2 className="text-2xl font-bold mb-6 text-gray-800">Crear Nuevo Evento</h2>
       <form onSubmit={handleSubmit} className="space-y-6" noValidate>
         {error && (<p className="text-red-500 bg-red-100 p-3 rounded-md">{error}</p>)}
 
+        <fieldset className="border border-violet-300 p-4 rounded-md">
+        <legend className="text-xl font-semibold text-gray-700">
+            Datos del Evento
+        </legend>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <Label htmlFor="title">Título del Evento</Label>
@@ -155,17 +235,17 @@ function AddEventPage() {
             {formErrors.title && (<p className="text-red-500 text-sm mt-1">{formErrors.title}</p>)}
           </div>
           <div>
-            <Label htmlFor="categoryId">Categoría</Label>
-            <Select
-              instanceId="category-select"
-              inputId="categoryId"
-              name="categoryId"
-              value={categoryOptions.find((o) => o.value === formData.categoryId) ||null}
-              onChange={(option) =>handleSelectChange("categoryId", option?.value || null)}
-              options={categoryOptions}
-              placeholder="Selecciona una categoría"
-            />
-            {formErrors.title && (<p className="text-red-500 text-sm mt-1">{formErrors.category}</p>)}
+          <Label htmlFor="categoryId">Categoría</Label>
+          <Select
+            instanceId="category-select"
+            inputId="categoryId"
+            name="categoryId"
+            value={categoryOptions.find((o) => o.value === formData.categoryId) ||null}
+            onChange={(option) =>handleSelectChange("categoryId", option?.value || null)}
+            options={categoryOptions}
+            placeholder="Selecciona una categoría"
+          />
+            {formErrors.category && (<p className="text-red-500 text-sm mt-1">{formErrors.category}</p>)}
           </div>
 
           <div className="pt-5">
@@ -201,28 +281,32 @@ function AddEventPage() {
           </div>
 
           <div>
-            <Label htmlFor="startDate">Fecha de Inicio</Label>
-            <Input
+            <EventDateTimePicker
               id="startDate"
-              name="startDate"
-              type={formData.isAllDay ? "date" : "datetime-local"}
+              label="Fecha de Inicio"
               value={formData.startDate}
-              onChange={handleChange}
-              required
+              onChange={(value) => handleDateValueChange('startDate', value)}
+              isAllDay={formData.isAllDay}
+              error={formErrors.startDate}
+              selectsStart
+              startDate={startDateObj}
+              endDate={endDateObj}
+              minDate={minSelectableDate}
             />
-            {formErrors.startDate && (<p className="text-red-500 text-sm mt-1">{formErrors.startDate}</p> )}
           </div>
           <div>
-            <Label htmlFor="endDate">Fecha de Fin</Label>
-            <Input
+            <EventDateTimePicker
               id="endDate"
-              name="endDate"
-              type={formData.isAllDay ? "date" : "datetime-local"}
+              label="Fecha de Fin"
               value={formData.endDate}
-              onChange={handleChange}
-              required
+              onChange={(value) => handleDateValueChange('endDate', value)}
+              isAllDay={formData.isAllDay}
+              error={formErrors.endDate}
+              minDate={startDateObj ?? minSelectableDate}
+              selectsEnd
+              startDate={startDateObj}
+              endDate={endDateObj}
             />
-            {formErrors.endDate && (<p className="text-red-500 text-sm mt-1">{formErrors.endDate}</p>)}
           </div>
 
           
@@ -256,6 +340,8 @@ function AddEventPage() {
             )}
           </div>
         </div>
+        </fieldset>
+
         <div className="pt-6 flex justify-end gap-6">
           <button
             type="submit"

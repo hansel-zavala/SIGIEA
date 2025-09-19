@@ -2,10 +2,12 @@
 import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import authService from "../services/authService";
+import { useToast } from "../context/ToastContext";
 import { FaUserShield, FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 
 function LoginPage() {
   const { login } = useAuth();
+  const { showToast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -18,6 +20,11 @@ function LoginPage() {
     try {
       const data = await authService.login(email, password);
       login(data);
+      const userName = data?.user?.name || data?.user?.email || 'Bienvenido';
+      showToast({
+        message: `¡Hola ${userName}! Nos alegra verte de nuevo.`,
+        type: 'info',
+      });
     } catch (err) {
       setError("Credenciales inválidas o error de conexión.");
     }

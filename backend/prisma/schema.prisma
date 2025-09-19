@@ -140,6 +140,8 @@ model Report {
   itemAnswers     ReportItemAnswer[]
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  @@unique([studentId, therapistId, templateId])
 }
 
 model ReportItemAnswer {

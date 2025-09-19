@@ -218,7 +218,7 @@ function ScheduleCalendarPage() {
                         <div>
                             <Label>Días de la semana</Label>
                             <div className="flex flex-wrap gap-2 mt-2">
-                                {dayOptions.map(day => ( <button type="button" key={day} onClick={() => handleDayToggle(day)} className={`px-3 py-1 text-sm rounded-full transition-colors ${selectedDays.includes(day) ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}>{day.substring(0, 3)}</button>))}
+                                {dayOptions.map(day => ( <button type="button" key={day} onClick={() => handleDayToggle(day)} className={`px-3 py-1 text-sm rounded-full transition-colors ${selectedDays.includes(day) ? 'bg-violet-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}>{day.substring(0, 3)}</button>))}
                             </div>
                         </div>
                         <div>
@@ -278,7 +278,7 @@ function ScheduleCalendarPage() {
                                 />
                             </div>
                         </div>
-                        <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Guardar Horario</button>
+                        <button type="submit" className="w-full min-w-[100px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-violet-500 hover:from-violet-500 hover:to-violet-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">Guardar Horario</button>
                     </form>
                 </div>
                 <div className="col-span-12 lg:col-span-8 bg-white p-6 rounded-lg shadow-md">

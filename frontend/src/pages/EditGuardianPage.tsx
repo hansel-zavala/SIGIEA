@@ -9,6 +9,7 @@ import {getAllTiposParentesco, createTipoParentesco, updateTipoParentesco, delet
 import Label from '../components/ui/Label';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
+import { useToast } from '../context/ToastContext';
 
 
 function EditGuardianPage() {
@@ -29,6 +30,7 @@ function EditGuardianPage() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (id) {
@@ -99,7 +101,7 @@ function EditGuardianPage() {
     const hasPassword = !!formData.password?.trim();
     if (hasEmail || hasPassword) {
       if (!hasEmail) errors.email = 'Debe ingresar el correo.';
-      if (!hasPassword) errors.password = 'Debe ingresar la contraseña.';
+      //if (!hasPassword) errors.password = 'Debe ingresar la contraseña.';
     }
     if (hasEmail && !emailRegex.test(formData.email)) errors.email = 'Correo inválido.';
     if (hasPassword && formData.password.length < 6) errors.password = 'Mínimo 6 caracteres.';
@@ -128,6 +130,8 @@ function EditGuardianPage() {
               ...formData,
               copiaIdentidadUrl: copiaUrl,
             });
+            const fullName = `${formData.nombres.trim()} ${formData.apellidos.trim()}`.trim() || 'el guardián';
+            showToast({ message: `Se actualizó correctamente ${fullName}.` });
             navigate('/guardians');
         } catch (err) {
             setError('No se pudo actualizar el guardián.');

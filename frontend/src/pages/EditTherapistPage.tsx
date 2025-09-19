@@ -10,9 +10,9 @@ import ComboBox from '../components/ui/ComboBox';
 import CustomDatePicker from '../components/ui/DatePicker';
 import { departamentos, municipiosPorDepartamento } from '../data/honduras-data';
 import { FaTrash, FaExternalLinkAlt } from 'react-icons/fa';
+import { useToast } from '../context/ToastContext';
 
 const dayOptions = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
-const genderOptions = [{ value: 'Masculino', label: 'Masculino' }, { value: 'Femenino', label: 'Femenino' }];
 
 function EditTherapistPage() {
   const [formData, setFormData] = useState({
@@ -47,6 +47,7 @@ function EditTherapistPage() {
   const [error, setError] = useState('');
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const acceptedFileTypes = "image/png, image/jpeg, application/pdf, .doc, .docx";
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (id) {
@@ -159,6 +160,12 @@ function EditTherapistPage() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+
+    if (!validateForm()) {
+      setError('Por favor, corrige los errores marcados en el formulario.');
+      return;
+    }
+
     setError('');
 
     if (id) {
@@ -181,14 +188,14 @@ function EditTherapistPage() {
         if (!dataToUpdate.password) delete (dataToUpdate as Partial<typeof dataToUpdate>).password;
 
         await therapistService.updateTherapist(Number(id), dataToUpdate);
+        const fullName = `${formData.nombres || ''} ${formData.apellidos || ''}`.trim() || 'el personal';
+        showToast({ message: `Se actualizó correctamente el perfil de ${fullName}.` });
         navigate('/therapists');
       } catch (err: any) {
         setError(err.response?.data?.error || 'No se pudo actualizar el perfil.');
       }
     }
   };
-
-  const today = new Date().toISOString().split("T")[0];
 
   const specialtyOptions = [
     { value: 'Terapeuta', label: 'Terapeuta' },

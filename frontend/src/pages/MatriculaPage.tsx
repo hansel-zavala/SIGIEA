@@ -16,6 +16,7 @@ import { ConfirmationDialog } from '../components/ui/ConfirmationDialog';
 import Label from "../components/ui/Label";
 import Input from "../components/ui/Input";
 import Select from "../components/ui/Select";
+import { useToast } from "../context/ToastContext";
 
 
 interface Guardian {
@@ -134,6 +135,7 @@ function MatriculaPage() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isConfirmOpen, setConfirmOpen] = useState(false);
   const [guardianIndexToDelete, setGuardianIndexToDelete] = useState<number | null>(null);
+  const { showToast } = useToast();
 
   const validateFile = (file: File | null) => {
   if (!file) return "";
@@ -455,6 +457,8 @@ function MatriculaPage() {
       };
 
       await studentService.createStudent(fullMatriculaData);
+      const fullName = `${studentData.nombres.trim()} ${studentData.apellidos.trim()}`.trim() || 'el estudiante';
+      showToast({ message: `Se matriculó correctamente a ${fullName}.` });
       navigate("/students");
     } catch (err: any) {
       const errorMessage =

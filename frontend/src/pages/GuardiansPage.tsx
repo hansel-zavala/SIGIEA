@@ -8,6 +8,7 @@ import Pagination from '../components/ui/Pagination';
 import { FaUserCircle, FaPencilAlt, FaTrash, FaUndo } from 'react-icons/fa';
 import Badge from '../components/ui/Badge';
 import { ConfirmationDialog } from "../components/ui/ConfirmationDialog";
+import { useToast } from '../context/ToastContext';
 
 interface Guardian {
   id: number;
@@ -21,6 +22,8 @@ interface Guardian {
   students: { id?: number; fullName?: string; nombres?: string; apellidos?: string; isActive?: boolean }[];
 }
 
+const GUARDIANS_PAGE_SIZE_KEY = 'guardians-list-page-size';
+
 function GuardiansPage() {
   const [guardians, setGuardians] = useState<Guardian[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,11 +31,17 @@ function GuardiansPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(() => {
+    if (typeof window === 'undefined') return 10;
+    const stored = window.localStorage.getItem(GUARDIANS_PAGE_SIZE_KEY);
+    const parsed = stored ? Number(stored) : NaN;
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 10;
+  });
   const [statusFilter, setStatusFilter] = useState('active');
   const [confirmAction, setConfirmAction] = useState<"deactivate" | "reactivate" | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectGuardianId, setSelectedStudentId] = useState<number | null>(null);
+  const { showToast } = useToast();
 
 
 
@@ -65,25 +74,29 @@ function GuardiansPage() {
     return () => clearTimeout(timerId);
   }, [searchTerm, currentPage, itemsPerPage, statusFilter]);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined' && itemsPerPage > 0) {
+      window.localStorage.setItem(GUARDIANS_PAGE_SIZE_KEY, String(itemsPerPage));
+    }
+  }, [itemsPerPage]);
+
   const handleDelete = async (guardianId: number) => {
-    if (window.confirm('¿Seguro que quieres desactivar a este guardián?')) {
-      try {
-        await guardianService.deleteGuardian(guardianId);
-        fetchGuardians();
-      } catch (err) {
-        setError('No se pudo desactivar al guardián.');
-      }
+    try {
+      await guardianService.deleteGuardian(guardianId);
+      showToast({ message: 'Se eliminó correctamente.', type: 'error' });
+      fetchGuardians();
+    } catch (err) {
+      setError('No se pudo desactivar al guardián.');
     }
   };
 
   const handleReactivate = async (guardianId: number) => {
-    if (window.confirm('¿Seguro que quieres reactivar a este guardián?')) {
-      try {
-        await guardianService.reactivateGuardian(guardianId);
-        fetchGuardians(); 
-      } catch (err: any) {
-        alert(err.response?.data?.error || 'No se pudo reactivar al guardián.');
-      }
+    try {
+      await guardianService.reactivateGuardian(guardianId);
+      showToast({ message: 'Se reactivó correctamente.' });
+      fetchGuardians(); 
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'No se pudo reactivar al guardián.');
     }
   };
 
@@ -94,6 +107,12 @@ function GuardiansPage() {
 
   const handlePageChange = (pageNumber: number) => {
       setCurrentPage(pageNumber);
+  };
+
+  const handleItemsPerPageChange = (size: number) => {
+      if (size <= 0) return;
+      setItemsPerPage(size);
+      setCurrentPage(1);
   };
 
   const openDeactivateDialog = (studentId: number) => {
@@ -148,6 +167,8 @@ function GuardiansPage() {
         <button onClick={() => handleFilterChange('inactive')} className={`px-4 py-2 text-sm rounded-md ${statusFilter === 'inactive' ? 'text-white font-bold bg-violet-500' : 'bg-gray-200'}`}>Inactivos</button>
         <button onClick={() => handleFilterChange('all')} className={`px-4 py-2 text-sm rounded-md ${statusFilter === 'all' ? 'text-white font-bold bg-violet-500' : 'bg-gray-200'}`}>Todos</button>
       </div>
+
+      {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
 
       <div className="flex justify-between items-center mb-4 gap-4">
         <p className="text-xs text-gray-500 mt-1">Hacer click en la foto o nombre del Padre para ver perfil. </p>
@@ -238,12 +259,17 @@ function GuardiansPage() {
             )}
           </tbody>
         </table>
+        {guardians.length > 0 && (
+          <div className="border-t border-gray-200 bg-white px-4 py-3">
         <Pagination
             itemsPerPage={itemsPerPage}
-            totalItems={totalItems}
+            totalItems={guardians.length}
             currentPage={currentPage}
             onPageChange={handlePageChange}
+            onItemsPerPageChange={handleItemsPerPageChange}
         />
+        </div>
+      )}
       </div>
       <ConfirmationDialog
         isOpen={confirmOpen}

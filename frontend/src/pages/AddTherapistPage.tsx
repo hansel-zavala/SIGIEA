@@ -9,6 +9,7 @@ import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import ComboBox from '../components/ui/ComboBox';
 import CustomDatePicker from '../components/ui/DatePicker';
+import { useToast } from '../context/ToastContext';
 import { departamentos, municipiosPorDepartamento } from '../data/honduras-data';
 import { FaTrash } from 'react-icons/fa';
 
@@ -33,8 +34,8 @@ function AddTherapistPage() {
     dateOfBirth: null as Date | null,
     direccion: '',
     hireDate: new Date(),
-    workStartTime: '08:00',
-    workEndTime: '17:00',
+    workStartTime: '07:00',
+    workEndTime: '15:00',
     lunchStartTime: '12:00',
     lunchEndTime: '13:00',
     workDays: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"],
@@ -50,6 +51,7 @@ function AddTherapistPage() {
   const navigate = useNavigate();
   const acceptedFileTypes = "image/png, image/jpeg, application/pdf, .doc, .docx";
   const allowedFileTypesCurriculum = ".pdf, .doc, .docx";
+  const { showToast } = useToast();
   
   
   useEffect(() => {
@@ -193,6 +195,8 @@ function AddTherapistPage() {
       };
 
       await therapistService.createTherapist(finalData);
+      const fullName = `${formData.nombres.trim()} ${formData.apellidos.trim()}`.trim() || 'el personal';
+      showToast({ message: `Se creó correctamente el perfil de ${fullName}.` });
       navigate('/therapists');
 
     } catch (err: any) {

@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import leccionService from '../services/leccionService';
 import Label from '../components/ui/Label';
 import Input from '../components/ui/Input';
+import { useToast } from '../context/ToastContext';
 
 function EditLeccionPage() {
   const [formData, setFormData] = useState({ title: '', objective: '', description: '', category: '', keySkill: '' });
@@ -11,6 +12,7 @@ function EditLeccionPage() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const navigate = useNavigate();
   const { id } = useParams();
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (id) {
@@ -79,6 +81,8 @@ function EditLeccionPage() {
     if (id) {
         try {
             await leccionService.updateLeccion(Number(id), formData);
+            const lessonTitle = formData.title.trim() || 'la lección';
+            showToast({ message: `Se actualizó correctamente la lección "${lessonTitle}".` });
             navigate('/lecciones');
         } catch (err) {
             setError('No se pudo actualizar la lección.');

@@ -16,10 +16,16 @@ const modalStyles = {
 
 Modal.setAppElement('#root');
 
-const InfoField = ({ label, value }: { label: string, value: any }) => (
+interface InfoFieldProps {
+  label: string;
+  value: any;
+  valueClassName?: string;
+}
+
+const InfoField = ({ label, value, valueClassName }: InfoFieldProps) => (
   <div>
     <Label as="h3" className="text-xs font-semibold text-gray-500">{label}</Label>
-    <p className="text-gray-800 text-sm">{value ?? 'No especificado'}</p>
+    <p className={`text-gray-800 text-sm ${valueClassName ?? ''}`.trim()}>{value ?? 'No especificado'}</p>
   </div>
 );
 
@@ -90,7 +96,7 @@ function StudentDetailModal({ isOpen, onRequestClose, student }: ModalProps) {
         <div className="border-t pt-4">
           <h3 className="text-lg font-semibold text-blue-700 mb-3">Resumen</h3>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <InfoField label="Terapeuta Asignado"  value={student.therapist?.fullName || 'No asignado'} style={{ fontWeight: 'bold' }}/>
+            <InfoField label="Terapeuta Asignado" value={student.therapist?.fullName || 'No asignado'} valueClassName="font-semibold" />
             <InfoField label="Edad" value={calculateAge(student.dateOfBirth)} />
             <InfoField label="Género" value={student.genero} />
             <InfoField label="Jornada" value={student.jornada} />

@@ -18,6 +18,19 @@ export const createReport = async (req: AuthRequest , res: Response) => {
     const template = await prisma.reportTemplate.findUnique({ where: { id: parseInt(templateId) } });
     if (!template) return res.status(404).json({ error: 'Plantilla no encontrada.' });
 
+    // Evitar duplicados: un reporte por terapeuta/estudiante/plantilla
+    const existing = await prisma.report.findFirst({
+      where: {
+        studentId: parseInt(studentId),
+        templateId: parseInt(templateId),
+        therapistId,
+      },
+      select: { id: true },
+    });
+    if (existing) {
+      return res.status(409).json({ error: 'Reporte ya existe para esta plantilla', existingReportId: existing.id });
+    }
+
     const newReport = await prisma.report.create({
       data: {
         studentId: parseInt(studentId),
@@ -39,7 +52,7 @@ export const getReportsByStudent = async (req: AuthRequest , res: Response) => {
       where: { studentId: parseInt(studentId) },
       include: {
         template: true,
-        therapist: { select: { name: true } },
+        therapist: { select: { id: true, name: true } },
       },
       orderBy: { reportDate: 'desc' },
     });
@@ -82,9 +95,19 @@ export const getReportById = async (req: AuthRequest , res: Response) => {
 };
 
 export const submitReportAnswers = async (req: AuthRequest , res: Response) => {
-    try {
-        const { reportId } = req.params;
-        const { answers } = req.body;
+  try {
+    const { reportId } = req.params;
+    const { answers } = req.body;
+
+    // Autorización: solo el terapeuta dueño o admin puede modificar
+    const report = await prisma.report.findUnique({ where: { id: parseInt(reportId) } });
+    if (!report) return res.status(404).json({ error: 'Reporte no encontrado.' });
+    const user = req.user;
+    if (!user) return res.status(401).json({ error: 'No autenticado.' });
+    const isAdmin = user.role === 'admin';
+    if (!isAdmin && report.therapistId !== user.id) {
+      return res.status(403).json({ error: 'No autorizado para editar este reporte.' });
+    }
 
         const transaction = await prisma.$transaction(async (tx) => {
             await tx.reportItemAnswer.deleteMany({
@@ -134,5 +157,25 @@ export const renderReport = async (req: AuthRequest, res: Response) => {
       return res.status(501).json({ error: msg });
     }
     return res.status(500).json({ error: msg });
+  }
+};
+
+// Devuelve si ya existe un reporte del terapeuta autenticado para el estudiante/plantilla
+export const getExistingReport = async (req: AuthRequest, res: Response) => {
+  try {
+    const therapistId = req.user?.id;
+    if (!therapistId) return res.status(401).json({ error: 'No autenticado.' });
+    const studentId = parseInt(String(req.query.studentId));
+    const templateId = parseInt(String(req.query.templateId));
+    if (!studentId || !templateId) return res.status(400).json({ error: 'Parámetros inválidos' });
+
+    const existing = await prisma.report.findFirst({
+      where: { studentId, templateId, therapistId },
+      select: { id: true },
+    });
+    if (existing) return res.json({ exists: true, reportId: existing.id });
+    return res.json({ exists: false });
+  } catch (error) {
+    return res.status(500).json({ error: 'No se pudo verificar existencia de reporte.' });
   }
 };

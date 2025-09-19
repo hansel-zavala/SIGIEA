@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import leccionService from '../services/leccionService';
 import Label from '../components/ui/Label';
 import Input from '../components/ui/Input';
+import { useToast } from '../context/ToastContext';
 
 function AddLeccionPage() {
   const [formData, setFormData] = useState({
@@ -17,6 +18,7 @@ function AddLeccionPage() {
   const [error, setError] = useState('');
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -53,7 +55,7 @@ function AddLeccionPage() {
     if (!formData.keySkill.trim()) {
       errors.keySkill = "La habilidad clave es obligatoria.";
     } else if (formData.keySkill && !validCharsRegex.test(formData.keySkill)) {
-      errors.keySkill = "La habilidad clave contiene caracteres no permitidos.";
+      errors.keySkill = "La habilidad clave contiene caracteres no permitidos."; 
     }
 
     setFormErrors(errors);
@@ -70,6 +72,8 @@ function AddLeccionPage() {
 
     try {
       await leccionService.createLeccion(formData);
+      const lessonTitle = formData.title.trim() || 'la lección';
+      showToast({ message: `Se creó correctamente la lección "${lessonTitle}".` });
       navigate('/lecciones');
     } catch (err: any) {
       setError(err.response?.data?.error || 'No se pudo crear la lección.');

@@ -1,5 +1,4 @@
 // frontend/src/components/modals/EventDetailModal.tsx
-import React from 'react';
 import Modal from 'react-modal'; // <-- 1. Usar la librería react-modal
 import { type Event } from '../../services/eventService';
 import { FaCalendarAlt, FaInfoCircle, FaClock, FaMapMarkerAlt, FaUsers, FaTag, FaTimes } from 'react-icons/fa';

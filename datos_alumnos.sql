@@ -23,7 +23,8 @@ INSERT INTO `User` (`email`, `password`, `name`, `role`, `createdAt`, `updatedAt
 -- NOTA: Asumimos que los IDs de los usuarios de terapeutas son 1, 2, 3, 4.
 INSERT INTO `TherapistProfile` (`nombres`, `apellidos`, `numero_identidad`, `email`, `tipo_profesional`, `isActive`, `userId`, `createdAt`, `updatedAt`, `profilePictureUrl`) VALUES
 ('Laura', 'Guzmán', '0801198811111', 'laura.guzman@sigiea.hn', 'Terapeuta', 1, 1, NOW(), NOW(), '/public/uploads/therapist-5.jpg'),
-('Marco', 'Díaz', '0501199222222', 'marco.diaz@sigiea.hn', 'Psicologo', 1, 2, NOW(), NOW(), '/public/uploads/therapist-6.jpg'),
+('
+', 'Díaz', '0501199222222', 'marco.diaz@sigiea.hn', 'Psicologo', 1, 2, NOW(), NOW(), '/public/uploads/therapist-6.jpg'),
 ('Elena', 'Vargas', '0102198533333', 'elena.vargas@sigiea.hn', 'Ambos', 1, 3, NOW(), NOW(), '/public/uploads/therapist-7.jpg'),
 ('Javier', 'Solís', '0801199544444', 'javier.solis@sigiea.hn', 'Terapeuta', 1, 4, NOW(), NOW(), '/public/uploads/therapist-8.jpg');
 

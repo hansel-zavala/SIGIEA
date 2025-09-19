@@ -1,11 +1,13 @@
 // frontend/src/pages/LeccionesPage.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import leccionService from "../services/leccionService";
 import Badge from "../components/ui/Badge";
 import { FaBook } from "react-icons/fa";
 import { FaPencilAlt, FaTrash, FaPlus } from "react-icons/fa";
 import { ConfirmationDialog } from "../components/ui/ConfirmationDialog";
+import { useToast } from '../context/ToastContext';
+import Pagination from "../components/ui/Pagination";
 
 interface Leccion {
   id: number;
@@ -14,12 +16,22 @@ interface Leccion {
   category: string | null;
 }
 
+const LESSONS_PAGE_SIZE_KEY = 'lecciones-items-per-page';
+
 function LeccionesPage() {
   const [lecciones, setLecciones] = useState<Leccion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(() => {
+    if (typeof window === 'undefined') return 10;
+    const stored = window.localStorage.getItem(LESSONS_PAGE_SIZE_KEY);
+    const parsed = stored ? Number(stored) : NaN;
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 10;
+  });
+  const { showToast } = useToast();
 
   useEffect(() => {
     const fetchLecciones = async () => {
@@ -39,6 +51,7 @@ function LeccionesPage() {
     try {
       await leccionService.deleteLeccion(leccionId);
       setLecciones((prev) => prev.filter((l) => l.id !== leccionId));
+      showToast({ message: 'Se eliminó correctamente.', type: 'error' });
     } catch (err) {
       setError("No se pudo desactivar la lección.");
     }
@@ -54,6 +67,33 @@ function LeccionesPage() {
     await handleDelete(selectedLessonId);
     setConfirmOpen(false);
     setSelectedLessonId(null);
+  };
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(LESSONS_PAGE_SIZE_KEY, String(itemsPerPage));
+    }
+  }, [itemsPerPage]);
+
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(lecciones.length / Math.max(itemsPerPage, 1)));
+    setCurrentPage((prev) => Math.min(prev, totalPages));
+  }, [lecciones.length, itemsPerPage]);
+
+  const currentLecciones = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    return lecciones.slice(start, end);
+  }, [lecciones, currentPage, itemsPerPage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (size: number) => {
+    if (size <= 0) return;
+    setItemsPerPage(size);
+    setCurrentPage(1);
   };
 
   if (loading) return <p>Cargando lecciones...</p>;
@@ -90,7 +130,7 @@ function LeccionesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {lecciones.map((leccion) => (
+              {currentLecciones.map((leccion) => (
                 <tr key={leccion.id}>
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
@@ -101,7 +141,7 @@ function LeccionesPage() {
                         <span className="block font-medium text-gray-800 text-x">
                           {leccion.title}
                         </span>
-                        <span className="block text-gray-500">
+                        <span className="block text-gray-500 text-x">
                           {leccion.objective}
                         </span>
                       </div>
@@ -127,9 +167,27 @@ function LeccionesPage() {
                   </td>
                 </tr>
               ))}
+              {lecciones.length === 0 && (
+                <tr>
+                  <td colSpan={3} className="px-5 py-8 text-center text-gray-500">
+                    No hay lecciones registradas.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
+        {lecciones.length > 0 && (
+          <div className="border-t border-gray-200 bg-white px-4 py-3">
+            <Pagination
+              itemsPerPage={itemsPerPage}
+              totalItems={lecciones.length}
+              currentPage={currentPage}
+              onPageChange={handlePageChange}
+              onItemsPerPageChange={handleItemsPerPageChange}
+            />
+          </div>
+        )}
       </div>
       <ConfirmationDialog
         isOpen={confirmOpen}

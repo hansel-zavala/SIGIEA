@@ -1,5 +1,5 @@
 // frontend/src/pages/StudentDetailPage.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import studentService from "../services/studentService";
 import therapySessionService from "../services/therapySessionService";
@@ -12,6 +12,7 @@ import Modal from "react-modal";
 import Label from "../components/ui/Label";
 import Select from "../components/ui/Select";
 import Pagination from "../components/ui/Pagination";
+import VioletDropdown from "../components/ui/VioletDropdown";
 import StudentDetailModal from "./StudentDetailModal";
 
 interface Leccion {
@@ -40,6 +41,9 @@ interface Report {
     name: string;
   };
 }
+
+const SESSION_HISTORY_PAGE_SIZE_KEY = 'student-detail-session-page-size';
+const REPORT_HISTORY_PAGE_SIZE_KEY = 'student-detail-report-page-size';
 const modalStyles = {
   content: {
     top: "50%",
@@ -76,7 +80,19 @@ function StudentDetailPage() {
   const [error, setError] = useState("");
   const { id: studentId } = useParams<{ id: string }>();
   const [currentPage, setCurrentPage] = useState(1);
-  const [sessionsPerPage] = useState(5);
+  const [sessionsPerPage, setSessionsPerPage] = useState(() => {
+    if (typeof window === 'undefined') return 5;
+    const stored = window.localStorage.getItem(SESSION_HISTORY_PAGE_SIZE_KEY);
+    const parsed = stored ? Number(stored) : NaN;
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 5;
+  });
+  const [reportPage, setReportPage] = useState(1);
+  const [reportsPerPage, setReportsPerPage] = useState(() => {
+    if (typeof window === 'undefined') return 5;
+    const stored = window.localStorage.getItem(REPORT_HISTORY_PAGE_SIZE_KEY);
+    const parsed = stored ? Number(stored) : NaN;
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 5;
+  });
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [exportSize, setExportSize] = useState<'A4' | 'OFICIO'>('A4'); // Tamaño de exportación para PDF/DOCX
@@ -107,6 +123,29 @@ function StudentDetailPage() {
         .finally(() => setLoading(false));
     }
   }, [studentId]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && sessionsPerPage > 0) {
+      window.localStorage.setItem(SESSION_HISTORY_PAGE_SIZE_KEY, String(sessionsPerPage));
+    }
+  }, [sessionsPerPage]);
+
+  useEffect(() => {
+    if (reportsPerPage <= 0) {
+      return;
+    }
+    const totalReportPages = Math.max(
+      1,
+      Math.ceil(reports.length / reportsPerPage)
+    );
+    setReportPage((prev) => Math.min(prev, totalReportPages));
+  }, [reports.length, reportsPerPage]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && reportsPerPage > 0) {
+      window.localStorage.setItem(REPORT_HISTORY_PAGE_SIZE_KEY, String(reportsPerPage));
+    }
+  }, [reportsPerPage]);
 
   const handlePrint = () => {
     if (studentId) {
@@ -219,7 +258,24 @@ function StudentDetailPage() {
     indexOfLastSession
   );
 
+  const indexOfLastReport = reportPage * reportsPerPage;
+  const indexOfFirstReport = indexOfLastReport - reportsPerPage;
+  const currentReports = reports.slice(
+    indexOfFirstReport,
+    indexOfLastReport
+  );
+
   const onPageChange = (pageNumber: number) => setCurrentPage(pageNumber);
+  const handleSessionsPerPageChange = (size: number) => {
+    setSessionsPerPage(size);
+    setCurrentPage(1);
+  };
+  const onReportPageChange = (pageNumber: number) => setReportPage(pageNumber);
+  const handleReportsPerPageChange = (size: number) => {
+    if (size <= 0) return;
+    setReportsPerPage(size);
+    setReportPage(1);
+  };
 
   const father = student?.guardians?.find((g: any) => g.parentesco === "Padre");
   const studentAge = student ? calculateAge(student.dateOfBirth) : null;
@@ -233,6 +289,14 @@ function StudentDetailPage() {
     { value: "Cancelada", label: "Cancelada" },
   ];
 
+  const exportSizeOptions = useMemo(
+    () => [
+      { value: 'A4' as const, label: 'A4' },
+      { value: 'OFICIO' as const, label: 'Oficio' },
+    ],
+    [],
+  );
+
   if (loading) return <p>Cargando perfil...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
 
@@ -240,7 +304,7 @@ function StudentDetailPage() {
     <>
       <div className="space-y-8">
         <div>
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center justify-between bg-white rounded-xl shadow-sm ring-1 ring-gray-100 px-4 py-3 mb-2">
             <h2 className="text-2xl font-bold text-gray-800">
               Perfil de: {student?.fullName}
             </h2>
@@ -296,11 +360,10 @@ function StudentDetailPage() {
           </div>
         </div>
         
-
-        <div>
-          <h3 className="text-2xl font-bold text-gray-800 mb-4">
-            Historial de Sesiones
-          </h3>
+      <div className="flex items-center justify-between bg-white rounded-xl shadow-sm ring-1 ring-gray-100 px-4 py-3 mb-2">
+        <h2 className="text-2xl font-bold text-gray-800">Historial de Sesiones</h2>  
+      </div>
+        <div >
           <div className="overflow-hidden rounded-xl bg-white shadow-md">
             <table className="w-full text-sm">
               <thead className="bg-gray-50">
@@ -367,18 +430,22 @@ function StudentDetailPage() {
               totalItems={sessionHistory.length}
               currentPage={currentPage}
               onPageChange={onPageChange}
+              onItemsPerPageChange={handleSessionsPerPageChange}
             />
           </div>
         </div>
+
          <div>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between bg-white rounded-xl shadow-sm ring-1 ring-gray-100 px-4 py-3 mb-2">
             <h3 className="text-2xl font-bold text-gray-800">Historial de Reportes</h3>
-            <div className="flex items-center gap-2 text-sm">
+            <div className="flex items-center gap-3 text-sm">
               <label className="text-gray-600">Tamaño:</label>
-              <select value={exportSize} onChange={(e) => setExportSize(e.target.value as 'A4' | 'OFICIO')} className="border rounded px-2 py-1">
-                <option value="A4">A4</option>
-                <option value="OFICIO">Oficio</option>
-              </select>
+              <VioletDropdown
+                value={exportSize}
+                onChange={setExportSize}
+                options={exportSizeOptions}
+                ariaLabel="Seleccionar tamaño de reporte"
+              />
             </div>
           </div>
           <div className="overflow-hidden rounded-xl bg-white shadow-md">
@@ -392,7 +459,7 @@ function StudentDetailPage() {
                 </tr>
               </thead>
               <tbody>
-                {reports.map((report) => (
+                {currentReports.map((report) => (
                   <tr key={report.id}>
                     <td className="px-5 py-4">{new Date(report.reportDate).toLocaleDateString()}</td>
                     <td className="px-5 py-4">{report.template.title}</td>
@@ -432,13 +499,21 @@ function StudentDetailPage() {
                 )}
               </tbody>
             </table>
+            <Pagination
+              itemsPerPage={reportsPerPage}
+              totalItems={reports.length}
+              currentPage={reportPage}
+              onPageChange={onReportPageChange}
+              onItemsPerPageChange={handleReportsPerPageChange}
+            />
+            
           </div>
         </div>
         <div className="p-1"></div>
       </div>
 
       <div>
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center justify-between bg-white rounded-xl shadow-sm ring-1 ring-gray-100 px-4 py-3 mb-2">
           <h3 className="text-2xl font-bold text-gray-800">Próximas Sesiones</h3>
           <Link to={`/students/${student.id}/schedule`}>
             <button className="py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-purple-400 to-purple-500 hover:from-purple-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-m">

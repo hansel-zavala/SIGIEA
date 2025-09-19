@@ -31,10 +31,24 @@ export const createReport = async (studentId: number, templateId: number) => {
     try {
         const response = await api.post('/reports', { studentId, templateId });
         return response.data;
-    } catch (error) {
+    } catch (error: any) {
+        // Si ya existe, backend responde 409 con existingReportId
+        if (error?.response?.status === 409 && error.response.data?.existingReportId) {
+            return { id: error.response.data.existingReportId, alreadyExists: true };
+        }
         console.error("Error al crear el reporte:", error);
         throw error;
     }
+}
+
+export const getExistingReport = async (studentId: number, templateId: number) => {
+  try {
+    const response = await api.get('/reports/exists', { params: { studentId, templateId } });
+    return response.data as { exists: boolean; reportId?: number };
+  } catch (error) {
+    console.error('Error verificando reporte existente:', error);
+    throw error;
+  }
 }
 
 export const getReportsByStudent = async (studentId: number) => {
@@ -92,6 +106,7 @@ export const downloadReport = async (
 export default {
     getStudentsForReporting,
     createReport,
+    getExistingReport,
     submitReportAnswers,
     getReportsByStudent,
   getReportById

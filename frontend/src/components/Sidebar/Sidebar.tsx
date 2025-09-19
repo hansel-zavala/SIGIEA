@@ -1,6 +1,6 @@
 // frontend/src/components/Sidebar/Sidebar.tsx
 import { NavLink } from 'react-router-dom';
-import { FaHome, FaUserGraduate, FaBook, FaFileSignature, FaUsers, FaUserMd, FaCalendarDay, FaFileMedicalAlt, FaCog, FaClipboardList, FaWpforms } from 'react-icons/fa';
+import { FaHome, FaUserGraduate, FaBook, FaFileSignature, FaUsers, FaUserMd, FaCalendarDay, FaClipboardList, FaWpforms } from 'react-icons/fa';
 import logo from '../../assets/apo-autis-logo.png';
 
 interface SidebarProps {

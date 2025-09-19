@@ -61,7 +61,7 @@ export async function renderReportDocx(report: FullReport, opts: DocxRenderOptio
   // Configura tamaño y márgenes
   const marginTw = mmToTwips(20); // 20mm en todos los lados
   const page = opts.size === 'A4'
-    ? { width: Docx.PageSize.A4_WIDTH, height: Docx.PageSize.A4_HEIGHT }
+    ? { width: mmToTwips(210), height: mmToTwips(297) }
     : { width: inToTwips(8.5), height: inToTwips(13) }; // Oficio
 
   // Encabezado simple (título + meta)
@@ -163,7 +163,7 @@ export async function renderReportDocx(report: FullReport, opts: DocxRenderOptio
   const footer = new Footer({
     children: [
       new Paragraph({
-        alignment: AlignmentType.BOTH,
+        alignment: AlignmentType.JUSTIFIED,
         children: [
           new TextRun({ text: opts.institutionName ?? '', size: 18 }),
           new TextRun({ text: '  \t' }), // tab para separar

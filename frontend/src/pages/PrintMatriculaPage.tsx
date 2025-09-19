@@ -100,14 +100,16 @@ function PrintMatriculaPage() {
                 <section className="border border-gray-300 p-3 rounded">
                     <h3 className="text-base font-bold mb-2 underline">DATOS DEL ESTUDIANTE</h3>
                     <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-                        <InfoFieldCompact label="Nombre Completo" value={student.fullName} className="col-span-2"/>
+                        <InfoFieldCompact label="Nombre Completo" value={student.fullName} />
+                        <InfoFieldCompact label="Año de Ingreso a APO-AUTIS" value={new Date(student.anoIngreso).getFullYear()} />
                         <InfoFieldCompact label="Fecha de Nacimiento" value={formatDate(student.dateOfBirth)} />
                         <InfoFieldCompact label="Lugar de Nacimiento" value={student.lugarNacimiento} />
                         <InfoFieldCompact label="Dirección" value={student.direccion} className="col-span-2"/>
                         <InfoFieldCompact label="Género" value={student.genero} />
                         <InfoFieldCompact label="Tipo de Sangre" value={student.tipoSangre?.replace('_', ' ') || 'N/A'} />
-                        <InfoFieldCompact label="Institución de Procedencia" value={student.institucionProcedencia} />
-                        <InfoFieldCompact label="Año de Ingreso a APO-AUTIS" value={new Date(student.anoIngreso).getFullYear()} />
+                        <InfoFieldCompact label="Institución de Procedencia" value={student.institutoIncluido} />
+                        <InfoFieldCompact label="Referencio Medica" value={student.referencioMedica} />
+                        
                     </div>
                 </section>
 

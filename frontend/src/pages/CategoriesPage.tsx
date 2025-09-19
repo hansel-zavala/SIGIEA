@@ -1,7 +1,7 @@
 // frontend/src/pages/CategoriesPage.tsx
 import { useState, useEffect } from "react";
 import categoryService, { type Category } from "../services/categoryService";
-import { FaTag, FaPlus, FaPencilAlt, FaTrash } from "react-icons/fa";
+import { FaPlus, FaPencilAlt, FaTrash } from "react-icons/fa";
 import Modal from 'react-modal';
 import Label from "../components/ui/Label";
 import Input from "../components/ui/Input";

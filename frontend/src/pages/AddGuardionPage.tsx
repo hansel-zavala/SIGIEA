@@ -7,6 +7,7 @@ import { SelectWithCatalog } from '../components/ui/SelectWithCatalog';
 import { getAllTiposParentesco, createTipoParentesco, updateTipoParentesco, deleteTipoParentesco } from '../services/tipoParentescoService';
 import studentService from '../services/studentService';
 import uploadService from '../services/uploadService';
+import { useToast } from '../context/ToastContext';
 
 function AddGuardionPage() {
   const { id: studentId } = useParams<{ id: string }>();
@@ -19,6 +20,7 @@ function AddGuardionPage() {
   });
   const [file, setFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<Record<string,string>>({});
+  const { showToast } = useToast();
 
   const parentescoOptions = [
     { value: 'Padre', label: 'Padre' },
@@ -61,6 +63,8 @@ function AddGuardionPage() {
         copiaIdentidadUrl = uploaded.filePath;
       }
       await studentService.addGuardian(parseInt(studentId), { ...form, copiaIdentidadUrl });
+      const guardianName = `${form.nombres.trim()} ${form.apellidos.trim()}`.trim() || 'el nuevo padre/tutor';
+      showToast({ message: `Se agregó correctamente ${guardianName}.` });
       navigate(`/students/${studentId}`);
     } catch (err: any) {
       setError(err?.response?.data?.error || 'No se pudo agregar el padre/tutor.');
@@ -158,4 +162,3 @@ function AddGuardionPage() {
 }
 
 export default AddGuardionPage;
-

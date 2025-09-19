@@ -9,6 +9,7 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import EventDetailModal from '../components/modals/EventDetailModal.js';
+import { useToast } from "../context/ToastContext.js";
 
 function DashboardPage() {
   const location = useLocation();
@@ -43,17 +44,45 @@ function DashboardPage() {
 
   }, [location]);
 
-  const calendarEvents = events.map(event => ({
-    id: String(event.id),
-    title: event.title,
-    start: event.startDate,
-    end: event.endDate,
-    allDay: event.isAllDay,
-    extendedProps: { 
-      ...event,
-      categoryColor: event.category?.color || '#808080'
+  const toDateOnly = (value: string) => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toISOString().split('T')[0];
+  };
+
+  const addDays = (value: string, amount: number) => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    date.setUTCDate(date.getUTCDate() + amount);
+    return date.toISOString().split('T')[0];
+  };
+
+  const calendarEvents = events.map(event => {
+    const baseEvent = {
+      id: String(event.id),
+      title: event.title,
+      start: event.startDate,
+      end: event.endDate,
+      allDay: event.isAllDay,
+      extendedProps: {
+        ...event,
+        categoryColor: event.category?.color || '#808080'
+      }
+    };
+
+    if (!event.isAllDay) {
+      return baseEvent;
     }
-  }));
+
+    const normalizedStart = toDateOnly(event.startDate);
+    const normalizedEnd = addDays(event.endDate || event.startDate, 1);
+
+    return {
+      ...baseEvent,
+      start: normalizedStart,
+      end: normalizedEnd,
+    };
+  });
 
   const handleEventClick = (clickInfo: any) => {
     setSelectedEvent(clickInfo.event.extendedProps as EventType);
@@ -71,11 +100,31 @@ function DashboardPage() {
     .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
     .slice(0, 6);
 
+  const dayFormatter = new Intl.DateTimeFormat('es-ES', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+  });
+
+  const dayFormatterUTC = new Intl.DateTimeFormat('es-ES', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+    timeZone: 'UTC',
+  });
+
+  const timeFormatter = new Intl.DateTimeFormat('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
   const formatDate = (iso: string, allDay?: boolean) => {
-    const d = new Date(iso);
-    const date = d.toLocaleDateString('es-ES', { weekday: 'short', day: '2-digit', month: 'short' });
-    const time = allDay ? '' : ` • ${d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
-    return `${date}${time}`;
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return '';
+    if (allDay) {
+      return dayFormatterUTC.format(date);
+    }
+    return `${dayFormatter.format(date)} • ${timeFormatter.format(date)}`;
   };
 
   return (
@@ -129,7 +178,7 @@ function DashboardPage() {
           <section className="grid grid-cols-1 xl:grid-cols-3 gap-8">
             {/* Calendario */}
             <div className="xl:col-span-2">
-              <div className="mb-4">
+              <div className="mb-2">
                 <div className="flex items-center justify-between bg-white rounded-xl shadow-sm ring-1 ring-gray-100 px-4 py-3">
                   <div className="flex items-center gap-2">
                     <FaCalendarAlt className="text-[var(--brand-primary)]" />
@@ -207,4 +256,4 @@ function DashboardPage() {
   );
 }
 
-export default DashboardPage;
+export default DashboardPage;

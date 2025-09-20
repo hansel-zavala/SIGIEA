@@ -3,6 +3,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import { toCsv, sendCsvResponse, buildTimestampedFilename } from '../utils/csv.js';
 
 const prisma = new PrismaClient();
 
@@ -444,5 +445,70 @@ export const reactivateStudent = async (req: Request, res: Response) => {
     res.json({ message: 'Estudiante reactivado correctamente.', student: result });
   } catch (error) {
     res.status(500).json({ error: 'No se pudo reactivar el estudiante.' });
+  }
+};
+
+export const exportStudents = async (req: Request, res: Response) => {
+  try {
+    const { status = 'all', format = 'csv' } = req.query as { status?: string; format?: string };
+    if (format !== 'csv') {
+      return res.status(400).json({ error: 'Formato no soportado. Actualmente solo se permite CSV.' });
+    }
+
+    const whereCondition: any = {};
+    if (status === 'active') whereCondition.isActive = true;
+    if (status === 'inactive') whereCondition.isActive = false;
+
+    const students = await prisma.student.findMany({
+      where: whereCondition,
+      orderBy: [
+        { isActive: 'desc' },
+        { createdAt: 'desc' },
+      ],
+      include: {
+        therapist: { select: { nombres: true, apellidos: true } },
+        guardians: { orderBy: { parentesco: 'asc' } },
+      },
+    });
+
+    const rows = students.map((student) => {
+      const primaryGuardian = student.guardians[0];
+      const secondaryGuardians = student.guardians.slice(1);
+      const therapistName = student.therapist ? `${student.therapist.nombres} ${student.therapist.apellidos}` : 'No asignado';
+
+      return [
+        student.id,
+        `${student.nombres} ${student.apellidos}`,
+        student.nombres,
+        student.apellidos,
+        new Date(student.dateOfBirth).toISOString().split('T')[0],
+        therapistName,
+        primaryGuardian ? `${primaryGuardian.nombres} ${primaryGuardian.apellidos}` : 'No asignado',
+        primaryGuardian?.telefono ?? 'N/A',
+        secondaryGuardians.map((g) => `${g.nombres} ${g.apellidos}`).join('; '),
+        student.isActive ? 'Activo' : 'Inactivo',
+        student.createdAt.toISOString(),
+      ];
+    });
+
+    const headers = [
+      'ID',
+      'Nombre completo',
+      'Nombres',
+      'Apellidos',
+      'Fecha de nacimiento',
+      'Terapeuta asignado',
+      'Tutor principal',
+      'Teléfono tutor principal',
+      'Otros tutores',
+      'Estado',
+      'Fecha de registro',
+    ];
+
+    const csv = toCsv(headers, rows);
+    const filename = buildTimestampedFilename(`estudiantes-${status}`);
+    sendCsvResponse(res, filename, csv);
+  } catch (error) {
+    res.status(500).json({ error: 'No se pudo exportar la lista de estudiantes.' });
   }
 };

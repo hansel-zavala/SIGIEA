@@ -1,8 +1,9 @@
 // frontend/src/pages/TherapistProfilePage.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import therapistService, { type TherapistProfile } from '../services/therapistService';
 import { FaUserMd, FaEdit, FaUserGraduate } from 'react-icons/fa';
+import Pagination from '../components/ui/Pagination';
 
 
 const InfoField = ({ label, value }: { label: string; value: string | undefined | null }) => (
@@ -17,6 +18,8 @@ function TherapistProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const { id } = useParams<{ id: string }>();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
 
   useEffect(() => {
     if (id) {
@@ -32,6 +35,29 @@ function TherapistProfilePage() {
         });
     }
   }, [id]);
+
+  const totalAssigned = therapist?.assignedStudents?.length ?? 0;
+
+  useEffect(() => {
+    if (!totalAssigned) {
+      setCurrentPage(1);
+      return;
+    }
+    const totalPages = Math.max(1, Math.ceil(totalAssigned / Math.max(itemsPerPage, 1)));
+    setCurrentPage((prev) => Math.min(prev, totalPages));
+  }, [totalAssigned, itemsPerPage]);
+
+  const paginatedStudents = useMemo(() => {
+    if (!therapist?.assignedStudents) return [];
+    const start = (currentPage - 1) * Math.max(itemsPerPage, 1);
+    return therapist.assignedStudents.slice(start, start + Math.max(itemsPerPage, 1));
+  }, [therapist?.assignedStudents, currentPage, itemsPerPage]);
+
+  const handleItemsPerPageChange = (size: number) => {
+    if (size <= 0) return;
+    setItemsPerPage(size);
+    setCurrentPage(1);
+  };
 
   if (loading) return <p>Cargando perfil...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
@@ -50,8 +76,8 @@ function TherapistProfilePage() {
     <div className="bg-white p-6 rounded-lg shadow-md space-y-8">
       <div className="flex justify-between items-center pb-6 border-b">
         <div className="flex items-center gap-6">
-          <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center border-4 border-blue-200">
-            <FaUserMd size={50} className="text-blue-400" />
+          <div className="w-24 h-24 bg-violet-100 rounded-full flex items-center justify-center border-4 border-violet-200">
+            <FaUserMd size={50} className="text-violet-500" />
           </div>
           <div>
             <h2 className="text-3xl font-bold text-gray-800">{therapist.fullName}</h2>
@@ -85,22 +111,23 @@ function TherapistProfilePage() {
 
       <div>
         <h3 className="text-xl font-semibold text-gray-700 mb-4">Estudiantes Asignados</h3>
-        <div className="overflow-hidden rounded-xl border border-gray-200">
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+          <div className="max-w-full overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50">
+            <thead className="border-b border-gray-100 bg-gray-50">
               <tr>
                 <th className="px-5 py-3 font-medium text-gray-500 text-left">Nombre del Estudiante</th>
                 <th className="px-5 py-3 font-medium text-gray-500 text-left">Jornada</th>
                 
               </tr>
-            </thead>
+            </thead >
             <tbody className="divide-y divide-gray-100">
-              {therapist.assignedStudents && therapist.assignedStudents.length > 0 ? (
-                therapist.assignedStudents.map(student => (
+              {paginatedStudents && paginatedStudents.length > 0 ? (
+                paginatedStudents.map(student => (
                   <tr key={student.id}>
                     <td className="px-5 py-4 font-medium text-gray-800">{student.fullName}</td>
                     <td className="px-5 py-4 text-gray-600">{student.jornada}</td>
-                    <td className="px-5 py-4 text-end">
+                    <td className="px-5 py-4 text-end pr-16">
                       <Link
                         to={`/students/${student.id}`}
                         className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold text-white rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 shadow-md"
@@ -121,6 +148,18 @@ function TherapistProfilePage() {
               )}
             </tbody>
           </table>
+          </div>
+          {totalAssigned > 0 && (
+            <div className="border-t border-gray-200 bg-gray-50 px-4 py-3">
+              <Pagination
+                itemsPerPage={itemsPerPage}
+                totalItems={totalAssigned}
+                currentPage={currentPage}
+                onPageChange={setCurrentPage}
+                onItemsPerPageChange={handleItemsPerPageChange}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

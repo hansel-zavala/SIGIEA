@@ -144,14 +144,15 @@ function TemplatesPage() {
       {loading ? (
         <p>Cargando...</p>
       ) : (
-        <div className="max-w-full overflow-x-auto rounded-xl border border-gray-200 bg-white">
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+          <div className="max-w-full overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="border-b border-gray-100 bg-gray-50">
               <tr>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Título</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actualizado</th>
-                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                <th className="px-4 py-2 text-left  font-medium text-gray-500 uppercase tracking-wider">Título</th>
+                <th className="px-4 py-2 text-left  font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                <th className="px-4 py-2 text-left  font-medium text-gray-500 uppercase tracking-wider">Actualizado</th>
+                <th className="px-4 py-2 text-right  font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -200,8 +201,9 @@ function TemplatesPage() {
               )}
             </tbody>
           </table>
+          </div>
           {filtered.length > 0 && (
-            <div className="border-t border-gray-200 bg-white px-4 py-3">
+            <div className="border-t border-gray-200 bg-gray-50 px-4 py-3">
               <Pagination
                 itemsPerPage={itemsPerPage}
                 totalItems={filtered.length}

@@ -19,6 +19,7 @@ import reportTemplateRoutes from './routes/reportTemplateRoutes.js';
 import reportTemplatePublicRoutes from './routes/reportTemplatePublicRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
 import tipoParentescoRoutes from './routes/tipoParentescoRoutes.js';
+import documentRoutes from './routes/documentRoutes.js';
 
 const app = express();
 const PORT = 3001;
@@ -46,6 +47,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/report-templates-public', reportTemplatePublicRoutes);
 app.use('/api/report-templates', reportTemplateRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/documents', documentRoutes);
 app.use('/api', tipoParentescoRoutes);
 app.use('/public', express.static('public'));
 

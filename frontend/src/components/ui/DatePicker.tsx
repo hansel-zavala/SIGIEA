@@ -12,6 +12,8 @@ interface DatePickerProps {
   selected: Date | null;
   onChange: (date: Date | null) => void;
   maxDate?: Date;
+  onMonthChange?: (date: Date) => void;
+  onYearChange?: (date: Date) => void;
 }
 
 const CustomInput = forwardRef<HTMLInputElement, { value?: string; onClick?: () => void }>(
@@ -26,7 +28,7 @@ const CustomInput = forwardRef<HTMLInputElement, { value?: string; onClick?: () 
   )
 );
 
-function CustomDatePicker({ selected, onChange, maxDate }: DatePickerProps) {
+function CustomDatePicker({ selected, onChange, maxDate, onMonthChange, onYearChange }: DatePickerProps) {
   return (
     <DatePicker
       selected={selected}
@@ -38,6 +40,8 @@ function CustomDatePicker({ selected, onChange, maxDate }: DatePickerProps) {
       scrollableYearDropdown
       showMonthDropdown
       yearDropdownItemNumber={60}
+      onMonthChange={onMonthChange}
+      onYearChange={onYearChange}
       customInput={<CustomInput />}
       popperPlacement="bottom-start"
       wrapperClassName="w-full" 

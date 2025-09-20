@@ -49,8 +49,28 @@ export const updateMedicamento = async (req: Request, res: Response) => {
 export const deleteMedicamento = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const medicamentoId = parseInt(id, 10);
+
+    if (Number.isNaN(medicamentoId)) {
+      return res.status(400).json({ error: 'Identificador de medicamento inválido.' });
+    }
+
+    const studentsUsingMedicamento = await prisma.student.count({
+      where: {
+        medicamentos: {
+          some: { id: medicamentoId },
+        },
+      },
+    });
+
+    if (studentsUsingMedicamento > 0) {
+      return res.status(400).json({
+        error: 'No se puede eliminar el medicamento porque está asignado a otros estudiantes.',
+      });
+    }
+
     await prisma.medicamento.delete({
-      where: { id: parseInt(id) },
+      where: { id: medicamentoId },
     });
     res.json({ message: 'Medicamento eliminado correctamente.' });
   } catch (error) {

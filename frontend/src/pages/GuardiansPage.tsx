@@ -3,18 +3,21 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import guardianService from '../services/guardianService';
-import Input from '../components/ui/Input';
+import SearchInput from "../components/ui/SearchInput";
 import Pagination from '../components/ui/Pagination';
-import { FaUserCircle, FaPencilAlt, FaTrash, FaUndo } from 'react-icons/fa';
+import { FaUserCircle, FaPencilAlt, FaTrash, FaUndo, FaSearch } from 'react-icons/fa';
 import Badge from '../components/ui/Badge';
 import { ConfirmationDialog } from "../components/ui/ConfirmationDialog";
 import { useToast } from '../context/ToastContext';
+import ExportMenu from '../components/ExportMenu';
+import { downloadBlob, inferFilenameFromResponse } from '../utils/downloadFile';
+import { actionButtonStyles } from '../styles/actionButtonStyles';
 
 interface Guardian {
   id: number;
   nombres: string;
   apellidos: string;
-  fullName: string;
+  fullName: string; 
   telefono: string;
   numeroIdentidad: string;
   parentesco: string;
@@ -41,6 +44,7 @@ function GuardiansPage() {
   const [confirmAction, setConfirmAction] = useState<"deactivate" | "reactivate" | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectGuardianId, setSelectedStudentId] = useState<number | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
   const { showToast } = useToast();
 
 
@@ -93,10 +97,25 @@ function GuardiansPage() {
   const handleReactivate = async (guardianId: number) => {
     try {
       await guardianService.reactivateGuardian(guardianId);
-      showToast({ message: 'Se reactivó correctamente.' });
+      showToast({ message: 'Se reactivó correctamente.' }); 
       fetchGuardians(); 
     } catch (err: any) {
       alert(err.response?.data?.error || 'No se pudo reactivar al guardián.');
+    }
+  };
+
+  const handleExportGuardians = async ({ status, format }: { status: string; format: string }) => {
+    try {
+      setIsExporting(true);
+      const response = await guardianService.exportGuardians(status, format);
+      const filename = inferFilenameFromResponse(response, `guardianes-${status}.csv`);
+      downloadBlob(response.data, filename);
+      showToast({ message: 'Exportación de padres/tutores generada correctamente.' });
+    } catch (err) {
+      console.error('Error al exportar guardianes', err);
+      showToast({ message: 'No se pudo exportar la lista de padres.', type: 'error' });
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -134,15 +153,19 @@ function GuardiansPage() {
     setConfirmOpen(false);
     setSelectedStudentId(null);
     setConfirmAction(null);
-  };
+  }; 
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
-      <div className="flex justify-between items-center mb-6 gap-4">
-        <h2 className="text-2xl font-bold text-gray-800">Gestión de los Padres</h2>
-        <div className="flex-grow">
-            <Input
+      
+        <h2 className="text-2xl font-bold text-gray-800 mb-3">Gestión de los Padres</h2>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+          <div className="flex-1">
+        <div className="group relative flex items-center gap-3 rounded-full bg-white/95 px-4 py-2 shadow border border-gray-200 mb-4">
+          <FaSearch className="text-gray-400" size={16} />
+            <SearchInput
                 type="text"
+                className="text-base"
                 placeholder="Buscar por nombre, identidad o estudiante..."
                 value={searchTerm}
                 onChange={(e) => {
@@ -155,7 +178,20 @@ function GuardiansPage() {
                     }
                 }}
             />
+            <span className="pointer-events-none absolute inset-x-4 bottom-[6px] h-[2px] origin-left scale-x-0 rounded-full bg-gradient-to-r from-violet-400 via-fuchsia-400 to-violet-500 transition-transform duration-200 group-focus-within:scale-x-100" />
         </div>
+      </div>
+      <ExportMenu
+        defaultStatus={statusFilter}
+        onExport={handleExportGuardians}
+        statuses={[
+          { value: 'all', label: 'Todos' },
+          { value: 'active', label: 'Activos' },
+          { value: 'inactive', label: 'Inactivos' },
+        ]}
+        triggerLabel={isExporting ? 'Exportando…' : 'Exportar'}
+        disabled={isExporting}
+      />
       </div>
 
       <div className="mb-4">
@@ -237,17 +273,29 @@ function GuardiansPage() {
                       <Badge color={guardian.isActive ? "success" : "error"}>{guardian.isActive ? "Activo" : "Inactivo"}</Badge>
                     </td>
                     <td className="px-5 py-4">
-                      <div className="flex gap-4">
-                        <Link to={`/guardians/edit/${guardian.id}`} title="Editar Guardián">
-                          <FaPencilAlt className="text-blue-500 hover:text-blue-700 cursor-pointer" style={{ fontSize: '15px' }} />
+                      <div className="flex items-center gap-3">
+                        <Link
+                          to={`/guardians/edit/${guardian.id}`}
+                          title="Editar Guardián"
+                          className={actionButtonStyles.edit}
+                        >
+                          <FaPencilAlt className="text-lg" />
                         </Link>
                         {guardian.isActive ? (
-                          <button onClick={() => openDeactivateDialog(guardian.id)} title="Desactivar Guardián">
-                            <FaTrash className="text-red-500 hover:text-red-700 cursor-pointer" style={{ fontSize: '15px' }} />
+                          <button
+                            onClick={() => openDeactivateDialog(guardian.id)}
+                            title="Desactivar Guardián"
+                            className={actionButtonStyles.delete}
+                          >
+                            <FaTrash className="text-lg" />
                           </button>
                         ) : (
-                          <button onClick={() => openReactivateDialog(guardian.id)} title="Reactivar Guardián">
-                            <FaUndo className="text-green-500 hover:text-green-700 cursor-pointer" style={{ fontSize: '15px' }} />
+                          <button
+                            onClick={() => openReactivateDialog(guardian.id)}
+                            title="Reactivar Guardián"
+                            className={actionButtonStyles.reactivate}
+                          >
+                            <FaUndo className="text-lg" />
                           </button>
                         )}
                       </div>
@@ -260,7 +308,7 @@ function GuardiansPage() {
           </tbody>
         </table>
         {guardians.length > 0 && (
-          <div className="border-t border-gray-200 bg-white px-4 py-3">
+          <div className="bborder-t border-gray-200 bg-gray-50 px-4 py-3">
         <Pagination
             itemsPerPage={itemsPerPage}
             totalItems={guardians.length}

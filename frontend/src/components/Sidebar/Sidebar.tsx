@@ -1,6 +1,6 @@
 // frontend/src/components/Sidebar/Sidebar.tsx
 import { NavLink } from 'react-router-dom';
-import { FaHome, FaUserGraduate, FaBook, FaFileSignature, FaUsers, FaUserMd, FaCalendarDay, FaClipboardList, FaWpforms } from 'react-icons/fa';
+import { FaHome, FaUserGraduate, FaBook, FaFileSignature, FaUsers, FaUserMd, FaCalendarDay, FaClipboardList, FaWpforms, FaFolderOpen } from 'react-icons/fa';
 import logo from '../../assets/apo-autis-logo.png';
 
 interface SidebarProps {
@@ -16,6 +16,7 @@ function Sidebar({ isOpen }: SidebarProps) {
     { name: 'Terapeutas', to: '/therapists', icon: <FaUserMd size={22} /> },
     { name: 'Lecciones', to: '/lecciones', icon: <FaBook size={22} /> },
     { name: 'Eventos', to: '/events', icon: <FaCalendarDay size={22} /> },
+    { name: 'Archivero', to: '/archivero', icon: <FaFolderOpen size={22} /> },
     { name: 'Reportes', to: '/reports', icon: <FaClipboardList size={22} />, adminOnly: false },
     { name: 'Plantillas', to: '/templates', icon: <FaWpforms size={22} />, adminOnly: true },
   ];

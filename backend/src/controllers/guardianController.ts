@@ -2,6 +2,7 @@
 import { Request, Response } from 'express';
 import prisma from '../db.js';
 import bcrypt from 'bcrypt';
+import { toCsv, sendCsvResponse, buildTimestampedFilename } from '../utils/csv.js';
 
 export const getAllGuardians = async (req: Request, res: Response) => {
   try {
@@ -198,5 +199,62 @@ export const reactivateGuardian = async (req: Request, res: Response) => {
     res.json({ message: 'Guardián reactivado correctamente.', guardian: reactivatedGuardian });
   } catch (error) {
     res.status(500).json({ error: 'No se pudo reactivar al guardián.' });
+  }
+};
+
+export const exportGuardians = async (req: Request, res: Response) => {
+  try {
+    const { status = 'all', format = 'csv' } = req.query as { status?: string; format?: string };
+    const normalizedFormat = String(format).toLowerCase();
+    if (format !== 'csv') {
+      return res.status(400).json({ error: 'Formato no soportado. Actualmente solo se permite CSV.' });
+    }
+
+    const whereCondition: any = {};
+    if (status === 'active') whereCondition.isActive = true;
+    if (status === 'inactive') whereCondition.isActive = false;
+
+    const guardians = await prisma.guardian.findMany({
+      where: whereCondition,
+      orderBy: [
+        { isActive: 'desc' },
+        { createdAt: 'desc' },
+      ],
+      include: {
+        students: {
+          select: { id: true, nombres: true, apellidos: true, isActive: true },
+        },
+      },
+    });
+
+    const rows = guardians.map((guardian) => [
+      guardian.id,
+      `${guardian.nombres} ${guardian.apellidos}`,
+      guardian.numeroIdentidad,
+      guardian.telefono,
+      guardian.parentesco,
+      guardian.students.filter((s) => s.isActive).map((s) => `${s.nombres} ${s.apellidos}`).join('; '),
+      guardian.students.filter((s) => !s.isActive).map((s) => `${s.nombres} ${s.apellidos}`).join('; '),
+      guardian.isActive ? 'Activo' : 'Inactivo',
+      guardian.createdAt.toISOString(),
+    ]);
+
+    const headers = [
+      'ID',
+      'Nombre completo',
+      'Número de identidad',
+      'Teléfono',
+      'Parentesco',
+      'Estudiantes activos',
+      'Estudiantes inactivos',
+      'Estado',
+      'Fecha de registro',
+    ];
+
+    const csv = toCsv(headers, rows);
+    const filename = buildTimestampedFilename(`guardians-${status}`);
+    sendCsvResponse(res, filename, csv);
+  } catch (error) {
+    res.status(500).json({ error: 'No se pudo exportar la lista de guardianes.' });
   }
 };

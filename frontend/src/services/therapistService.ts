@@ -83,6 +83,19 @@ const reactivateTherapist = async (id: number) => {
   }
 };
 
+const exportTherapists = async (status: string = 'all', format: string = 'csv') => {
+  try {
+    const response = await api.get('/therapists/export/download', {
+      params: { status, format },
+      responseType: 'blob',
+    });
+    return response;
+  } catch (error) {
+    console.error('Error al exportar terapeutas:', error);
+    throw error;
+  }
+};
+
 export default {
   createTherapist,
   getAllTherapists,
@@ -90,4 +103,5 @@ export default {
   updateTherapist,
   deleteTherapist,
   reactivateTherapist,
+  exportTherapists,
 };

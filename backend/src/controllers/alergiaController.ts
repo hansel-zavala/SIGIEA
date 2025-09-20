@@ -45,8 +45,28 @@ export const updateAlergia = async (req: Request, res: Response) => {
 export const deleteAlergia = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const alergiaId = parseInt(id, 10);
+
+    if (Number.isNaN(alergiaId)) {
+      return res.status(400).json({ error: 'Identificador de alergia inválido.' });
+    }
+
+    const studentsWithAlergia = await prisma.student.count({
+      where: {
+        alergias: {
+          some: { id: alergiaId },
+        },
+      },
+    });
+
+    if (studentsWithAlergia > 0) {
+      return res.status(400).json({
+        error: 'No se puede eliminar la alergia porque está asignada a otros estudiantes.',
+      });
+    }
+
     await prisma.alergia.delete({
-      where: { id: parseInt(id) },
+      where: { id: alergiaId },
     });
     res.json({ message: 'Alergia eliminada correctamente.' });
   } catch (error) {

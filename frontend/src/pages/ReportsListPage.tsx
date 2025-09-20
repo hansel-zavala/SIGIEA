@@ -59,14 +59,17 @@ function ReportsListPage() {
     setCurrentPage(1);
   };
 
-  if (loading) return <p>Cargando...</p>;
-  if (error) return <p className="text-red-500">{error}</p>;
-
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800">Generar Reporte de Estudiante</h2>
       </div>
+
+      {error && (
+        <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-600">
+          {error}
+        </div>
+      )}
 
       <div className="flex justify-between items-center mb-4 gap-4">
         <p className="text-xs text-gray-500 mt-1">Hacer click en la foto o nombre del estudiante para ver perfil y editar el reporte. </p>
@@ -74,6 +77,7 @@ function ReportsListPage() {
 
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <div className="max-w-full overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50">
             <tr>
@@ -83,7 +87,11 @@ function ReportsListPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {currentStudents.length > 0 ? currentStudents.map((student) => (
+            {loading ? (
+              <tr>
+                <td colSpan={3} className="px-5 py-8 text-center text-gray-500">Cargando estudiantes...</td>
+              </tr>
+            ) : currentStudents.length > 0 ? currentStudents.map((student) => (
               <tr key={student.id}>
                 <td className="px-5 py-4">
                   <Link
@@ -113,7 +121,11 @@ function ReportsListPage() {
             )) : (
               <tr>
                 <td colSpan={3} className="px-5 py-8 text-center text-gray-500">
-                  {students.length === 0 ? 'No hay estudiantes disponibles para reportes.' : 'No hay resultados en esta página.'}
+                  {error
+                    ? 'No se pudieron cargar los estudiantes para reportes.'
+                    : students.length === 0
+                      ? 'No hay estudiantes disponibles para reportes.'
+                      : 'No hay resultados en esta página.'}
                 </td>
               </tr>
             )}
@@ -121,7 +133,7 @@ function ReportsListPage() {
         </table>
       </div>
       {students.length > 0 && (
-        <div className="border-t border-gray-200 bg-white px-4 py-3">
+        <div className="border-t border-gray-200 bg-gray-50 px-4 py-3">
           <Pagination
             itemsPerPage={itemsPerPage}
             totalItems={students.length}
@@ -131,6 +143,7 @@ function ReportsListPage() {
           />
         </div>
       )}
+      </div>
     </div>
   );
 }

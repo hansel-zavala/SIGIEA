@@ -1,5 +1,6 @@
 // frontend/src/pages/MatriculaPage.tsx
 import React, { useState, useEffect } from "react";
+import type { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import studentService from "../services/studentService";
 import uploadService from "../services/uploadService";
@@ -177,6 +178,13 @@ function MatriculaPage() {
 
   const handleStudentSelectChange = (name: string, value: string | null) => {setStudentData((prev) => ({ ...prev, [name]: value || "" }));};
 
+  const handleDateChange = (date: Date | null) => {
+    setStudentData((prev) => ({
+      ...prev,
+      dateOfBirth: date ? date.toISOString().split("T")[0] : "",
+    }));
+  };
+
   const handleGuardianSelectChange = (
     index: number,
     name: string,
@@ -282,32 +290,84 @@ function MatriculaPage() {
   };
 
   const handleAddMedicamento = async (name: string) => {
-    await medicamentoService.create(name);
-    setAllMedicamentos(await medicamentoService.getAll());
+    try {
+      await medicamentoService.create(name);
+      const updatedMedicamentos = await medicamentoService.getAll();
+      setAllMedicamentos(updatedMedicamentos);
+      showToast({ message: "Medicamento agregado correctamente." });
+    } catch (error) {
+      const axiosError = error as AxiosError<{ error?: string }>;
+      const message = axiosError.response?.data?.error ?? "No se pudo agregar el medicamento.";
+      showToast({ message, type: "error" });
+      throw error;
+    }
   };
   const handleUpdateMedicamento = async (id: number, name: string) => {
-    await medicamentoService.update(id, name);
-    setAllMedicamentos(await medicamentoService.getAll());
+    try {
+      await medicamentoService.update(id, name);
+      const updatedMedicamentos = await medicamentoService.getAll();
+      setAllMedicamentos(updatedMedicamentos);
+      showToast({ message: "Medicamento actualizado correctamente." });
+    } catch (error) {
+      const axiosError = error as AxiosError<{ error?: string }>;
+      const message = axiosError.response?.data?.error ?? "No se pudo actualizar el medicamento.";
+      showToast({ message, type: "error" });
+      throw error;
+    }
   };
 
   const handleDeleteMedicamento = async (id: number) => {
-    await medicamentoService.remove(id);
-    setAllMedicamentos(await medicamentoService.getAll());
-    setSelectedMedicamentos(prev => prev.filter(item => item.id !== id));
+    try {
+      await medicamentoService.remove(id);
+      const updatedMedicamentos = await medicamentoService.getAll();
+      setAllMedicamentos(updatedMedicamentos);
+      setSelectedMedicamentos((prev) => prev.filter((item) => item.id !== id));
+      showToast({ message: "Medicamento eliminado correctamente.", type: "error" });
+    } catch (error) {
+      const axiosError = error as AxiosError<{ error?: string }>;
+      const message = axiosError.response?.data?.error ?? "No se pudo eliminar el medicamento.";
+      showToast({ message, type: "error" });
+    }
   };
 
   const handleAddAlergia = async (name: string) => {
-    await alergiaService.create(name);
-    setAllAlergias(await alergiaService.getAll());
+    try {
+      await alergiaService.create(name);
+      const updatedAlergias = await alergiaService.getAll();
+      setAllAlergias(updatedAlergias);
+      showToast({ message: "Alergia agregada correctamente." });
+    } catch (error) {
+      const axiosError = error as AxiosError<{ error?: string }>;
+      const message = axiosError.response?.data?.error ?? "No se pudo agregar la alergia.";
+      showToast({ message, type: "error" });
+      throw error;
+    }
   };
   const handleUpdateAlergia = async (id: number, name: string) => {
-    await alergiaService.update(id, name);
-    setAllAlergias(await alergiaService.getAll());
+    try {
+      await alergiaService.update(id, name);
+      const updatedAlergias = await alergiaService.getAll();
+      setAllAlergias(updatedAlergias);
+      showToast({ message: "Alergia actualizada correctamente." });
+    } catch (error) {
+      const axiosError = error as AxiosError<{ error?: string }>;
+      const message = axiosError.response?.data?.error ?? "No se pudo actualizar la alergia.";
+      showToast({ message, type: "error" });
+      throw error;
+    }
   };
   const handleDeleteAlergia = async (id: number) => {
-    await alergiaService.remove(id);
-    setAllAlergias(await alergiaService.getAll());
-    setSelectedAlergias(prev => prev.filter(item => item.id !== id));
+    try {
+      await alergiaService.remove(id);
+      const updatedAlergias = await alergiaService.getAll();
+      setAllAlergias(updatedAlergias);
+      setSelectedAlergias((prev) => prev.filter((item) => item.id !== id));
+      showToast({ message: "Alergia eliminada correctamente.", type: "error" });
+    } catch (error) {
+      const axiosError = error as AxiosError<{ error?: string }>;
+      const message = axiosError.response?.data?.error ?? "No se pudo eliminar la alergia.";
+      showToast({ message, type: "error" });
+    }
   };
 
   const validateForm = () => {
@@ -477,14 +537,6 @@ function MatriculaPage() {
     label: m.nombre,
   }));
 
-  const handleDateChange = (date: Date | null) => {
-    setStudentData((prev) => ({
-      ...prev,
-      dateOfBirth: date ? date.toISOString().split("T")[0] : "",
-    }));
-  };
-
-
   const acceptedFileTypes = "image/png, image/jpeg, application/pdf, .doc, .docx, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
   return (
@@ -557,7 +609,7 @@ function MatriculaPage() {
             <div>
               <Label htmlFor="dateOfBirth">Fecha de Nacimiento</Label>
               <CustomDatePicker
-                selected={ studentData.dateOfBirth ? new Date(studentData.dateOfBirth) : null }
+                selected={studentData.dateOfBirth ? new Date(studentData.dateOfBirth) : null}
                 onChange={handleDateChange}
                 maxDate={new Date()}
               />

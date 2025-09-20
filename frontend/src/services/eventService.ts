@@ -18,9 +18,15 @@ export interface Event {
   category?: Category | null;
 }
 
-const getAllEvents = async (): Promise<Event[]> => {
+const getAllEvents = async (options?: { status?: 'active' | 'inactive' | 'all'; search?: string }): Promise<Event[]> => {
   try {
-    const response = await api.get('/events');
+    const { status = 'active', search } = options || {};
+    const params: Record<string, string> = { status };
+    if (search && search.trim().length > 0) {
+      params.search = search.trim();
+    }
+
+    const response = await api.get('/events', { params });
     return response.data;
   } catch (error) {
     console.error("Error al obtener los eventos:", error);
@@ -57,6 +63,16 @@ const deleteEvent = async (id: number): Promise<void> => {
   }
 };
 
+const reactivateEvent = async (id: number): Promise<Event> => {
+  try {
+    const response = await api.patch(`/events/${id}/reactivate`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error al reactivar el evento con ID ${id}:`, error);
+    throw error;
+  }
+};
+
 const getEventById = async (id: number): Promise<Event> => {
     try {
         const response = await api.get(`/events/${id}`);
@@ -67,10 +83,25 @@ const getEventById = async (id: number): Promise<Event> => {
     }
 };
 
+const exportEvents = async (status: 'active' | 'inactive' | 'all' = 'all', format: string = 'csv') => {
+  try {
+    const response = await api.get('/events/export/download', {
+      params: { status, format },
+      responseType: 'blob',
+    });
+    return response;
+  } catch (error) {
+    console.error('Error al exportar eventos:', error);
+    throw error;
+  }
+};
+
 export default {
   getAllEvents,
   createEvent,
   updateEvent,
   getEventById,
   deleteEvent,
+  reactivateEvent,
+  exportEvents,
 };

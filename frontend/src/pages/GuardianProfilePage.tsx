@@ -64,8 +64,8 @@ function GuardianProfilePage() {
     <div className="bg-white p-6 rounded-lg shadow-md ">
       <div className="flex justify-between items-start mb-6">
         <div className="flex items-center gap-6">
-          <div className="w-32 h-32 bg-blue-100 rounded-full flex items-center justify-center border-4 border-blue-200">
-            <FaUserCircle size={80} className="text-blue-300" />
+          <div className="w-24 h-24 bg-violet-100 rounded-full flex items-center justify-center border-4 border-violet-200">
+            <FaUserCircle size={80} className="text-violet-500" />
           </div>
           <div>
             <h2 className="text-3xl font-bold text-gray-800">{guardian.fullName}</h2>

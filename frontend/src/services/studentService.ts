@@ -95,6 +95,19 @@ const addGuardian = async (studentId: number, guardianData: any) => {
   }
 };
 
+const exportStudents = async (status: string = 'all', format: string = 'csv') => {
+  try {
+    const response = await api.get('/students/export/download', {
+      params: { status, format },
+      responseType: 'blob',
+    });
+    return response;
+  } catch (error) {
+    console.error('Error al exportar estudiantes:', error);
+    throw error;
+  }
+};
+
 
 export default {
   getAllStudents,
@@ -105,4 +118,5 @@ export default {
   assignTherapyPlan,
   reactivateStudent,
   addGuardian,
+  exportStudents,
 };

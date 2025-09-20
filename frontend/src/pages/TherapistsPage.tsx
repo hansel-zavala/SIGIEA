@@ -3,12 +3,15 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import therapistService from '../services/therapistService.js';
-import Input from '../components/ui/Input';
+import SearchInput from "../components/ui/SearchInput";
 import Pagination from '../components/ui/Pagination';
-import { FaUserMd, FaPencilAlt, FaTrash, FaPlus, FaUndo } from 'react-icons/fa';
+import { FaUserMd, FaPencilAlt, FaTrash, FaPlus, FaUndo, FaSearch } from 'react-icons/fa';
 import Badge from '../components/ui/Badge.js';
 import { ConfirmationDialog } from "../components/ui/ConfirmationDialog";
 import { useToast } from '../context/ToastContext';
+import { actionButtonStyles } from '../styles/actionButtonStyles';
+import ExportMenu from '../components/ExportMenu';
+import { downloadBlob, inferFilenameFromResponse } from '../utils/downloadFile';
 
 interface TherapistProfile {
   id: number;
@@ -38,6 +41,7 @@ function TherapistsPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectedTherapistId, setSelectedTherapistId] = useState<number | null>(null);
   const { showToast } = useToast();
+  const [isExporting, setIsExporting] = useState(false);
 
 
   const fetchTherapists = () => {
@@ -46,6 +50,7 @@ function TherapistsPage() {
           .then(response => {
               setTherapists(response.data);
               setTotalItems(response.total);
+              setError('');
           })
           .catch(() => setError('No se pudo cargar la lista de personal.'))
           .finally(() => setLoading(false));
@@ -79,6 +84,21 @@ function TherapistsPage() {
       fetchTherapists();
     } catch (err: any) {
       setError(err.response?.data?.error || 'No se pudo reactivar al miembro del personal.');
+    }
+  };
+
+  const handleExportTherapists = async ({ status, format }: { status: string; format: string }) => {
+    try {
+      setIsExporting(true);
+      const response = await therapistService.exportTherapists(status, format);
+      const filename = inferFilenameFromResponse(response, `terapeutas-${status}.csv`);
+      downloadBlob(response.data, filename);
+      showToast({ message: 'Exportación de terapeutas generada correctamente.' });
+    } catch (err) {
+      console.error('Error al exportar terapeutas', err);
+      showToast({ message: 'No se pudo exportar la lista de terapeutas.', type: 'error' });
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -119,46 +139,64 @@ function TherapistsPage() {
     setConfirmAction(null);
   };
 
-  if (loading) return <p>Cargando...</p>;
-  if (error) return <p className="text-red-500">{error}</p>;
-
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
-      <div className="flex justify-between items-center mb-6 gap-4">
-        <h2 className="text-2xl font-bold text-gray-800">Gestión de Terapeutas</h2>
-        <div className="flex-grow">
-            <Input
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-800 mb-3">Gestión de Terapeutas</h2>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+        <div className="flex-1">
+        <div className="group relative flex items-center gap-3 rounded-full bg-white/95 px-4 py-2 shadow border border-gray-200">
+          <FaSearch className="text-gray-400" size={16} />
+            <SearchInput
                 type="text"
-                placeholder="Buscar por nombre..."
+                className="text-base"
+                placeholder="Buscar por nombre, especialidad o identidad..."
                 value={searchTerm}
                 onChange={(e) => {
                     const value = e.target.value;
-                    const validCharsRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/;
+                    const validCharsRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s-]*$/;
                     if (validCharsRegex.test(value)) {
                       setSearchTerm(value);
                       setCurrentPage(1);
                     }
                 }}
             />
+            <span className="pointer-events-none absolute inset-x-4 bottom-[6px] h-[2px] origin-left scale-x-0 rounded-full bg-gradient-to-r from-violet-400 via-fuchsia-400 to-violet-500 transition-transform duration-200 group-focus-within:scale-x-100" />
+          </div>
         </div>
-
-        <Link to="/therapists/new">
-          <button className="min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">
-            <FaPlus className="text-xl" />
-              <span className="text-lg">Crear Nuevo Terapeuta</span>
-          </button>
-        </Link>
+        <div className="flex flex-col gap-2 md:flex-row md:items-center">
+          <Link to="/therapists/new">
+            <button className="min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">
+              <FaPlus className="text-xl" />
+                <span className="text-lg">Crear Nuevo Terapeuta</span>
+            </button>
+          </Link>
+          <ExportMenu
+            defaultStatus={statusFilter}
+            onExport={handleExportTherapists} 
+            statuses={[
+              { value: 'all', label: 'Todos' },
+              { value: 'active', label: 'Activos' },
+              { value: 'inactive', label: 'Inactivos' },
+            ]}
+            triggerLabel={isExporting ? 'Exportando…' : 'Exportar'}
+            disabled={isExporting}
+          />
+        </div>
+      </div>
       </div>
 
       <div className="mb-4">
         <p className="text-xs text-gray-500 mt-1">Estos botones son para filtrar la lista de terapeuta por estado.</p>
       </div>
 
+      {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
+
       <div className="flex items-center gap-2 mb-4">
         <button onClick={() => handleFilterChange('active')} className={`px-4 py-2 text-sm rounded-md ${statusFilter === 'active' ? 'text-white font-bold bg-violet-500' : 'bg-gray-200'}`}>Activos</button>
         <button onClick={() => handleFilterChange('inactive')} className={`px-4 py-2 text-sm rounded-md ${statusFilter === 'inactive' ? 'text-white font-bold bg-violet-500' : 'bg-gray-200'}`}>Inactivos</button>
         <button onClick={() => handleFilterChange('all')} className={`px-4 py-2 text-sm rounded-md ${statusFilter === 'all' ? 'text-white font-bold bg-violet-500' : 'bg-gray-200'}`}>Todos</button>
-      </div>
+      </div> 
 
       <div className="flex justify-between items-center mb-4 gap-4">
         <p className="text-xs text-gray-500 mt-1">Hacer click en la foto o nombre del terapeuta para ver perfil. </p>
@@ -166,8 +204,9 @@ function TherapistsPage() {
       </div>
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-        <table className="w-full text-sm">
-          <thead className=" bg-gray-50">
+        <div className="max-w-full overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className=" bg-gray-50">
             <tr>
               <th className="px-5 py-3 font-medium text-gray-500 text-left">Nombre</th>
               <th className="px-5 py-3 font-medium text-gray-500 text-left">Email</th>
@@ -177,7 +216,11 @@ function TherapistsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 border-t border-gray-100">
-            {therapists.length > 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan={5} className="text-center p-8 text-gray-500">Cargando...</td>
+              </tr>
+            ) : therapists.length > 0 ? (
               therapists.map((therapist) => (
                 <tr key={therapist.id}>
                   <td className="px-5 py-4">
@@ -199,44 +242,57 @@ function TherapistsPage() {
                     <Badge color={therapist.isActive ? "success" : "error"}>{therapist.isActive ? "Activo" : "Inactivo"}</Badge>
                   </td>
                   <td className="px-5 py-4">
-                    <div className="flex gap-4">
-                      <Link to={`/therapists/edit/${therapist.id}`} title="Editar">
-                        <FaPencilAlt className="text-blue-500 hover:text-blue-700 cursor-pointer" style={{ fontSize: '15px' }} />
+                    <div className="flex items-center gap-3">
+                      <Link
+                        to={`/therapists/edit/${therapist.id}`}
+                        title="Editar"
+                        className={actionButtonStyles.edit}
+                      >
+                        <FaPencilAlt className="text-lg" />
                       </Link>
                       {therapist.isActive ? (
-                        <button onClick={() => openDeactivateDialog(therapist.id)} title="Desactivar">
-                          <FaTrash className="text-red-500 hover:text-red-700 cursor-pointer" style={{ fontSize: '15px' }} />
+                        <button
+                          onClick={() => openDeactivateDialog(therapist.id)}
+                          title="Desactivar"
+                          className={actionButtonStyles.delete}
+                        >
+                          <FaTrash className="text-lg" />
                         </button>
                       ) : (
-                        <button onClick={() => openReactivateDialog(therapist.id)} title="Reactivar">
-                          <FaUndo className="text-green-500 hover:text-green-700 cursor-pointer" style={{ fontSize: '15px' }} />
+                        <button
+                          onClick={() => openReactivateDialog(therapist.id)}
+                          title="Reactivar"
+                          className={actionButtonStyles.reactivate}
+                        >
+                          <FaUndo className="text-lg" />
                         </button>
                       )}
                     </div>
                   </td>
                 </tr>
               ))
-            ) : (
-              <tr>
-                <td colSpan={5} className="text-center p-8 text-gray-500">
-                  No se encontró terapeuta.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-      {therapists.length > 0 && (
-          <div className="border-t border-gray-200 bg-white px-4 py-3">
+              ) : (
+                <tr>
+                  <td colSpan={5} className="text-center p-8 text-gray-500">
+                    No se encontró terapeuta.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        {therapists.length > 0 && (
+          <div className="border-t border-gray-200 bg-gray-50 px-4 py-3">
        <Pagination
             itemsPerPage={itemsPerPage}
-            totalItems={therapists.length}
+            totalItems={totalItems}
             currentPage={currentPage}
             onPageChange={handlePageChange}
             onItemsPerPageChange={handleItemsPerPageChange}
-        />
-        </div>
-      )}
+          />
+          </div>
+        )}
+      </div>
       <ConfirmationDialog
         isOpen={confirmOpen}
         onClose={() => setConfirmOpen(false)}

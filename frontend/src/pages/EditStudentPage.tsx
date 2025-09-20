@@ -1,5 +1,6 @@
 // frontend/src/pages/EditStudentPage.tsx
 import { useState, useEffect } from 'react';
+import type { AxiosError } from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
 import studentService from '../services/studentService';
 import therapistService, { type TherapistProfile } from '../services/therapistService.js';
@@ -15,6 +16,23 @@ import { departamentos, municipiosPorDepartamento } from '../data/honduras-data'
 import { FaExternalLinkAlt, FaTrash } from 'react-icons/fa';
 import CustomDatePicker from '../components/ui/DatePicker';
 import { useToast } from '../context/ToastContext';
+
+const formatDateOnly = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const parseDateValue = (value?: string | null) => {
+  if (!value) return null;
+  const [datePart] = value.split('T');
+  const pieces = datePart?.split('-');
+  if (!pieces || pieces.length !== 3) return null;
+  const [year, month, day] = pieces.map(Number);
+  if ([year, month, day].some((segment) => Number.isNaN(segment))) return null;
+  return new Date(year, month - 1, day);
+};
 
 type StudentFormData = {
     nombres: string;
@@ -172,8 +190,38 @@ function EditStudentPage() {
     setFormData(prev => ({ ...prev, [name]: value || '' }));
   };
 
+  const updateDateOfBirth = (updater: (current: Date) => Date) => {
+    setFormData((prev) => {
+      const current = parseDateValue(prev.dateOfBirth) ?? new Date();
+      const updated = updater(new Date(current.getTime()));
+      return { ...prev, dateOfBirth: formatDateOnly(updated) };
+    });
+  };
+
   const handleDateChange = (date: Date | null) => {
-      setFormData(prev => ({...prev, dateOfBirth: date ? date.toISOString() : '' }));
+    setFormData((prev) => ({ ...prev, dateOfBirth: date ? formatDateOnly(date) : '' }));
+  };
+
+  const handleBirthMonthChange = (date: Date) => {
+    updateDateOfBirth((current) => {
+      const desiredDay = current.getDate();
+      current.setDate(1);
+      current.setMonth(date.getMonth());
+      const maxDay = new Date(current.getFullYear(), current.getMonth() + 1, 0).getDate();
+      current.setDate(Math.min(desiredDay, maxDay));
+      return current;
+    });
+  };
+
+  const handleBirthYearChange = (date: Date) => {
+    updateDateOfBirth((current) => {
+      const desiredDay = current.getDate();
+      current.setDate(1);
+      current.setFullYear(date.getFullYear());
+      const maxDay = new Date(current.getFullYear(), current.getMonth() + 1, 0).getDate();
+      current.setDate(Math.min(desiredDay, maxDay));
+      return current;
+    });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -241,12 +289,84 @@ function EditStudentPage() {
     }
   };
 
-  const handleAddMedicamento = async (name: string) => { await medicamentoService.create(name); setAllMedicamentos(await medicamentoService.getAll()); };
-  const handleUpdateMedicamento = async (id: number, name: string) => { await medicamentoService.update(id, name); setAllMedicamentos(await medicamentoService.getAll()); };
-  const handleDeleteMedicamento = async (id: number) => { await medicamentoService.remove(id); setAllMedicamentos(await medicamentoService.getAll()); };
-  const handleAddAlergia = async (name: string) => { await alergiaService.create(name); setAllAlergias(await alergiaService.getAll()); };
-  const handleUpdateAlergia = async (id: number, name: string) => { await alergiaService.update(id, name); setAllAlergias(await alergiaService.getAll()); };
-  const handleDeleteAlergia = async (id: number) => { await alergiaService.remove(id); setAllAlergias(await alergiaService.getAll()); };
+  const handleAddMedicamento = async (name: string) => {
+    try {
+      await medicamentoService.create(name);
+      const updatedMedicamentos = await medicamentoService.getAll();
+      setAllMedicamentos(updatedMedicamentos);
+      showToast({ message: 'Medicamento agregado correctamente.' });
+    } catch (error) {
+      const axiosError = error as AxiosError<{ error?: string }>;
+      const message = axiosError.response?.data?.error ?? 'No se pudo agregar el medicamento.';
+      showToast({ message, type: 'error' });
+      throw error;
+    }
+  };
+  const handleUpdateMedicamento = async (id: number, name: string) => {
+    try {
+      await medicamentoService.update(id, name);
+      const updatedMedicamentos = await medicamentoService.getAll();
+      setAllMedicamentos(updatedMedicamentos);
+      showToast({ message: 'Medicamento actualizado correctamente.' });
+    } catch (error) {
+      const axiosError = error as AxiosError<{ error?: string }>;
+      const message = axiosError.response?.data?.error ?? 'No se pudo actualizar el medicamento.';
+      showToast({ message, type: 'error' });
+      throw error;
+    }
+  };
+  const handleDeleteMedicamento = async (id: number) => {
+    try {
+      await medicamentoService.remove(id);
+      const updatedMedicamentos = await medicamentoService.getAll();
+      setAllMedicamentos(updatedMedicamentos);
+      setSelectedMedicamentos((prev) => prev.filter((item) => item.id !== id));
+      showToast({ message: 'Medicamento eliminado correctamente.', type: 'error' });
+    } catch (error) {
+      const axiosError = error as AxiosError<{ error?: string }>;
+      const message = axiosError.response?.data?.error ?? 'No se pudo eliminar el medicamento.';
+      showToast({ message, type: 'error' });
+    }
+  };
+  const handleAddAlergia = async (name: string) => {
+    try {
+      await alergiaService.create(name);
+      const updatedAlergias = await alergiaService.getAll();
+      setAllAlergias(updatedAlergias);
+      showToast({ message: 'Alergia agregada correctamente.' });
+    } catch (error) {
+      const axiosError = error as AxiosError<{ error?: string }>;
+      const message = axiosError.response?.data?.error ?? 'No se pudo agregar la alergia.';
+      showToast({ message, type: 'error' });
+      throw error;
+    }
+  };
+  const handleUpdateAlergia = async (id: number, name: string) => {
+    try {
+      await alergiaService.update(id, name);
+      const updatedAlergias = await alergiaService.getAll();
+      setAllAlergias(updatedAlergias);
+      showToast({ message: 'Alergia actualizada correctamente.' });
+    } catch (error) {
+      const axiosError = error as AxiosError<{ error?: string }>;
+      const message = axiosError.response?.data?.error ?? 'No se pudo actualizar la alergia.';
+      showToast({ message, type: 'error' });
+      throw error;
+    }
+  };
+  const handleDeleteAlergia = async (id: number) => {
+    try {
+      await alergiaService.remove(id);
+      const updatedAlergias = await alergiaService.getAll();
+      setAllAlergias(updatedAlergias);
+      setSelectedAlergias((prev) => prev.filter((item) => item.id !== id));
+      showToast({ message: 'Alergia eliminada correctamente.', type: 'error' });
+    } catch (error) {
+      const axiosError = error as AxiosError<{ error?: string }>;
+      const message = axiosError.response?.data?.error ?? 'No se pudo eliminar la alergia.';
+      showToast({ message, type: 'error' });
+    }
+  };
 
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -303,7 +423,7 @@ function EditStudentPage() {
                   type="text" 
                   value={formData.nombres || ''} 
                   placeholder="Ingresa sus nombres" 
-                  onChange={handleChange}/>
+                  onChange={handleChange}/> 
                 {formErrors.nombres && <p className="text-red-500 text-sm mt-1">{formErrors.nombres}</p>}
             </div>
 
@@ -322,9 +442,11 @@ function EditStudentPage() {
             <div>
                 <Label htmlFor="dateOfBirth">Fecha de Nacimiento</Label>
                 <CustomDatePicker
-                  selected={formData.dateOfBirth ? new Date(formData.dateOfBirth) : null}
+                  selected={parseDateValue(formData.dateOfBirth)}
                   onChange={handleDateChange}
                   maxDate={new Date()}
+                  onMonthChange={handleBirthMonthChange}
+                  onYearChange={handleBirthYearChange}
                 />
               {formErrors.dateOfBirth && <p className="text-red-500 text-sm mt-1">{formErrors.dateOfBirth}</p>}
             </div>

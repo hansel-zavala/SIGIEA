@@ -1,10 +1,11 @@
 // frontend/src/pages/CategoriesPage.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import categoryService, { type Category } from "../services/categoryService";
 import { FaPlus, FaPencilAlt, FaTrash } from "react-icons/fa";
 import Modal from 'react-modal';
 import Label from "../components/ui/Label";
 import Input from "../components/ui/Input";
+import Pagination from "../components/ui/Pagination";
 
 const modalStyles = {
   content: {
@@ -21,6 +22,8 @@ function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -29,6 +32,28 @@ function CategoriesPage() {
   useEffect(() => {
     fetchCategories();
   }, []);
+
+  const totalCategories = categories.length;
+
+  useEffect(() => {
+    if (!totalCategories) {
+      setCurrentPage(1);
+      return;
+    }
+    const totalPages = Math.max(1, Math.ceil(totalCategories / Math.max(itemsPerPage, 1)));
+    setCurrentPage((prev) => Math.min(prev, totalPages));
+  }, [totalCategories, itemsPerPage]);
+
+  const paginatedCategories = useMemo(() => {
+    const start = (currentPage - 1) * Math.max(itemsPerPage, 1);
+    return categories.slice(start, start + Math.max(itemsPerPage, 1));
+  }, [categories, currentPage, itemsPerPage]);
+
+  const handleItemsPerPageChange = (size: number) => {
+    if (size <= 0) return;
+    setItemsPerPage(size);
+    setCurrentPage(1);
+  };
 
   const fetchCategories = () => {
     setLoading(true);
@@ -96,22 +121,77 @@ function CategoriesPage() {
           </button>
         </div>
 
-        {loading && <p>Cargando...</p>}
-        {error && !isModalOpen && <p className="text-red-500 mb-4">{error}</p>}
-        
-        <div className="space-y-2">
-          {categories.map((cat) => (
-            <div key={cat.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div style={{ backgroundColor: cat.color }} className="w-6 h-6 rounded-full border border-gray-300"></div>
-                <span className="font-medium">{cat.name}</span>
-              </div>
-              <div className="flex gap-4">
-                <button onClick={() => handleOpenModal(cat)} title="Editar"><FaPencilAlt className="text-blue-500 hover:text-blue-700"  /></button>
-                <button onClick={() => handleDelete(cat.id)} title="Eliminar"><FaTrash className="text-red-500 hover:text-red-700" /></button>
-              </div>
+        {error && !isModalOpen && (
+          <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-600">{error}</div>
+        )}
+
+        <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+          <div className="max-w-full overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b border-gray-100 bg-gray-50">
+                <tr>
+                  <th className="px-5 py-3 text-left font-medium text-gray-500">Nombre de la Categoría</th>
+                  <th className="px-5 py-3 text-left font-medium text-gray-500">Color</th>
+                  <th className="px-5 py-3 text-right font-medium text-gray-500">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {loading ? (
+                  <tr>
+                    <td colSpan={3} className="px-5 py-8 text-center text-gray-500">Cargando categorías...</td>
+                  </tr>
+                ) : paginatedCategories.length > 0 ? (
+                  paginatedCategories.map((cat) => (
+                    <tr key={cat.id}>
+                      <td className="px-5 py-4 font-medium text-gray-800">{cat.name}</td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <span
+                            className="inline-block h-5 w-5 rounded-full border border-gray-300"
+                            style={{ backgroundColor: cat.color }}
+                          />
+                          <span className="font-mono text-gray-600">{cat.color}</span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex justify-end gap-3">
+                          <button
+                            onClick={() => handleOpenModal(cat)}
+                            title="Editar"
+                            className="inline-flex items-center justify-center rounded-md border border-blue-200 px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"
+                          >
+                            <FaPencilAlt />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(cat.id)}
+                            title="Eliminar"
+                            className="inline-flex items-center justify-center rounded-md border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+                          >
+                            <FaTrash />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={3} className="px-5 py-8 text-center text-gray-500">No hay categorías registradas.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          {totalCategories > 0 && (
+            <div className="border-t border-gray-200 bg-gray-50 px-4 py-3">
+              <Pagination
+                itemsPerPage={itemsPerPage}
+                totalItems={totalCategories}
+                currentPage={currentPage}
+                onPageChange={setCurrentPage}
+                onItemsPerPageChange={handleItemsPerPageChange}
+              />
             </div>
-          ))}
+          )}
         </div>
       </div>
 

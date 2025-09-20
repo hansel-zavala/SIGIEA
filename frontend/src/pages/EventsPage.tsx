@@ -2,10 +2,14 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import eventService, { type Event } from "../services/eventService";
-import { FaCalendarAlt, FaPlus, FaPencilAlt, FaTrash, FaTags } from "react-icons/fa";
+import { FaCalendarAlt, FaPlus, FaPencilAlt, FaTrash, FaTags, FaSearch, FaUndo } from "react-icons/fa";
 import { ConfirmationDialog } from "../components/ui/ConfirmationDialog";
 import { useToast } from '../context/ToastContext';
 import Pagination from "../components/ui/Pagination";
+import SearchInput from "../components/ui/SearchInput";
+import { actionButtonStyles } from "../styles/actionButtonStyles";
+import ExportMenu from "../components/ExportMenu";
+import { downloadBlob, inferFilenameFromResponse } from "../utils/downloadFile";
 
 const EVENTS_PAGE_SIZE_KEY = 'events-page-size';
 
@@ -15,6 +19,8 @@ function EventsPage() {
   const [error, setError] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<'active' | 'inactive' | 'all'>('active');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(() => {
     if (typeof window === 'undefined') return 10;
@@ -23,16 +29,17 @@ function EventsPage() {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 10;
   });
   const { showToast } = useToast();
+  const [isExporting, setIsExporting] = useState(false);
 
-  useEffect(() => {
-    fetchEvents();
-  }, []);
-
-  const fetchEvents = () => {
+  const fetchEvents = (
+    status: 'active' | 'inactive' | 'all' = statusFilter,
+    search = searchTerm,
+  ) => {
     setLoading(true);
-    eventService.getAllEvents()
+    eventService.getAllEvents({ status, search })
       .then(data => {
         setEvents(data);
+        setError("");
       })
       .catch(() => {
         setError("No se pudo cargar la lista de eventos.");
@@ -40,15 +47,50 @@ function EventsPage() {
       .finally(() => {
         setLoading(false);
       });
-  }
+  };
 
-  const handleDelete = async (eventId: number) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchEvents(statusFilter, searchTerm);
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [statusFilter, searchTerm]);
+
+const handleDelete = async (eventId: number) => {
     try {
-    await eventService.deleteEvent(eventId);
-    showToast({ message: 'Se eliminó correctamente.', type: 'error' });
-      fetchEvents(); 
+      await eventService.deleteEvent(eventId);
+      showToast({ message: 'Se desactivó el evento correctamente.', type: 'error' });
+      fetchEvents(statusFilter);
+    } catch (err: any) {
+      const message = err?.response?.data?.error || 'No se pudo desactivar el evento.';
+      showToast({ message, type: 'error' });
+    }
+  };
+
+  const handleReactivate = async (eventId: number) => {
+    try {
+      await eventService.reactivateEvent(eventId);
+      showToast({ message: 'Evento reactivado correctamente.' });
+      fetchEvents(statusFilter);
+    } catch (err: any) {
+      const message = err?.response?.data?.error || 'No se pudo reactivar el evento.';
+      showToast({ message, type: 'error' });
+    }
+  };
+
+  const handleExportEvents = async ({ status, format }: { status: string; format: string }) => {
+    try {
+      setIsExporting(true);
+      const response = await eventService.exportEvents(status as 'active' | 'inactive' | 'all', format);
+      const filename = inferFilenameFromResponse(response, `eventos-${status}.csv`);
+      downloadBlob(response.data, filename);
+      showToast({ message: 'Exportación de eventos generada correctamente.' });
     } catch (err) {
-      setError("No se pudo desactivar el evento.");
+      console.error('Error al exportar eventos', err);
+      showToast({ message: 'No se pudo exportar la lista de eventos.', type: 'error' });
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -70,16 +112,27 @@ function EventsPage() {
     }
   }, [itemsPerPage]);
 
+  const filteredEvents = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return events;
+    return events.filter((eventItem) => {
+      const titleMatch = eventItem.title.toLowerCase().includes(term);
+      const categoryMatch = eventItem.category?.name?.toLowerCase().includes(term) ?? false;
+      const audienceMatch = eventItem.audience?.toLowerCase().includes(term) ?? false;
+      return titleMatch || categoryMatch || audienceMatch;
+    });
+  }, [events, searchTerm]);
+
   useEffect(() => {
-    const totalPages = Math.max(1, Math.ceil(events.length / Math.max(itemsPerPage, 1)));
+    const totalPages = Math.max(1, Math.ceil(filteredEvents.length / Math.max(itemsPerPage, 1)));
     setCurrentPage((prev) => Math.min(prev, totalPages));
-  }, [events.length, itemsPerPage]);
+  }, [filteredEvents.length, itemsPerPage]);
 
   const currentEvents = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
     const end = start + itemsPerPage;
-    return events.slice(start, end);
-  }, [events, currentPage, itemsPerPage]);
+    return filteredEvents.slice(start, end);
+  }, [filteredEvents, currentPage, itemsPerPage]);
 
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
@@ -100,41 +153,86 @@ function EventsPage() {
     });
   };
 
-  if (loading) return <p>Cargando eventos...</p>;
-  if (error) return <p className="text-red-500">{error}</p>;
-
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
-      <div className="flex justify-between items-center mb-4 gap-4">
-        <p className="text-xs text-gray-500 mt-1"> </p>
-        <p className="text-xs text-gray-500 mt-1">El boton de GESTIONAR CATEGORIAS espara asignarle un color a una categoria, Ejemplo: Rojo para reuniones con padres...</p>
+      <h2 className="text-2xl font-bold text-gray-800">Gestión de Eventos</h2>
+      <div className="flex flex-col gap-3 mb-4 md:flex-row md:items-center md:justify-between">
+        <p className="text-xs text-gray-500"></p>
+        <p className="text-xs text-gray-500 pr-24">
+          El botón de gestionar categorías ayuda a asignar colores rápidos a cada tipo de evento.
+        </p>
+        
       </div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold mb-6 text-gray-800">
-          Gestión de Eventos
-        </h2>
-        <div className="flex items-center gap-2 mb-4">
-        <Link to="/categories">
-          <button className="min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-gray-300 to-gray-500 hover:from-gray-500 hover:to-gray-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">
-            <FaTags className="text-xl" />
-            <span className="text-lg">Gestionar Categorías</span>
-          </button>
-        </Link>
-        <Link to="/events/new">
-            <button className="min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-6">
+        <div className="flex-1">
+          <div className="group relative flex items-center gap-3 rounded-full bg-white px-4 py-2 shadow border border-gray-200">
+            <FaSearch className="text-gray-400" size={16} />
+            <SearchInput
+              type="text"
+              className="text-base"
+              placeholder="Buscar por título, categoría o audiencia..."
+              value={searchTerm}
+              onChange={(event) => {
+                setSearchTerm(event.target.value);
+                setCurrentPage(1);
+              }}
+            />
+            <span className="pointer-events-none absolute inset-x-4 bottom-[6px] h-[2px] origin-left scale-x-0 rounded-full bg-gradient-to-r from-violet-400 via-fuchsia-400 to-violet-500 transition-transform duration-200 group-focus-within:scale-x-100" />
+          </div>
+        </div>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+          <Link to="/categories" className="md:ml-4">
+            <button className="w-full min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-gray-300 to-gray-500 hover:from-gray-500 hover:to-gray-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md md:w-auto">
+              <FaTags className="text-xl" />
+              <span className="text-lg">Gestionar Categorías</span>
+            </button>
+          </Link>
+          <Link to="/events/new" className="md:ml-3">
+            <button className="w-full min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md md:w-auto">
               <FaPlus className="text-xl" />
               <span className="text-lg">Crear Nuevo Evento</span>
             </button>
-        </Link>
+          </Link>
+        </div>
+        <div className="md:ml-3">
+          <ExportMenu
+            defaultStatus={statusFilter}
+            onExport={handleExportEvents}
+            statuses={[
+              { value: 'all', label: 'Todos' },
+              { value: 'active', label: 'Activos' },
+              { value: 'inactive', label: 'Inactivos' },
+            ]}
+            triggerLabel={isExporting ? 'Exportando…' : 'Exportar'}
+            disabled={isExporting}
+          />
         </div>
       </div>
 
+      {error && (
+        <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-600">
+          {error}
+        </div>
+      )}
+
+      <div className="flex items-center gap-2 mb-4">
+          <button
+            onClick={() => { setStatusFilter('active'); setCurrentPage(1); }}
+            className={`px-4 py-2 text-sm rounded-md ${statusFilter === 'active' ? 'text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md' : 'bg-gray-200'}`}>Activos</button>
+          <button
+            onClick={() => { setStatusFilter('inactive'); setCurrentPage(1); }}
+            className={`px-4 py-2 text-sm rounded-md ${statusFilter === 'inactive' ? 'text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md' : 'bg-gray-200'}`}>Inactivos</button>
+          <button
+            onClick={() => { setStatusFilter('all'); setCurrentPage(1); }}
+            className={`px-4 py-2 text-sm rounded-md ${statusFilter === 'all' ? 'text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md' : 'bg-gray-200'}`}>Todos</button>
+        </div>
+
       <div className="flex justify-between items-center mb-4 gap-4">
-        <p className="text-xs text-gray-500 mt-1"> </p>
-        <p className="text-xs text-gray-500 mt-1">ACCIONES: El lápiz es para editar, el bote es para eliminar.</p>
+        <p className="text-xs text-gray-500 mt-1">ACCIONES: El lápiz es para editar, el bote es para desactivar y la flecha para reactivar.</p>
       </div>
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <div className="max-w-full overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50">
             <tr>
@@ -147,12 +245,16 @@ function EventsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {currentEvents.length > 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan={6} className="text-center p-8 text-gray-500">Cargando eventos...</td>
+              </tr>
+            ) : currentEvents.length > 0 ? (
               currentEvents.map((event) => (
                 <tr key={event.id}>
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="text-blue-600"><FaCalendarAlt /></div>
+                      <div className="text-blue-600"><FaCalendarAlt size={20}/></div>
                       <span className="font-medium text-gray-800">{event.title}</span>
                     </div>
                   </td>
@@ -170,14 +272,31 @@ function EventsPage() {
                     {event.category?.name}
                   </td>
                   <td className="px-5 py-4">
-                    <div className="flex gap-4">
-                      
-                      <Link to={`/events/edit/${event.id}`} title="Editar Evento">
-                        <FaPencilAlt className="text-blue-500 hover:text-blue-700 cursor-pointer" />
+                    <div className="flex items-center gap-3">
+                      <Link
+                        to={`/events/edit/${event.id}`}
+                        title="Editar Evento"
+                        className={actionButtonStyles.edit}
+                      >
+                        <FaPencilAlt className="text-lg" />
                       </Link>
-                      <button onClick={() => openDeleteDialog(event.id)} title="Desactivar Evento">
-                        <FaTrash className="text-red-500 hover:text-red-700 cursor-pointer" />
-                      </button>
+                      {event.isActive ? (
+                        <button
+                          onClick={() => openDeleteDialog(event.id)}
+                          title="Desactivar Evento"
+                          className={actionButtonStyles.delete}
+                        >
+                          <FaTrash className="text-lg" />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleReactivate(event.id)}
+                          title="Reactivar Evento"
+                          className={actionButtonStyles.reactivate}
+                        >
+                          <FaUndo className="text-lg" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -185,24 +304,27 @@ function EventsPage() {
             ) : (
               <tr>
                 <td colSpan={6} className="text-center p-8 text-gray-500">
-                  {events.length === 0 ? 'No hay eventos creados.' : 'No hay eventos en esta página.'}
+                  {error
+                    ? 'No se pudieron cargar los eventos.'
+                    : 'No se encontraron eventos con ese criterio.'}
                 </td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
-      {events.length > 0 && (
-        <div className="border-t border-gray-200 bg-white px-4 py-3">
+      {filteredEvents.length > 0 && (
+        <div className="border-t border-gray-200 bg-gray-50 px-4 py-3">
           <Pagination
             itemsPerPage={itemsPerPage}
-            totalItems={events.length}
+            totalItems={filteredEvents.length}
             currentPage={currentPage}
             onPageChange={handlePageChange}
             onItemsPerPageChange={handleItemsPerPageChange}
           />
         </div>
       )}
+      </div>
       <ConfirmationDialog
         isOpen={confirmOpen}
         onClose={() => setConfirmOpen(false)}

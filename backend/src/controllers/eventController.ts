@@ -1,6 +1,8 @@
 // backend/src/controllers/eventController.ts
 import { Request, Response } from 'express';
 import prisma from '../db.js';
+import { Prisma, EventAudience } from '@prisma/client';
+import { toCsv, sendCsvResponse, buildTimestampedFilename } from '../utils/csv.js';
 
 const INVALID_DATE_ERROR = 'INVALID_DATE';
 
@@ -49,7 +51,7 @@ const normalizeDateInput = (
     const seconds = type === 'end' ? 59 : 0;
     const milliseconds = type === 'end' ? 999 : 0;
 
-    const dateValue = new Date(Date.UTC(year, month - 1, day, hours, minutes, seconds, milliseconds));
+    const dateValue = new Date(year, month - 1, day, hours, minutes, seconds, milliseconds);
     if (Number.isNaN(dateValue.getTime())) {
       throw new Error(INVALID_DATE_ERROR);
     }
@@ -65,10 +67,51 @@ const normalizeDateInput = (
 
 export const getAllEvents = async (req: Request, res: Response) => {
   try {
+    await prisma.event.updateMany({
+      where: {
+        isActive: true,
+        endDate: { lt: new Date() },
+      },
+      data: { isActive: false },
+    });
+
+    const { status, search } = req.query;
+    const where: Prisma.EventWhereInput = {};
+
+    if (status === 'inactive') {
+      where.isActive = false;
+    } else if (status === 'all') {
+      // No explicit filter, include all statuses
+    } else {
+      where.isActive = true;
+    }
+
+    const searchTerm = typeof search === 'string' ? search.trim() : '';
+    if (searchTerm) {
+      const normalized = searchTerm.toLowerCase();
+      const audienceMatches = (['General', 'Padres', 'Terapeutas', 'Personal'] as EventAudience[])
+        .filter(value => value.toLowerCase().includes(normalized));
+
+      const orFilters: Prisma.EventWhereInput[] = [
+        { title: { contains: searchTerm } },
+        {
+          category: {
+            name: { contains: searchTerm },
+          },
+        },
+      ];
+
+      if (audienceMatches.length > 0) {
+        orFilters.push({ audience: { in: audienceMatches } });
+      }
+
+      where.OR = orFilters;
+    }
+
     const events = await prisma.event.findMany({
-      where: { isActive: true },
+      where,
       include: {
-        category: true, 
+        category: true,
       },
       orderBy: { startDate: 'asc' },
     });
@@ -231,5 +274,83 @@ export const deleteEvent = async (req: Request, res: Response) => {
     res.json({ message: 'Evento desactivado correctamente.' });
   } catch (error) {
     res.status(500).json({ error: 'No se pudo desactivar el evento.' });
+  }
+};
+
+export const reactivateEvent = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const event = await prisma.event.findUnique({ where: { id: parseInt(id) } });
+
+    if (!event) {
+      return res.status(404).json({ error: 'Evento no encontrado.' });
+    }
+
+    if (event.endDate < new Date()) {
+      return res.status(400).json({ error: 'No se puede reactivar un evento que ya finalizó.' });
+    }
+
+    const updatedEvent = await prisma.event.update({
+      where: { id: event.id },
+      data: { isActive: true },
+    });
+
+    res.json(updatedEvent);
+  } catch (error) {
+    res.status(500).json({ error: 'No se pudo reactivar el evento.' });
+  }
+};
+
+export const exportEvents = async (req: Request, res: Response) => {
+  try {
+    const { status = 'all', format = 'csv' } = req.query as { status?: string; format?: string };
+
+    if (format !== 'csv') {
+      return res.status(400).json({ error: 'Formato no soportado. Actualmente solo se permite CSV.' });
+    }
+
+    const whereClause: Prisma.EventWhereInput = {};
+    if (status === 'active') whereClause.isActive = true;
+    if (status === 'inactive') whereClause.isActive = false;
+
+    const events = await prisma.event.findMany({
+      where: status === 'all' ? undefined : whereClause,
+      orderBy: [{ isActive: 'desc' }, { startDate: 'desc' }],
+      include: { category: true },
+    });
+
+    const rows = events.map((event) => [
+      event.id,
+      event.title,
+      event.description ?? '',
+      event.startDate.toISOString(),
+      event.endDate.toISOString(),
+      event.isAllDay ? 'Sí' : 'No',
+      event.location ?? '',
+      event.audience ?? EventAudience.General,
+      event.category?.name ?? 'Sin categoría',
+      event.isActive ? 'Activo' : 'Inactivo',
+      event.createdAt.toISOString(),
+    ]);
+
+    const headers = [
+      'ID',
+      'Título',
+      'Descripción',
+      'Fecha inicio',
+      'Fecha fin',
+      'Todo el día',
+      'Ubicación',
+      'Audiencia',
+      'Categoría',
+      'Estado',
+      'Fecha de creación',
+    ];
+
+    const csv = toCsv(headers, rows);
+    const filename = buildTimestampedFilename(`eventos-${status}`);
+    sendCsvResponse(res, filename, csv);
+  } catch (error) {
+    res.status(500).json({ error: 'No se pudo exportar la lista de eventos.' });
   }
 };

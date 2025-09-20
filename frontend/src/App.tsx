@@ -13,6 +13,7 @@ import StudentDetailPage from './pages/StudentDetailPage';
 import LeccionesPage from './pages/LeccionesPage';
 import AddLeccionPage from './pages/AddLeccionPage';
 import EditLeccionPage from './pages/EditLeccionPage';
+import LeccionProfilePage from './pages/LeccionProfilePage';
 import LogSessionPage from './pages/LogSessionPage';
 import GuardiansPage from './pages/GuardiansPage';
 import EditGuardianPage from './pages/EditGuardianPage';
@@ -33,6 +34,7 @@ import ViewReportPage from './pages/ViewReportPage';
 import GuardianProfilePage from './pages/GuardianProfilePage';
 import ProfilePage from './pages/ProfilePage';
 import AddGuardionPage from './pages/AddGuardionPage';
+import ArchiveroPage from './pages/ArchiveroPage';
 
 function App() {
   const { user } = useAuth();
@@ -52,6 +54,7 @@ function App() {
               <Route path="lecciones" element={<LeccionesPage />} />
               <Route path="lecciones/new" element={<AddLeccionPage />} />
               <Route path="lecciones/edit/:id" element={<EditLeccionPage />} />
+              <Route path="lecciones/:id" element={<LeccionProfilePage />} />
               <Route path="guardians" element={<GuardiansPage />} />
               <Route path="guardians/edit/:id" element={<EditGuardianPage />} />
               <Route path="guardians/:id" element={<GuardianProfilePage />} />
@@ -71,6 +74,7 @@ function App() {
               <Route path="reports/new/:studentId" element={<FillReportPage />} />
               <Route path="reports/view/:reportId" element={<ViewReportPage />} />
               <Route path="reports/edit/:reportId" element={<FillReportPage />} />
+              <Route path="archivero" element={<ArchiveroPage />} />
               <Route path="profile" element={<ProfilePage />} />
               <Route path="students/:id/guardians/new" element={<AddGuardionPage />} />
             </Route>

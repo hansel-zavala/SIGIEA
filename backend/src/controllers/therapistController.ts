@@ -3,6 +3,8 @@
 import { Request, Response } from 'express';
 import prisma from '../db.js';
 import bcrypt from 'bcrypt';
+import { Prisma } from '@prisma/client';
+import { toCsv, sendCsvResponse, buildTimestampedFilename } from '../utils/csv.js';
 
 export const createTherapist = async (req: Request, res: Response) => {
     try {
@@ -80,7 +82,7 @@ export const getAllTherapists = async (req: Request, res: Response) => {
         const limitNum = parseInt(limit as string, 10);
         const skip = (pageNum - 1) * limitNum;
 
-        const whereCondition: any = {}; 
+        const whereCondition: Prisma.TherapistProfileWhereInput = {}; 
 
         if (status === 'active') {
             whereCondition.isActive = true;
@@ -89,10 +91,26 @@ export const getAllTherapists = async (req: Request, res: Response) => {
         }
 
         if (search) {
-            whereCondition.OR = [
-                { nombres: { contains: search as string } },
-                { apellidos: { contains: search as string } },
-            ];
+            const searchQuery = (search as string).trim();
+            if (searchQuery.length > 0) {
+                const terms = searchQuery.split(/\s+/);
+                const existingAnd = Array.isArray(whereCondition.AND)
+                    ? whereCondition.AND
+                    : whereCondition.AND
+                        ? [whereCondition.AND]
+                        : [];
+
+                whereCondition.AND = [
+                    ...existingAnd,
+                    ...terms.map(term => ({
+                        OR: [
+                            { nombres: { contains: term } },
+                            { apellidos: { contains: term } },
+                            { specialty: { contains: term } },
+                        ],
+                    })),
+                ];
+            }
         }
         
         const [therapists, totalTherapists] = await prisma.$transaction([
@@ -222,5 +240,62 @@ export const reactivateTherapist = async (req: Request, res: Response) => {
         res.json({ message: 'Terapeuta reactivado correctamente.' });
     } catch (error) {
         res.status(500).json({ error: 'No se pudo reactivar al terapeuta.' });
+    }
+};
+
+export const exportTherapists = async (req: Request, res: Response) => {
+    try {
+        const { status = 'all', format = 'csv' } = req.query as { status?: string; format?: string };
+
+        if (format !== 'csv') {
+            return res.status(400).json({ error: 'Formato no soportado. Actualmente solo se permite CSV.' });
+        }
+
+        const whereCondition: Prisma.TherapistProfileWhereInput = {};
+        if (status === 'active') whereCondition.isActive = true;
+        if (status === 'inactive') whereCondition.isActive = false;
+
+        const therapists = await prisma.therapistProfile.findMany({
+            where: whereCondition,
+            orderBy: [
+                { isActive: 'desc' },
+                { createdAt: 'desc' },
+            ],
+            include: {
+                assignedStudents: {
+                    select: { id: true, nombres: true, apellidos: true, isActive: true },
+                },
+            },
+        });
+
+        const rows = therapists.map((therapist) => [
+            therapist.id,
+            `${therapist.nombres} ${therapist.apellidos}`,
+            therapist.email,
+            therapist.specialty,
+            therapist.identityNumber,
+            therapist.assignedStudents.filter((s) => s.isActive).map((s) => `${s.nombres} ${s.apellidos}`).join('; '),
+            therapist.assignedStudents.filter((s) => !s.isActive).map((s) => `${s.nombres} ${s.apellidos}`).join('; '),
+            therapist.isActive ? 'Activo' : 'Inactivo',
+            therapist.createdAt.toISOString(),
+        ]);
+
+        const headers = [
+            'ID',
+            'Nombre completo',
+            'Correo electrónico',
+            'Especialidad',
+            'Número de identidad',
+            'Estudiantes activos',
+            'Estudiantes inactivos',
+            'Estado',
+            'Fecha de registro',
+        ];
+
+        const csv = toCsv(headers, rows);
+        const filename = buildTimestampedFilename(`terapeutas-${status}`);
+        sendCsvResponse(res, filename, csv);
+    } catch (error) {
+        res.status(500).json({ error: 'No se pudo exportar la lista de terapeutas.' });
     }
 };

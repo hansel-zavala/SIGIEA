@@ -19,6 +19,7 @@ model User {
   guardian         Guardian?
   createdLecciones Leccion[]
   createdReports   Report[]
+  uploadedDocuments Document[]       @relation("UploadedDocuments")
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 }
@@ -104,6 +105,13 @@ enum ReportItemWidth {
   TWO_THIRDS
 }
 
+enum DocumentOwnerType {
+  STUDENT
+  THERAPIST
+  GUARDIAN
+  MISC
+}
+
 model ReportItem {
   id          Int      @id @default(autoincrement())
   label       String
@@ -158,6 +166,27 @@ model ReportItemAnswer {
   updatedAt  DateTime @updatedAt
 
   @@unique([reportId, itemId])
+}
+
+model Document {
+  id           Int                @id @default(autoincrement())
+  ownerType    DocumentOwnerType
+  ownerId      Int?
+  title        String
+  description  String?
+  category     String?
+  fileName     String
+  mimeType     String
+  size         Int
+  storagePath  String
+  uploadedBy   Int?
+  uploadedByUser User?             @relation("UploadedDocuments", fields: [uploadedBy], references: [id])
+  metadata     Json?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@index([ownerType, ownerId])
+  @@index([category])
 }
 
 

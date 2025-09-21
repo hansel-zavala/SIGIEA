@@ -1,10 +1,22 @@
 // frontend/src/services/therapistService.ts
 import api from './api.js';
+interface tipoAtenciones {
+  atencionGrupal: boolean;
+  atencionIndividual: boolean;
+  atencionPrevocacional: boolean;
+  atencionDistancia: boolean;
+  terapiaDomicilio: boolean;
+  atencionVocacional: boolean;
+  inclusionEscolar: boolean;
+  educacionFisica: boolean;
+}
 
 interface StudentForProfile {
   id: number;
   fullName: string;
   jornada: string;
+  genero: string;
+  tipoAtencion: tipoAtenciones;
 }
 
 export interface TherapistProfile {
@@ -96,6 +108,19 @@ const exportTherapists = async (status: string = 'all', format: string = 'csv') 
   }
 };
 
+const exportAssignedStudents = async (therapistId: number, format: string = 'csv') => {
+  try {
+    const response = await api.get(`/therapists/${therapistId}/export-students`, {
+      params: { format },
+      responseType: 'blob',
+    });
+    return response;
+  } catch (error) {
+    console.error(`Error al exportar los alumnos del terapeuta con ID ${therapistId}:`, error);
+    throw error;
+  }
+};
+
 export default {
   createTherapist,
   getAllTherapists,
@@ -104,4 +129,5 @@ export default {
   deleteTherapist,
   reactivateTherapist,
   exportTherapists,
+  exportAssignedStudents,
 };

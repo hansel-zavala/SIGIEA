@@ -4,6 +4,9 @@ import { useParams, Link } from 'react-router-dom';
 import therapistService, { type TherapistProfile } from '../services/therapistService';
 import { FaUserMd, FaEdit, FaUserGraduate } from 'react-icons/fa';
 import Pagination from '../components/ui/Pagination';
+import ExportMenu from '../components/ExportMenu';
+import { useToast } from '../context/ToastContext';
+import { downloadBlob, inferFilenameFromResponse } from '../utils/downloadFile';
 
 
 const InfoField = ({ label, value }: { label: string; value: string | undefined | null }) => (
@@ -13,6 +16,23 @@ const InfoField = ({ label, value }: { label: string; value: string | undefined 
   </div>
 );
 
+const formatAttentionTypes = (atenciones: any) => {
+  if (!atenciones) return 'No especificado';
+
+  const types = [
+    atenciones.atencionIndividual && 'Individual',
+    atenciones.atencionGrupal && 'Grupal',
+    atenciones.atencionPrevocacional && 'Prevocacional',
+    atenciones.atencionDistancia && 'A distancia',
+    atenciones.terapiaDomicilio && 'Domicilio',
+    atenciones.atencionVocacional && 'Vocacional',
+    atenciones.inclusionEscolar && 'Inclusión Escolar',
+    atenciones.educacionFisica && 'Educación Física',
+  ].filter(Boolean);
+
+  return types.length > 0 ? types.join(', ') : 'No especificado';
+};
+
 function TherapistProfilePage() {
   const [therapist, setTherapist] = useState<TherapistProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -20,6 +40,8 @@ function TherapistProfilePage() {
   const { id } = useParams<{ id: string }>();
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [isExporting, setIsExporting] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (id) {
@@ -59,6 +81,23 @@ function TherapistProfilePage() {
     setCurrentPage(1);
   };
 
+  const handleExportAssignedStudents = async ({ format }: { format: string }) => {
+    if (!id) return;
+    try {
+      setIsExporting(true);
+      const response = await therapistService.exportAssignedStudents(Number(id), format);
+      const extension = format === 'excel' ? 'xlsx' : format;
+      const filename = inferFilenameFromResponse(response, `alumnos-asignados-${therapist?.fullName}.${extension}`);
+      downloadBlob(response.data, filename);
+      showToast({ message: 'Exportación generada correctamente.' });
+    } catch (err) {
+      console.error('Error al exportar alumnos', err);
+      showToast({ message: 'No se pudo exportar la lista de alumnos.', type: 'error' });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (loading) return <p>Cargando perfil...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
   if (!therapist) return <p>No se encontró el terapeuta.</p>;
@@ -81,7 +120,7 @@ function TherapistProfilePage() {
           </div>
           <div>
             <h2 className="text-3xl font-bold text-gray-800">{therapist.fullName}</h2>
-            <p className="text-lg text-gray-600">{therapist.specialty}</p>
+            <p className="text-lg text-gray-600">{therapist.specialty}</p> 
           </div>
         </div>
         <div className="flex gap-4">
@@ -110,7 +149,15 @@ function TherapistProfilePage() {
 
 
       <div>
-        <h3 className="text-xl font-semibold text-gray-700 mb-4">Estudiantes Asignados</h3>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-semibold text-gray-700">Estudiantes Asignados</h3>
+          <ExportMenu
+            onExport={handleExportAssignedStudents}
+            statuses={[]}
+            triggerLabel={isExporting ? 'Exportando…' : 'Exportar Estudiantes'}
+            disabled={isExporting || totalAssigned === 0}
+          />
+        </div>
         <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
           <div className="max-w-full overflow-x-auto">
           <table className="w-full text-sm">
@@ -118,7 +165,8 @@ function TherapistProfilePage() {
               <tr>
                 <th className="px-5 py-3 font-medium text-gray-500 text-left">Nombre del Estudiante</th>
                 <th className="px-5 py-3 font-medium text-gray-500 text-left">Jornada</th>
-                
+                <th className="px-5 py-3 font-medium text-gray-500 text-left">Genero</th>
+                <th className="px-5 py-3 font-medium text-gray-500 text-left">Tipos de Atencion</th>
               </tr>
             </thead >
             <tbody className="divide-y divide-gray-100">
@@ -127,6 +175,8 @@ function TherapistProfilePage() {
                   <tr key={student.id}>
                     <td className="px-5 py-4 font-medium text-gray-800">{student.fullName}</td>
                     <td className="px-5 py-4 text-gray-600">{student.jornada}</td>
+                    <td className="px-5 py-4 text-gray-600">{student.genero}</td>
+                    <td className="px-5 py-4 text-gray-600">{formatAttentionTypes(student.tipoAtencion)}</td>
                     <td className="px-5 py-4 text-end pr-16">
                       <Link
                         to={`/students/${student.id}`}

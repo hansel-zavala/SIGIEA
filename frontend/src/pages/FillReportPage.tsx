@@ -67,42 +67,52 @@ function FillReportPage() {
     }, [studentId, routeReportId]);
 
     const handleTemplateSelect = async (templateId: string) => {
+        if (!templateId) {
+            setSelectedTemplate(null);
+            return;
+        }
+
         if (!studentId) return;
         const template = templates.find(t => t.id === parseInt(templateId));
         if (!template) return;
+
         try {
-            // Verifica si ya existe un reporte propio para esta plantilla
             const check = await reportService.getExistingReport(parseInt(studentId), template.id);
             if (check.exists) {
                 showToast({
-                  message: 'Ya existe un reporte con esta plantilla para este estudiante. Edítalo desde su perfil.',
-                  type: 'info',
-                  duration: 8000,
+                    message: 'Ya existe un reporte con esta plantilla para este estudiante. Edítalo desde su perfil.',
+                    type: 'info',
+                    duration: 8000,
                 });
+                setSelectedTemplate(null); 
                 return;
             }
-
-            // Si no existe, crea el reporte normalmente
-            const newReport = await reportService.createReport(parseInt(studentId), template.id);
-            if ((newReport as any).alreadyExists) {
-                showToast({
-                  message: 'Ya existe un reporte con esta plantilla para este estudiante. Edítalo desde su perfil.',
-                  type: 'info',
-                  duration: 8000,
-                });
-                return;
-            }
-            setReportId(newReport.id);
+            
             setSelectedTemplate(template);
+            setReportId(null); 
+            setInitialAnswers([]); 
+
         } catch (err) {
-            setError("No se pudo iniciar un nuevo reporte.");
+            setError("Error al verificar el reporte.");
+            setSelectedTemplate(null);
         }
     };
     
     const handleSubmitAnswers = async (answers: ReportAnswer[]) => {
-        if (!reportId) return;
         try {
-            await reportService.submitReportAnswers(reportId, answers);
+            let finalReportId = reportId;
+
+            if (!isEditMode && !finalReportId && studentId && selectedTemplate) {
+                const newReport = await reportService.createReport(parseInt(studentId), selectedTemplate.id);
+                finalReportId = newReport.id;
+            }
+
+            if (!finalReportId) {
+                setError('No se pudo determinar el ID del reporte para guardar.');
+                return;
+            }
+
+            await reportService.submitReportAnswers(finalReportId, answers);
             const message = isEditMode ? 'Reporte actualizado correctamente.' : 'Reporte generado correctamente.';
             showToast({ message });
             navigate(`/students/${studentId || student?.id}`);

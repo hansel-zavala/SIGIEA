@@ -165,10 +165,28 @@ export const getTherapistById = async (req: Request, res: Response) => {
         const therapistWithDetails = {
             ...therapist,
             fullName: `${therapist.nombres} ${therapist.apellidos}`,
-            assignedStudents: therapist.assignedStudents.map(student => ({
-                ...student,
-                fullName: `${student.nombres} ${student.apellidos}`,
-            })),
+            assignedStudents: therapist.assignedStudents.map(student => {
+                const { 
+                    atencionGrupal, atencionIndividual, atencionPrevocacional, 
+                    atencionDistancia, terapiaDomicilio, atencionVocacional, 
+                    inclusionEscolar, educacionFisica, ...restOfStudent 
+                } = student;
+
+                return {
+                    ...restOfStudent,
+                    fullName: `${student.nombres} ${student.apellidos}`,
+                    tipoAtencion: {
+                        atencionGrupal,
+                        atencionIndividual,
+                        atencionPrevocacional,
+                        atencionDistancia,
+                        terapiaDomicilio,
+                        atencionVocacional,
+                        inclusionEscolar,
+                        educacionFisica,
+                    },
+                };
+            }),
         };
 
         res.json(therapistWithDetails);
@@ -346,4 +364,91 @@ export const exportTherapists = async (req: Request, res: Response) => {
             console.error('Error al exportar estudiantes:', error);
             res.status(500).json({ error: 'No se pudo generar el archivo de exportación.' });
         }
+};
+
+export const exportAssignedStudents = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { format = 'csv' } = req.query as { format?: string };
+
+        const therapist = await prisma.therapistProfile.findUnique({
+            where: { id: parseInt(id) },
+            include: {
+                assignedStudents: {
+                    where: { isActive: true },
+                    orderBy: { nombres: 'asc' },
+                },
+            },
+        });
+
+        if (!therapist) {
+            return res.status(404).json({ error: 'Terapeuta no encontrado.' });
+        }
+
+        const filenameBase = `alumnos-asignados-${therapist.nombres}-${therapist.apellidos}`.toLowerCase().replace(/\s+/g, '-');
+
+        const formatAttentionTypes = (student: any) => {
+            const types = [
+                student.atencionIndividual && 'Individual',
+                student.atencionGrupal && 'Grupal',
+                student.atencionPrevocacional && 'Prevocacional',
+                student.atencionDistancia && 'A distancia',
+                student.terapiaDomicilio && 'Domicilio',
+                student.atencionVocacional && 'Vocacional',
+                student.inclusionEscolar && 'Inclusión Escolar',
+                student.educacionFisica && 'Educación Física',
+            ].filter(Boolean);
+            return types.join(', ') || 'No especificado';
+        };
+
+        const processedData = therapist.assignedStudents.map((s) => ({
+            id: s.id,
+            fullName: `${s.nombres} ${s.apellidos}`,
+            dateOfBirth: s.dateOfBirth.toISOString().split('T')[0],
+            jornada: s.jornada || 'No especificada',
+            genero: s.genero || 'No especificado',
+            tiposDeAtencion: formatAttentionTypes(s),
+        }));
+
+        const headers = [
+            { key: 'id', header: 'ID', width: 10 },
+            { key: 'fullName', header: 'Nombre Completo', width: 30 },
+            { key: 'dateOfBirth', header: 'Fecha de Nacimiento', width: 20 },
+            { key: 'jornada', header: 'Jornada', width: 20 },
+            { key: 'genero', header: 'Género', width: 15 },
+            { key: 'tiposDeAtencion', header: 'Tipos de Atención', width: 40 },
+        ];
+
+        const dataForPdfAndCsv = processedData.map((s) => [
+            s.id,
+            s.fullName,
+            s.dateOfBirth,
+            s.jornada,
+            s.genero,
+            s.tiposDeAtencion,
+        ]);
+
+        switch (format) {
+            case 'excel':
+                const excelFilename = buildTimestampedFilename(filenameBase, 'xlsx');
+                await sendExcelResponse(res, excelFilename, headers, processedData);
+                break;
+            case 'pdf':
+                const pdfFilename = buildTimestampedFilename(filenameBase, 'pdf');
+                sendPdfTableResponse(res, pdfFilename, {
+                    title: `Alumnos Asignados a ${therapist.nombres} ${therapist.apellidos}`,
+                    headers: headers.map(h => h.header),
+                    rows: dataForPdfAndCsv,
+                });
+                break;
+            default:
+                const csvFilename = buildTimestampedFilename(filenameBase, 'csv');
+                const csvContent = toCsv(headers.map(h => h.header), dataForPdfAndCsv);
+                sendCsvResponse(res, csvFilename, csvContent);
+                break;
+        }
+    } catch (error) {
+        console.error('Error al exportar estudiantes asignados:', error);
+        res.status(500).json({ error: 'No se pudo generar el archivo de exportación.' });
+    }
 };

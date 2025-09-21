@@ -265,71 +265,79 @@ export const listDocuments = async (req: AuthRequest, res: Response) => {
 
     if (ownerTypeFilter) {
       where.ownerType = ownerTypeFilter;
-      if (ownerTypeFilter === DocumentOwnerType.MISC) {
-        where.ownerId = ownerIdFilter;
-      } else {
-        where.ownerId = ownerIdFilter;
-      }
+      where.ownerId = ownerIdFilter;
     }
 
     if (category) {
       where.category = {
         contains: String(category),
-        mode: 'insensitive',
       };
     }
 
     if (search) {
       const searchValue = String(search);
       where.OR = [
-        { title: { contains: searchValue, mode: 'insensitive' } },
-        { description: { contains: searchValue, mode: 'insensitive' } },
-        { fileName: { contains: searchValue, mode: 'insensitive' } },
+        { title: { contains: searchValue } },
+        { description: { contains: searchValue } },
+        { fileName: { contains: searchValue } },
       ];
     }
 
-    const [total, items] = await prisma.$transaction([
-      prisma.document.count({ where }),
-      prisma.document.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip: (pageNumber - 1) * pageSizeNumber,
-        take: pageSizeNumber,
-      }),
-    ]);
+    const filteredDbItems = await prisma.document.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+    });
 
-    const totalPages = Math.max(Math.ceil(total / pageSizeNumber), 1);
+    let finalDocuments: DocumentResponse[] = filteredDbItems.map(mapDocument);
 
-    let documents: DocumentResponse[] = items.map(mapDocument);
-
+    let legacyDocs: DocumentResponse[] = [];
     if (ownerTypeFilter === DocumentOwnerType.STUDENT && ownerIdFilter) {
       const student = await prisma.student.findUnique({ where: { id: ownerIdFilter } });
       if (student) {
-        const legacyDocs = await buildLegacyStudentDocuments(student);
-        documents = documents.concat(legacyDocs);
+        legacyDocs = await buildLegacyStudentDocuments(student);
       }
     } else if (ownerTypeFilter === DocumentOwnerType.THERAPIST && ownerIdFilter) {
       const therapist = await prisma.therapistProfile.findUnique({ where: { id: ownerIdFilter } });
       if (therapist) {
-        const legacyDocs = await buildLegacyTherapistDocuments(therapist);
-        documents = documents.concat(legacyDocs);
+        legacyDocs = await buildLegacyTherapistDocuments(therapist);
       }
     } else if (ownerTypeFilter === DocumentOwnerType.GUARDIAN && ownerIdFilter) {
       const guardian = await prisma.guardian.findUnique({ where: { id: ownerIdFilter } });
       if (guardian) {
-        const legacyDocs = await buildLegacyGuardianDocuments(guardian);
-        documents = documents.concat(legacyDocs);
+        legacyDocs = await buildLegacyGuardianDocuments(guardian);
       }
     }
 
-    documents.sort((a, b) => {
-      const timeA = new Date(a.createdAt as any).getTime();
-      const timeB = new Date(b.createdAt as any).getTime();
-      return timeB - timeA;
-    });
+    let filteredLegacyDocs = legacyDocs;
+    if (category) {
+      const categoryValue = String(category).toLowerCase();
+      filteredLegacyDocs = filteredLegacyDocs.filter(
+        (doc) => doc.category && doc.category.toLowerCase().includes(categoryValue),
+      );
+    }
+    if (search) {
+      const searchValue = String(search).toLowerCase();
+      filteredLegacyDocs = filteredLegacyDocs.filter(
+        (doc) =>
+          doc.title.toLowerCase().includes(searchValue) ||
+          (doc.description || '').toLowerCase().includes(searchValue) ||
+          doc.fileName.toLowerCase().includes(searchValue),
+      );
+    }
+
+    finalDocuments.push(...filteredLegacyDocs);
+
+    finalDocuments.sort((a, b) => new Date(b.createdAt as any).getTime() - new Date(a.createdAt as any).getTime());
+
+    const total = finalDocuments.length;
+    const totalPages = Math.max(Math.ceil(total / pageSizeNumber), 1);
+    const paginatedDocuments = finalDocuments.slice(
+      (pageNumber - 1) * pageSizeNumber,
+      pageNumber * pageSizeNumber,
+    );
 
     res.json({
-      data: documents,
+      data: paginatedDocuments,
       pagination: {
         page: pageNumber,
         pageSize: pageSizeNumber,
@@ -339,6 +347,7 @@ export const listDocuments = async (req: AuthRequest, res: Response) => {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'No se pudieron obtener los documentos.';
+    console.error('Error in final listDocuments:', error);
     res.status(400).json({ error: message });
   }
 };

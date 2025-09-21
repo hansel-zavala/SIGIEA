@@ -1,6 +1,6 @@
 // frontend/src/pages/ArchiveroPage.tsx
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { FaCloudUploadAlt, FaDownload, FaFolderOpen, FaTrashAlt } from 'react-icons/fa';
+import { FaCloudUploadAlt, FaDownload, FaFolderOpen, FaSearch, FaTrashAlt } from 'react-icons/fa';
 import Input from '../components/ui/Input';
 import Pagination from '../components/ui/Pagination';
 import documentService, { type DocumentOwnerType, type DocumentRecord } from '../services/documentService';
@@ -9,6 +9,7 @@ import therapistService from '../services/therapistService';
 import guardianService from '../services/guardianService';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
+import SearchInput from '../components/ui/SearchInput';
 
 type OwnerTabKey = DocumentOwnerType;
 
@@ -214,7 +215,6 @@ function ArchiveroPage() {
         clearTimeout(entityFetchRef.current);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entitySearch, entityPage, entityPageSize, activeTab]);
 
   const fetchDocuments = async () => {
@@ -267,7 +267,6 @@ function ArchiveroPage() {
     if (activeTab === 'MISC' || selectedEntity) {
       fetchDocuments();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, selectedEntity, docSearch, docCategoryFilter, docPage, docPageSize]);
 
   const handleTabChange = (tab: OwnerTabKey) => {
@@ -365,18 +364,21 @@ function ArchiveroPage() {
 
   const renderEntityList = () => (
     <div className="space-y-4">
-      <div>
-        <label className="text-sm font-medium text-gray-700 mb-2 block">Buscar {ownerTabs.find((tab) => tab.key === activeTab)?.label.toLowerCase()}</label>
-        <Input
-          placeholder="Escribe para filtrar..."
-          value={entitySearch}
-          onChange={(event) => {
-            setEntitySearch(event.target.value);
-            setEntityPage(1);
-          }}
-        />
-        <p className="text-xs text-gray-500 mt-1">Se mostrarán los registros que coincidan con el texto ingresado.</p>
+      <label className="text-sm font-medium text-gray-700 mb-2 block">Buscar {ownerTabs.find((tab) => tab.key === activeTab)?.label.toLowerCase()}</label>
+      <div className="group relative flex items-center gap-3 rounded-full bg-white px-4 py-2 shadow border border-gray-200">
+        <FaSearch className="text-gray-400" size={16} />
+        <SearchInput
+              type="text"
+              className="text-base"
+              placeholder="Buscar por nombre o terapeuta..."
+              value={entitySearch}
+              onChange={(event) => {
+                setEntitySearch(event.target.value);
+                setEntityPage(1);
+              }}
+            />
       </div>
+      <p className="text-xs text-gray-500 mt-1">Se mostrarán los registros que coincidan con el texto ingresado.</p>
 
       <div className="rounded-lg border border-gray-200 divide-y divide-gray-200 max-h-[420px] overflow-y-auto">
         {entityLoading ? (
@@ -496,41 +498,55 @@ function ArchiveroPage() {
     </form>
   );
 
-  const renderDocumentFilters = () => (
-    <div className="flex flex-col gap-3 md:flex-row md:items-end">
-      <div className="flex-1">
-        <label className="text-sm font-medium text-gray-700 mb-2 block">Buscar en documentos</label>
-        <Input
-          placeholder="Nombre, descripción o archivo"
-          value={docSearch}
-          onChange={(event) => {
-            setDocSearch(event.target.value);
-            setDocPage(1);
-          }}
-        />
+  const renderDocumentFilters = () => {
+    const isDisabled = activeTab !== 'MISC' && !selectedEntity;
+
+    return (
+      <div className="flex flex-col gap-3 md:flex-row md:items-end">
+        <div className="flex-1">
+          <label className="text-sm font-medium text-gray-700 mb-2 block">Buscar en documentos</label>
+          <div className={`group relative flex items-center gap-3 rounded-full bg-white px-4 py-2 shadow border border-gray-200 ${isDisabled ? 'bg-gray-100' : ''}`}>
+            <FaSearch className="text-gray-400" size={16} />
+            <SearchInput
+              type="text"
+              className="text-base"
+              placeholder="Buscar por nombre, descripción o archivo..."
+              value={docSearch}
+              onChange={(event) => {
+                setDocSearch(event.target.value);
+                setDocPage(1);
+              }}
+              disabled={isDisabled}
+            />
+          </div>
+        </div>
+        <div className="flex-1">
+          <label className="text-sm font-medium text-gray-700 mb-2 block">Buscar por categoría</label>
+          <div className={`group relative flex items-center gap-3 rounded-full bg-white px-4 py-2 shadow border border-gray-200 ${isDisabled ? 'bg-gray-100' : ''}`}>
+            <FaSearch className="text-gray-400" size={16} />
+            <SearchInput
+              list="document-filter-categories"
+              placeholder="Seleccione una categoría..."
+              value={docCategoryFilter}
+              onChange={(event) => {
+                setDocCategoryFilter(event.target.value);
+                setDocPage(1);
+              }}
+              disabled={isDisabled}
+            />
+          </div>
+          <datalist id="document-filter-categories">
+            {[...new Set(documents.map((doc) => doc.category).filter(Boolean) as string[])]
+              .concat(currentCategoryOptions)
+              .filter((value, index, self) => self.indexOf(value) === index)
+              .map((option) => (
+                <option value={option} key={option} />
+              ))}
+          </datalist>
+        </div>
       </div>
-      <div className="flex-1">
-        <label className="text-sm font-medium text-gray-700 mb-2 block">Filtrar por categoría</label>
-        <Input
-          list="document-filter-categories"
-          placeholder="Todas las categorías"
-          value={docCategoryFilter}
-          onChange={(event) => {
-            setDocCategoryFilter(event.target.value);
-            setDocPage(1);
-          }}
-        />
-        <datalist id="document-filter-categories">
-          {[...new Set(documents.map((doc) => doc.category).filter(Boolean) as string[])]
-            .concat(currentCategoryOptions)
-            .filter((value, index, self) => self.indexOf(value) === index)
-            .map((option) => (
-              <option value={option} key={option} />
-            ))}
-        </datalist>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const renderDocumentTable = () => (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">

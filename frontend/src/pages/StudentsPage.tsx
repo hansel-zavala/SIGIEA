@@ -178,17 +178,7 @@ function StudentsPage() {
               <span className="text-lg">Crear Nuevo Estudiante</span>
             </button>
           </Link>
-          <ExportMenu
-            defaultStatus={statusFilter}
-            onExport={handleExportStudents}
-            statuses={[
-              { value: 'all', label: 'Todos' },
-              { value: 'active', label: 'Activos' },
-              { value: 'inactive', label: 'Inactivos' },
-            ]}
-            triggerLabel={isExporting ? 'Exportando…' : 'Exportar'}
-            disabled={isExporting}
-          />
+          
         </div>
       </div>
       </div>
@@ -201,12 +191,24 @@ function StudentsPage() {
         <button onClick={() => handleFilterChange('active')} className={`px-4 py-2 text-sm rounded-md ${statusFilter === 'active' ? 'text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md' : 'bg-gray-200'}`}>Activos</button>
         <button onClick={() => handleFilterChange('inactive')} className={`px-4 py-2 text-sm rounded-md ${statusFilter === 'inactive' ? 'text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md' : 'bg-gray-200'}`}>Inactivos</button>
         <button onClick={() => handleFilterChange('all')} className={`px-4 py-2 text-sm rounded-md ${statusFilter === 'all' ? 'text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md' : 'bg-gray-200'}`}>Todos</button>
+        <div className="flex-1"></div>
+        <ExportMenu
+            defaultStatus={statusFilter}
+            onExport={handleExportStudents}
+            statuses={[ 
+              { value: 'all', label: 'Todos' },
+              { value: 'active', label: 'Activos' },
+              { value: 'inactive', label: 'Inactivos' },
+            ]}
+            triggerLabel={isExporting ? 'Exportando…' : 'Exportar'}
+            disabled={isExporting}
+          />
       </div>
 
       {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
 
       <div className="flex justify-between items-center mb-4 gap-4">
-        <p className="text-xs text-gray-500 mt-1">Hacer click en la foto o nombre de estudiante para ver perfil. </p>
+        <p className="text-xs text-gray-500 mt-1">Hacer click en la foto o nombre del estudiante para ver perfil. </p>
         <p className="text-xs text-gray-500 mt-1">ACCIONES: El lápiz es para editar, el bote es para eliminar, y el calendario es para agregar horarios.</p>
       </div>
 

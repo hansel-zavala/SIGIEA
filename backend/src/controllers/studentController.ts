@@ -1,9 +1,11 @@
 // backend/src/controllers/studentController.ts
 
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { Parentesco, PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { toCsv, sendCsvResponse, buildTimestampedFilename } from '../utils/csv.js';
+import { sendExcelResponse } from '../utils/excel.js';
+import { sendPdfTableResponse } from '../utils/pdf.js';
 
 const prisma = new PrismaClient();
 
@@ -450,65 +452,107 @@ export const reactivateStudent = async (req: Request, res: Response) => {
 
 export const exportStudents = async (req: Request, res: Response) => {
   try {
-    const { status = 'all', format = 'csv' } = req.query as { status?: string; format?: string };
-    if (format !== 'csv') {
-      return res.status(400).json({ error: 'Formato no soportado. Actualmente solo se permite CSV.' });
+    const { status = 'all', format = 'csv' } = req.query as { status: string; format: string };
+
+    const where: any = {};
+    if (status === 'active') {where.isActive = true;} 
+      else if (status === 'inactive') {where.isActive = false;
     }
 
-    const whereCondition: any = {};
-    if (status === 'active') whereCondition.isActive = true;
-    if (status === 'inactive') whereCondition.isActive = false;
-
     const students = await prisma.student.findMany({
-      where: whereCondition,
-      orderBy: [
-        { isActive: 'desc' },
-        { createdAt: 'desc' },
-      ],
-      include: {
-        therapist: { select: { nombres: true, apellidos: true } },
-        guardians: { orderBy: { parentesco: 'asc' } },
+      where,
+      select: {
+        id: true,
+        nombres: true,
+        apellidos: true,
+        dateOfBirth: true,
+        anoIngreso: true,
+        isActive: true,
+        guardians: {
+          select: {
+            nombres: true,
+            apellidos: true,
+            numeroIdentidad: true,
+            telefono: true,
+            parentesco: true,
+            user: { select: { email: true } },
+          },
+          orderBy: { isActive: 'asc' },
+          take: 1,
+        },
+        therapist: {
+          select: {
+            nombres: true,
+            apellidos: true,
+          },
+        },
       },
+      orderBy: { nombres: 'asc' },
     });
 
-    const rows = students.map((student) => {
-      const primaryGuardian = student.guardians[0];
-      const secondaryGuardians = student.guardians.slice(1);
-      const therapistName = student.therapist ? `${student.therapist.nombres} ${student.therapist.apellidos}` : 'No asignado';
+    const filenameBase = `estudiantes-${status}`;
 
-      return [
-        student.id,
-        `${student.nombres} ${student.apellidos}`,
-        student.nombres,
-        student.apellidos,
-        new Date(student.dateOfBirth).toISOString().split('T')[0],
-        therapistName,
-        primaryGuardian ? `${primaryGuardian.nombres} ${primaryGuardian.apellidos}` : 'No asignado',
-        primaryGuardian?.telefono ?? 'N/A',
-        secondaryGuardians.map((g) => `${g.nombres} ${g.apellidos}`).join('; '),
-        student.isActive ? 'Activo' : 'Inactivo',
-        student.createdAt.toISOString(),
-      ];
+    const processedData = students.map(s => {
+      const primaryGuardian = s.guardians[0];
+      return {
+        id: s.id,
+        fullName: `${s.nombres} ${s.apellidos}`,
+        fullnametherapist: s.therapist ? `${s.therapist.nombres} ${s.therapist.apellidos}` : 'N/A',
+        fullnameguardian: `${primaryGuardian?.nombres ?? 'N/A'} ${primaryGuardian?.apellidos ?? 'N/A'}`,
+        telefono: primaryGuardian?.telefono ?? 'N/A',
+        Parentesco: primaryGuardian?.parentesco ?? 'N/A',
+        anoIngreso: s.anoIngreso.toISOString().split('T')[0],
+        isActive: s.isActive,
+      };
     });
 
-    const headers = [
-      'ID',
-      'Nombre completo',
-      'Nombres',
-      'Apellidos',
-      'Fecha de nacimiento',
-      'Terapeuta asignado',
-      'Tutor principal',
-      'Teléfono tutor principal',
-      'Otros tutores',
-      'Estado',
-      'Fecha de registro',
+    const headersForExcel = [
+      { key: 'id', header: 'Id', width: 10 },
+      { key: 'fullName', header: 'Nombre del Estudiante', width: 30 },
+      { key: 'fullnametherapist', header: 'Nombre de Terapeuta', width: 35 },
+      { key: 'fullnameguardian', header: 'Nombre de Padre/Tutor', width: 35 },
+      { key: 'telefono', header: 'Teléfono', width: 20 },
+      { key: 'Parentesco', header: 'Parentesco', width: 20 },
+      { key: 'anoIngreso', header: 'Fecha de Ingreso', width: 20 },
+      { key: 'isActive', header: 'Estado', width: 15 },
     ];
+    const dataForExcel = processedData.map((s) => ({ ...s, isActive: s.isActive ? 'Activo' : 'Inactivo' }));
 
-    const csv = toCsv(headers, rows);
-    const filename = buildTimestampedFilename(`estudiantes-${status}`);
-    sendCsvResponse(res, filename, csv);
+    const headersForPdfAndCsv = ['Id', 'Nombre Completo', 'Nombre de Terapeuta','Nombre de Padre/Tutor', 'Teléfono (Tutor)', 'Parentesco', 'Año de Ingreso', 'Estado'];
+    const dataForPdfAndCsv = processedData.map((s) => [
+      s.id,
+      s.fullName,
+      s.fullnametherapist,
+      s.fullnameguardian,
+      s.telefono,
+      s.Parentesco,
+      s.anoIngreso,
+      s.isActive ? 'Activo' : 'Inactivo',
+    ]);
+
+    switch (format) {
+      case 'excel':
+        const excelFilename = buildTimestampedFilename(filenameBase, 'xlsx'); 
+        await sendExcelResponse(res, excelFilename, headersForExcel, dataForExcel);
+        break;
+
+      case 'pdf':
+        const pdfFilename = buildTimestampedFilename(filenameBase, 'pdf');
+        sendPdfTableResponse(res, pdfFilename, {
+          title: 'Lista de Estudiantes',
+          headers: headersForPdfAndCsv,
+          rows: dataForPdfAndCsv,
+        });
+        break;
+
+      default:
+        const csvFilename = buildTimestampedFilename(filenameBase, 'csv');
+        const csvContent = toCsv(headersForPdfAndCsv, dataForPdfAndCsv);
+        sendCsvResponse(res, csvFilename, csvContent);
+        break;
+    }
   } catch (error) {
-    res.status(500).json({ error: 'No se pudo exportar la lista de estudiantes.' });
+    console.error('Error al exportar estudiantes:', error);
+    res.status(500).json({ error: 'No se pudo generar el archivo de exportación.' });
   }
 };

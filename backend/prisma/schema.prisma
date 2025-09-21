@@ -95,7 +95,7 @@ enum ReportItemType {
   select
   multiselect
   checkbox
-  level // Para mantener compatibilidad con AcquisitionLevel
+  level
 }
 
 enum ReportItemWidth {
@@ -158,9 +158,7 @@ model ReportItemAnswer {
   reportId   Int
   item       ReportItem @relation(fields: [itemId], references: [id])
   itemId     Int
-  // Para items de tipo 'level' mantenemos el valor específico
   level      AcquisitionLevel?
-  // Valor flexible para otros tipos de ítems (texto, número, fecha, select, rich text, etc.)
   valueJson  Json?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt

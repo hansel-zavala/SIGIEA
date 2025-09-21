@@ -13,7 +13,7 @@ interface ExportMenuProps {
   defaultStatus?: string;
   statuses?: Option[];
   formats?: Option[];
-  onExport: (options: { status: string; format: string }) => Promise<void>;
+  onExport: (options: { status: string; format: string }) => void;
   triggerLabel?: string;
   disabled?: boolean;
 }
@@ -24,7 +24,11 @@ const defaultStatuses: Option[] = [
   { value: 'inactive', label: 'Inactivos' },
 ];
 
-const defaultFormats: Option[] = [{ value: 'csv', label: 'CSV' }];
+const defaultFormats: Option[] = [
+  { value: 'pdf', label: 'PDF' },
+  { value: 'excel', label: 'Excel' },
+  { value: 'csv', label: 'CSV' },
+];
 
 function ExportMenu({
   defaultStatus = 'all',
@@ -37,7 +41,6 @@ function ExportMenu({
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState(defaultStatus);
   const [format, setFormat] = useState(formats[0]?.value ?? 'csv');
-  const [isLoading, setIsLoading] = useState(false);
   const panelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -52,29 +55,24 @@ function ExportMenu({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [open]);
 
-  const handleExport = async () => {
-    try {
-      setIsLoading(true);
-      await onExport({ status, format });
-      setOpen(false);
-    } finally {
-      setIsLoading(false);
-    }
+  const handleExport = () => {
+    onExport({ status, format });
+    setOpen(false);
   };
 
   return (
     <div className="relative inline-block text-left" ref={panelRef}>
       <button
         type="button"
-        onClick={() => !disabled && setOpen((prev) => !prev)}
+        onClick={() => setOpen((prev) => !prev)}
         disabled={disabled}
-        className={`inline-flex items-center gap-2 rounded-lg border border-violet-200 px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 ${
+        className={`inline-flex min-w-[150px] justify-center items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 ${
           disabled
-            ? 'cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200'
-            : 'bg-violet-50 text-violet-600 hover:bg-violet-100 focus:ring-violet-400'
+            ? 'cursor-not-allowed bg-gray-400 text-white'
+            : 'border border-violet-400 g-gradient-to-r from-white-400 to-white-500 text-violet-500 hover:from-violet-500 hover:to-violet-600 focus:ring-violet-500'
         }`}
       >
-        {triggerLabel}
+        {disabled ? 'Exportando...' : triggerLabel}
         <span className="text-xs">▼</span>
       </button>
 
@@ -120,10 +118,10 @@ function ExportMenu({
             <button
               type="button"
               onClick={handleExport}
-              disabled={isLoading}
+              disabled={disabled}
               className="w-full rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition-colors hover:from-violet-500 hover:to-purple-600 disabled:cursor-not-allowed disabled:opacity-75"
             >
-              {isLoading ? 'Generando...' : 'Generar archivo'}
+              {disabled ? 'Generando...' : 'Generar archivo'}
             </button>
           </div>
         </div>

@@ -1,5 +1,5 @@
 // frontend/src/pages/LeccionesPage.tsx
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react"; 
 import { Link } from "react-router-dom";
 import leccionService from "../services/leccionService";
 import type { LeccionStatusFilter } from "../services/leccionService";
@@ -17,7 +17,7 @@ interface LeccionSummary {
   id: number;
   title: string;
   objective: string | null;
-  category: string | null;
+  category?: string | null;
   isActive: boolean;
 }
 
@@ -87,7 +87,8 @@ function LeccionesPage() {
     try {
       setIsExporting(true);
       const response = await leccionService.exportLecciones(status as LeccionStatusFilter, format);
-      const filename = inferFilenameFromResponse(response, `lecciones-${status}.csv`);
+      const extension = format === 'excel' ? 'xlsx' : format;
+      const filename = inferFilenameFromResponse(response, `lecciones-${status}.${extension}`);
       downloadBlob(response.data, filename);
       showToast({ message: 'Exportación de lecciones generada correctamente.' });
     } catch (err) {
@@ -180,17 +181,6 @@ function LeccionesPage() {
                 <span className="text-lg">Crear Nueva Lección</span>
               </button>
             </Link>
-            <ExportMenu
-              defaultStatus={statusFilter}
-              onExport={handleExportLecciones}
-              statuses={[
-                { value: 'all', label: 'Todas' },
-                { value: 'active', label: 'Activas' },
-                { value: 'inactive', label: 'Inactivas' },
-              ]}
-              triggerLabel={isExporting ? 'Exportando…' : 'Exportar'}
-              disabled={isExporting}
-            />
           </div>
         </div>
       </div>
@@ -213,6 +203,18 @@ function LeccionesPage() {
         >
           Todas
         </button>
+        <div className="flex-1"></div>
+        <ExportMenu
+              defaultStatus={statusFilter}
+              onExport={handleExportLecciones}
+              statuses={[
+                { value: 'all', label: 'Todas' },
+                { value: 'active', label: 'Activas' },
+                { value: 'inactive', label: 'Inactivas' },
+              ]}
+              triggerLabel={isExporting ? 'Exportando…' : 'Exportar'}
+              disabled={isExporting}
+            />
       </div>
 
       <div className="flex justify-between items-center mb-4 gap-4">

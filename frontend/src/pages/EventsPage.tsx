@@ -1,5 +1,5 @@
 // frontend/src/pages/EventsPage.tsx
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react"; 
 import { Link } from "react-router-dom";
 import eventService, { type Event } from "../services/eventService";
 import { FaCalendarAlt, FaPlus, FaPencilAlt, FaTrash, FaTags, FaSearch, FaUndo } from "react-icons/fa";
@@ -83,7 +83,8 @@ const handleDelete = async (eventId: number) => {
     try {
       setIsExporting(true);
       const response = await eventService.exportEvents(status as 'active' | 'inactive' | 'all', format);
-      const filename = inferFilenameFromResponse(response, `eventos-${status}.csv`);
+      const extension = format === 'excel' ? 'xlsx' : format;
+      const filename = inferFilenameFromResponse(response, `eventos-${status}.${extension}`);
       downloadBlob(response.data, filename);
       showToast({ message: 'Exportación de eventos generada correctamente.' });
     } catch (err) {
@@ -195,17 +196,6 @@ const handleDelete = async (eventId: number) => {
           </Link>
         </div>
         <div className="md:ml-3">
-          <ExportMenu
-            defaultStatus={statusFilter}
-            onExport={handleExportEvents}
-            statuses={[
-              { value: 'all', label: 'Todos' },
-              { value: 'active', label: 'Activos' },
-              { value: 'inactive', label: 'Inactivos' },
-            ]}
-            triggerLabel={isExporting ? 'Exportando…' : 'Exportar'}
-            disabled={isExporting}
-          />
         </div>
       </div>
 
@@ -225,9 +215,22 @@ const handleDelete = async (eventId: number) => {
           <button
             onClick={() => { setStatusFilter('all'); setCurrentPage(1); }}
             className={`px-4 py-2 text-sm rounded-md ${statusFilter === 'all' ? 'text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md' : 'bg-gray-200'}`}>Todos</button>
+          <div className="flex-1"></div>
+          <ExportMenu
+            defaultStatus={statusFilter}
+            onExport={handleExportEvents}
+            statuses={[
+              { value: 'all', label: 'Todos' },
+              { value: 'active', label: 'Activos' },
+              { value: 'inactive', label: 'Inactivos' },
+            ]}
+            triggerLabel={isExporting ? 'Exportando…' : 'Exportar'}
+            disabled={isExporting}
+          />
         </div>
 
       <div className="flex justify-between items-center mb-4 gap-4">
+        <p className="text-xs text-gray-500 mt-1"></p>
         <p className="text-xs text-gray-500 mt-1">ACCIONES: El lápiz es para editar, el bote es para desactivar y la flecha para reactivar.</p>
       </div>
 

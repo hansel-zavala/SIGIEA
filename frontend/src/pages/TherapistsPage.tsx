@@ -16,7 +16,9 @@ import { downloadBlob, inferFilenameFromResponse } from '../utils/downloadFile';
 interface TherapistProfile {
   id: number;
   fullName: string;
+  identityNumber: string;
   email: string;
+  direccion?: string | null;
   specialty: string;
   isActive: boolean;
 }
@@ -91,7 +93,8 @@ function TherapistsPage() {
     try {
       setIsExporting(true);
       const response = await therapistService.exportTherapists(status, format);
-      const filename = inferFilenameFromResponse(response, `terapeutas-${status}.csv`);
+      const extension = format === 'excel' ? 'xlsx' : format;
+      const filename = inferFilenameFromResponse(response, `terapeutas-${status}.${extension}`);
       downloadBlob(response.data, filename);
       showToast({ message: 'Exportación de terapeutas generada correctamente.' });
     } catch (err) {
@@ -171,17 +174,6 @@ function TherapistsPage() {
                 <span className="text-lg">Crear Nuevo Terapeuta</span>
             </button>
           </Link>
-          <ExportMenu
-            defaultStatus={statusFilter}
-            onExport={handleExportTherapists} 
-            statuses={[
-              { value: 'all', label: 'Todos' },
-              { value: 'active', label: 'Activos' },
-              { value: 'inactive', label: 'Inactivos' },
-            ]}
-            triggerLabel={isExporting ? 'Exportando…' : 'Exportar'}
-            disabled={isExporting}
-          />
         </div>
       </div>
       </div>
@@ -196,6 +188,18 @@ function TherapistsPage() {
         <button onClick={() => handleFilterChange('active')} className={`px-4 py-2 text-sm rounded-md ${statusFilter === 'active' ? 'text-white font-bold bg-violet-500' : 'bg-gray-200'}`}>Activos</button>
         <button onClick={() => handleFilterChange('inactive')} className={`px-4 py-2 text-sm rounded-md ${statusFilter === 'inactive' ? 'text-white font-bold bg-violet-500' : 'bg-gray-200'}`}>Inactivos</button>
         <button onClick={() => handleFilterChange('all')} className={`px-4 py-2 text-sm rounded-md ${statusFilter === 'all' ? 'text-white font-bold bg-violet-500' : 'bg-gray-200'}`}>Todos</button>
+      <div className="flex-1"></div>
+      <ExportMenu
+            defaultStatus={statusFilter}
+            onExport={handleExportTherapists} 
+            statuses={[
+              { value: 'all', label: 'Todos' },
+              { value: 'active', label: 'Activos' },
+              { value: 'inactive', label: 'Inactivos' },
+            ]}
+            triggerLabel={isExporting ? 'Exportando…' : 'Exportar'}
+            disabled={isExporting}
+          />
       </div> 
 
       <div className="flex justify-between items-center mb-4 gap-4">
@@ -209,8 +213,10 @@ function TherapistsPage() {
             <thead className=" bg-gray-50">
             <tr>
               <th className="px-5 py-3 font-medium text-gray-500 text-left">Nombre</th>
+              <th className="px-5 py-3 font-medium text-gray-500 text-left">Numero de Identidad</th>
               <th className="px-5 py-3 font-medium text-gray-500 text-left">Email</th>
               <th className="px-5 py-3 font-medium text-gray-500 text-left">Especialidad</th>
+              <th className="px-5 py-3 font-medium text-gray-500 text-left">Dirección</th>
               <th className="px-5 py-3 font-medium text-gray-500 text-left">Estado</th>
               <th className="px-5 py-3 font-medium text-gray-500 text-left">Acciones</th>
             </tr>
@@ -236,8 +242,10 @@ function TherapistsPage() {
                     </div>
                   </Link>
                   </td>
+                  <td className="px-5 py-4 text-gray-600">{therapist.identityNumber}</td>
                   <td className="px-5 py-4 text-gray-600">{therapist.email}</td>
                   <td className="px-5 py-4 text-gray-600">{therapist.specialty}</td>
+                  <td className="px-5 py-4 text-gray-600">{therapist.direccion}</td>
                   <td className="px-5 py-4">
                     <Badge color={therapist.isActive ? "success" : "error"}>{therapist.isActive ? "Activo" : "Inactivo"}</Badge>
                   </td>

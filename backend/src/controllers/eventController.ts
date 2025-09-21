@@ -3,8 +3,10 @@ import { Request, Response } from 'express';
 import prisma from '../db.js';
 import { Prisma, EventAudience } from '@prisma/client';
 import { toCsv, sendCsvResponse, buildTimestampedFilename } from '../utils/csv.js';
+import { sendExcelResponse } from '../utils/excel.js';
+import { sendPdfTableResponse } from '../utils/pdf.js';
 
-const INVALID_DATE_ERROR = 'INVALID_DATE';
+const INVALID_DATE_ERROR = 'INVALID_DATE'; 
 
 const getTodayStart = (): Date => {
   const now = new Date();
@@ -305,52 +307,101 @@ export const exportEvents = async (req: Request, res: Response) => {
   try {
     const { status = 'all', format = 'csv' } = req.query as { status?: string; format?: string };
 
-    if (format !== 'csv') {
-      return res.status(400).json({ error: 'Formato no soportado. Actualmente solo se permite CSV.' });
+    const where: any = {};
+    if (status === 'active') {where.isActive = true;} 
+      else if (status === 'inactive') {where.isActive = false;
     }
 
-    const whereClause: Prisma.EventWhereInput = {};
-    if (status === 'active') whereClause.isActive = true;
-    if (status === 'inactive') whereClause.isActive = false;
-
     const events = await prisma.event.findMany({
-      where: status === 'all' ? undefined : whereClause,
-      orderBy: [{ isActive: 'desc' }, { startDate: 'desc' }],
-      include: { category: true },
+      where,
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        startDate: true,
+        endDate: true,
+        isAllDay: true,
+        location: true,
+        audience: true,
+        category: { select: { name: true } },
+        createdAt: true,
+        isActive: true,
+      },
+      orderBy: { startDate: 'asc' },
     });
 
-    const rows = events.map((event) => [
-      event.id,
-      event.title,
-      event.description ?? '',
-      event.startDate.toISOString(),
-      event.endDate.toISOString(),
-      event.isAllDay ? 'Sí' : 'No',
-      event.location ?? '',
-      event.audience ?? EventAudience.General,
-      event.category?.name ?? 'Sin categoría',
-      event.isActive ? 'Activo' : 'Inactivo',
-      event.createdAt.toISOString(),
+    const filenameBase = `eventos-${status}`;
+    const formatDate = (date: Date) => date.toLocaleDateString('es-HN', {
+      year: 'numeric', month: '2-digit', day: '2-digit'
+    });
+
+    const processedData = events.map(e => ({
+      id: e.id,
+      title: e.title,
+      description: e.description ?? 'N/A',
+      startDate: formatDate(e.startDate),
+      endDate: formatDate(e.endDate),
+      isAllDay: e.isAllDay ? 'Sí' : 'No',
+      location: e.location ?? 'No especificado',
+      audience: e.audience,
+      category: e.category?.name ?? 'Sin categoría',
+      createdAt: formatDate(e.createdAt),
+      isActive: e.isActive ? 'Activo' : 'Inactivo',
+    }));
+
+    const headersForExcel = [
+      { key: 'id', header: 'ID', width: 10 },
+      { key: 'title', header: 'Título', width: 30 },
+      { key: 'description', header: 'Descripción', width: 40 },
+      { key: 'startDate', header: 'Fecha de Inicio', width: 20 },
+      { key: 'endDate', header: 'Fecha de Fin', width: 20 },
+      { key: 'isAllDay', header: 'Todo el día', width: 15 },
+      { key: 'location', header: 'Ubicación', width: 25 },
+      { key: 'audience', header: 'Público', width: 15 },
+      { key: 'category', header: 'Categoría', width: 20 },
+      { key: 'createdAt', header: 'Fecha de Creación', width: 20 },
+      { key: 'isActive', header: 'Estado', width: 15 },
+    ];
+    const dataForExcel = processedData.map((e) => ({...e, isActive: e.isActive ? 'Activo' : 'Inactivo'}));
+
+    const headersForPdfAndCsv = ['ID', 'Título', 'Descripción', 'Fecha de Inicio', 'Fecha de Fin', 'Todo el día', 'Ubicación', 'Público', 'Categoría', 'Fecha de Creación', 'Estado'];
+    const dataForPdfAndCsv = processedData.map((e) => [
+      e.id,
+      e.title,
+      e.description,
+      e.startDate,
+      e.endDate,
+      e.isAllDay,
+      e.location,
+      e.audience,
+      e.category,
+      e.createdAt,
+      e.isActive ? 'Activo' : 'Inactivo',
     ]);
 
-    const headers = [
-      'ID',
-      'Título',
-      'Descripción',
-      'Fecha inicio',
-      'Fecha fin',
-      'Todo el día',
-      'Ubicación',
-      'Audiencia',
-      'Categoría',
-      'Estado',
-      'Fecha de creación',
-    ];
-
-    const csv = toCsv(headers, rows);
-    const filename = buildTimestampedFilename(`eventos-${status}`);
-    sendCsvResponse(res, filename, csv);
-  } catch (error) {
-    res.status(500).json({ error: 'No se pudo exportar la lista de eventos.' });
-  }
+    switch (format) {
+          case 'excel':
+            const excelFilename = buildTimestampedFilename(filenameBase, 'xlsx'); 
+            await sendExcelResponse(res, excelFilename, headersForExcel, dataForExcel);
+            break;
+    
+          case 'pdf':
+            const pdfFilename = buildTimestampedFilename(filenameBase, 'pdf');
+            sendPdfTableResponse(res, pdfFilename, {
+              title: 'Lista de Eventos',
+              headers: headersForPdfAndCsv,
+              rows: dataForPdfAndCsv,
+            });
+            break;
+    
+          default:
+            const csvFilename = buildTimestampedFilename(filenameBase, 'csv');
+            const csvContent = toCsv(headersForPdfAndCsv, dataForPdfAndCsv);
+            sendCsvResponse(res, csvFilename, csvContent);
+            break;
+        }
+      } catch (error) {
+        console.error('Error al exportar la lista de eventos:', error);
+        res.status(500).json({ error: 'No se pudo generar el archivo de exportación.' });
+      }
 };

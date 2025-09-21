@@ -170,7 +170,6 @@ function GuardiansPage() {
                 value={searchTerm}
                 onChange={(e) => {
                     const value = e.target.value;
-                    // Permitir letras, espacios, acentos, dígitos y guiones para buscar también por identidad
                     const validCharsRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s-]*$/;
                     if (validCharsRegex.test(value)) {
                       setSearchTerm(value);
@@ -181,17 +180,6 @@ function GuardiansPage() {
             <span className="pointer-events-none absolute inset-x-4 bottom-[6px] h-[2px] origin-left scale-x-0 rounded-full bg-gradient-to-r from-violet-400 via-fuchsia-400 to-violet-500 transition-transform duration-200 group-focus-within:scale-x-100" />
         </div>
       </div>
-      <ExportMenu
-        defaultStatus={statusFilter}
-        onExport={handleExportGuardians}
-        statuses={[
-          { value: 'all', label: 'Todos' },
-          { value: 'active', label: 'Activos' },
-          { value: 'inactive', label: 'Inactivos' },
-        ]}
-        triggerLabel={isExporting ? 'Exportando…' : 'Exportar'}
-        disabled={isExporting}
-      />
       </div>
 
       <div className="mb-4">
@@ -202,6 +190,18 @@ function GuardiansPage() {
         <button onClick={() => handleFilterChange('active')} className={`px-4 py-2 text-sm rounded-md ${statusFilter === 'active' ? 'text-white font-bold bg-violet-500' : 'bg-gray-200'}`}>Activos</button>
         <button onClick={() => handleFilterChange('inactive')} className={`px-4 py-2 text-sm rounded-md ${statusFilter === 'inactive' ? 'text-white font-bold bg-violet-500' : 'bg-gray-200'}`}>Inactivos</button>
         <button onClick={() => handleFilterChange('all')} className={`px-4 py-2 text-sm rounded-md ${statusFilter === 'all' ? 'text-white font-bold bg-violet-500' : 'bg-gray-200'}`}>Todos</button>
+      <div className="flex-1"></div>
+      <ExportMenu
+            defaultStatus={statusFilter}
+            onExport={handleExportGuardians}
+            statuses={[ 
+              { value: 'all', label: 'Todos' },
+              { value: 'active', label: 'Activos' },
+              { value: 'inactive', label: 'Inactivos' },
+            ]}
+            triggerLabel={isExporting ? 'Exportando…' : 'Exportar'}
+            disabled={isExporting}
+          />
       </div>
 
       {error && <p className="text-sm text-red-500 mb-4">{error}</p>}

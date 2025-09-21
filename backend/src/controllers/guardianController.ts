@@ -3,6 +3,8 @@ import { Request, Response } from 'express';
 import prisma from '../db.js';
 import bcrypt from 'bcrypt';
 import { toCsv, sendCsvResponse, buildTimestampedFilename } from '../utils/csv.js';
+import { sendExcelResponse } from '../utils/excel.js';
+import { sendPdfTableResponse } from '../utils/pdf.js';
 
 export const getAllGuardians = async (req: Request, res: Response) => {
   try {
@@ -205,56 +207,94 @@ export const reactivateGuardian = async (req: Request, res: Response) => {
 export const exportGuardians = async (req: Request, res: Response) => {
   try {
     const { status = 'all', format = 'csv' } = req.query as { status?: string; format?: string };
-    const normalizedFormat = String(format).toLowerCase();
-    if (format !== 'csv') {
-      return res.status(400).json({ error: 'Formato no soportado. Actualmente solo se permite CSV.' });
+
+    const where: any = {};
+    if (status === 'active') {where.isActive = true;} 
+      else if (status === 'inactive') {where.isActive = false;
     }
 
-    const whereCondition: any = {};
-    if (status === 'active') whereCondition.isActive = true;
-    if (status === 'inactive') whereCondition.isActive = false;
-
     const guardians = await prisma.guardian.findMany({
-      where: whereCondition,
-      orderBy: [
-        { isActive: 'desc' },
-        { createdAt: 'desc' },
-      ],
-      include: {
+      where,
+      select: {
+        id: true,
+        nombres: true,
+        apellidos: true,
+        numeroIdentidad: true,
+        telefono: true,
+        parentesco: true,
+        isActive: true,
         students: {
-          select: { id: true, nombres: true, apellidos: true, isActive: true },
-        },
-      },
+          select: {
+            nombres: true,
+            apellidos: true,
+            isActive: true,
+          },
+      orderBy: { isActive: 'desc' },
+      take: 1,
+    },
+  }
     });
 
-    const rows = guardians.map((guardian) => [
-      guardian.id,
-      `${guardian.nombres} ${guardian.apellidos}`,
-      guardian.numeroIdentidad,
-      guardian.telefono,
-      guardian.parentesco,
-      guardian.students.filter((s) => s.isActive).map((s) => `${s.nombres} ${s.apellidos}`).join('; '),
-      guardian.students.filter((s) => !s.isActive).map((s) => `${s.nombres} ${s.apellidos}`).join('; '),
-      guardian.isActive ? 'Activo' : 'Inactivo',
-      guardian.createdAt.toISOString(),
+    const filenameBase = `guardians-${status}`;
+
+    const processedData = guardians.map(g => {
+      const primaryStudent = g.students[0];
+      return {
+        id: g.id,
+        fullName: `${g.nombres} ${g.apellidos}`,
+        numeroIdentidad: g.numeroIdentidad,
+        telefono: g.telefono,
+        parentesco: g.parentesco,
+        fullnamestudent: primaryStudent ? `${primaryStudent.nombres} ${primaryStudent.apellidos}` : 'N/A',
+        isActive: g.isActive,
+      };
+    });
+
+    const headersForExcel = [
+      { key: 'id', header: 'Id', width: 10 },
+      { key: 'fullName', header: 'Nombre Completo', width: 30 },
+      { key: 'numeroIdentidad', header: 'Número de Identidad', width: 20 },
+      { key: 'telefono', header: 'Teléfono', width: 20 },
+      { key: 'parentesco', header: 'Parentesco', width: 20 },
+      { key: 'fullnamestudent', header: 'Nombre del Estudiante', width: 35 },
+      { key: 'isActive', header: 'Estado', width: 15 },
+    ];
+    const dataForExcel = processedData.map((g) => ({ ...g, isActive: g.isActive ? 'Activo' : 'Inactivo' }));
+
+    const headersForPdfAndCsv = ['Id', 'Nombre Completo', 'Número de Identidad', 'Teléfono', 'Parentesco', 'Nombre del Estudiante', 'Estado'];
+    const dataForPdfAndCsv = processedData.map((g) => [
+      g.id,
+      g.fullName,
+      g.numeroIdentidad,
+      g.telefono,
+      g.parentesco,
+      g.fullnamestudent,
+      g.isActive ? 'Activo' : 'Inactivo',
     ]);
 
-    const headers = [
-      'ID',
-      'Nombre completo',
-      'Número de identidad',
-      'Teléfono',
-      'Parentesco',
-      'Estudiantes activos',
-      'Estudiantes inactivos',
-      'Estado',
-      'Fecha de registro',
-    ];
+    switch (format) {
+      case 'excel':
+        const excelFilename = buildTimestampedFilename(filenameBase, 'xlsx');
+        await sendExcelResponse(res, excelFilename, headersForExcel, dataForExcel);
+        break;
 
-    const csv = toCsv(headers, rows);
-    const filename = buildTimestampedFilename(`guardians-${status}`);
-    sendCsvResponse(res, filename, csv);
+      case 'pdf':
+        const pdfFilename = buildTimestampedFilename(filenameBase, 'pdf');
+        sendPdfTableResponse(res, pdfFilename, {
+          title: 'Lista de Padres',
+          headers: headersForPdfAndCsv,
+          rows: dataForPdfAndCsv,
+        });
+        break;
+
+      default:
+        const csvFilename = buildTimestampedFilename(filenameBase, 'csv');
+        const csvContent = toCsv(headersForPdfAndCsv, dataForPdfAndCsv);
+        sendCsvResponse(res, csvFilename, csvContent);
+        break;
+    }
   } catch (error) {
-    res.status(500).json({ error: 'No se pudo exportar la lista de guardianes.' });
+    console.error('Error al exportar los padre:', error);
+    res.status(500).json({ error: 'No se pudo generar el archivo de exportación.' });
   }
 };

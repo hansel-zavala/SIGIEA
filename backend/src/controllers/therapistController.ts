@@ -5,6 +5,8 @@ import prisma from '../db.js';
 import bcrypt from 'bcrypt';
 import { Prisma } from '@prisma/client';
 import { toCsv, sendCsvResponse, buildTimestampedFilename } from '../utils/csv.js';
+import { sendExcelResponse } from '../utils/excel.js';
+import { sendPdfTableResponse } from '../utils/pdf.js';
 
 export const createTherapist = async (req: Request, res: Response) => {
     try {
@@ -247,8 +249,9 @@ export const exportTherapists = async (req: Request, res: Response) => {
     try {
         const { status = 'all', format = 'csv' } = req.query as { status?: string; format?: string };
 
-        if (format !== 'csv') {
-            return res.status(400).json({ error: 'Formato no soportado. Actualmente solo se permite CSV.' });
+        const where: any = {};
+        if (status === 'active') {where.isActive = true;} 
+            else if (status === 'inactive') {where.isActive = false;
         }
 
         const whereCondition: Prisma.TherapistProfileWhereInput = {};
@@ -256,46 +259,91 @@ export const exportTherapists = async (req: Request, res: Response) => {
         if (status === 'inactive') whereCondition.isActive = false;
 
         const therapists = await prisma.therapistProfile.findMany({
-            where: whereCondition,
-            orderBy: [
-                { isActive: 'desc' },
-                { createdAt: 'desc' },
-            ],
-            include: {
+            where,
+            select: {
+                id: true,
+                nombres: true,
+                apellidos: true,
+                email: true,
+                specialty: true,
+                identityNumber: true,
+                isActive: true,
+                createdAt: true,
                 assignedStudents: {
-                    select: { id: true, nombres: true, apellidos: true, isActive: true },
+                    select:{
+                        id: true,
+                        nombres: true,
+                        apellidos: true,
+                        isActive: true
+                    },
+                    orderBy:{ isActive: 'desc' }, 
                 },
             },
+            orderBy: { nombres: 'asc' },
         });
 
-        const rows = therapists.map((therapist) => [
-            therapist.id,
-            `${therapist.nombres} ${therapist.apellidos}`,
-            therapist.email,
-            therapist.specialty,
-            therapist.identityNumber,
-            therapist.assignedStudents.filter((s) => s.isActive).map((s) => `${s.nombres} ${s.apellidos}`).join('; '),
-            therapist.assignedStudents.filter((s) => !s.isActive).map((s) => `${s.nombres} ${s.apellidos}`).join('; '),
-            therapist.isActive ? 'Activo' : 'Inactivo',
-            therapist.createdAt.toISOString(),
+        const filenameBase = `terapeutas-${status}`;
+
+        const processedData = therapists.map((t) => {
+            const primaryStudent = t.assignedStudents[0];
+            return {
+                id: t.id,
+                fullName: `${t.nombres} ${t.apellidos}`,
+                identityNumber: t.identityNumber,
+                specialty: t.specialty,
+                email: t.email,
+                fullnamestudent: primaryStudent ? `${primaryStudent.nombres} ${primaryStudent.apellidos}` : 'N/A',
+                createAt: t.createdAt.toISOString().split('T')[0],
+                isActive: t.isActive,
+            };
+        });
+
+        const headersForExcel = [
+            { key: 'id', header: 'Id', width: 10 },
+            { key: 'fullname', header: 'Nombre Completo', width: 30 },
+            { key: 'identityNumber', header: 'Número de identidad', width: 20 },
+            { key: 'specialty', header: 'Especialidad', width: 20 },
+            { key: 'email', header: 'Correo electrónico', width: 30 },
+            { key: 'createAt', header: 'Fecha de registro', width: 20 },
+            { key: 'isActive', header: 'Estado', width: 15 },
+        ];
+        
+        const dataForExcel = processedData.map((t) => ({ ...t, isActive: t.isActive ? 'Activo' : 'Inactivo' }));
+
+        const headersForPdfAndCsv = ['Id', 'Nombre Completo', 'Numero de Identidad', 'Especialidad', 'Email', 'Fecha de registro', 'Estado']
+        const dataForPdfAndCsv = processedData.map((t) => [
+            t.id,
+            t.fullName,
+            t.identityNumber,
+            t.specialty,
+            t.email,
+            t.createAt,
+            t.isActive ? 'Activo' : 'Inactivo',
         ]);
 
-        const headers = [
-            'ID',
-            'Nombre completo',
-            'Correo electrónico',
-            'Especialidad',
-            'Número de identidad',
-            'Estudiantes activos',
-            'Estudiantes inactivos',
-            'Estado',
-            'Fecha de registro',
-        ];
-
-        const csv = toCsv(headers, rows);
-        const filename = buildTimestampedFilename(`terapeutas-${status}`);
-        sendCsvResponse(res, filename, csv);
-    } catch (error) {
-        res.status(500).json({ error: 'No se pudo exportar la lista de terapeutas.' });
-    }
+        switch (format) {
+            case 'excel':
+                const excelFilename = buildTimestampedFilename(filenameBase, 'xlsx'); 
+                await sendExcelResponse(res, excelFilename, headersForExcel, dataForExcel);
+                break;
+        
+            case 'pdf':
+                const pdfFilename = buildTimestampedFilename(filenameBase, 'pdf');
+                sendPdfTableResponse(res, pdfFilename, {
+                    title: 'Lista de Terapeutas',
+                    headers: headersForPdfAndCsv,
+                    rows: dataForPdfAndCsv,
+                });
+                break;
+        
+            default:
+                const csvFilename = buildTimestampedFilename(filenameBase, 'csv');
+                const csvContent = toCsv(headersForPdfAndCsv, dataForPdfAndCsv);
+                sendCsvResponse(res, csvFilename, csvContent);
+                break;
+            }
+        } catch (error) {
+            console.error('Error al exportar estudiantes:', error);
+            res.status(500).json({ error: 'No se pudo generar el archivo de exportación.' });
+        }
 };

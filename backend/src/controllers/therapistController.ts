@@ -71,6 +71,11 @@ export const createTherapist = async (req: Request, res: Response) => {
                     { permission: PermissionType.VIEW_THERAPISTS, granted: true },
                     { permission: PermissionType.VIEW_MATRICULA, granted: true },
                     { permission: PermissionType.VIEW_TEMPLATES, granted: true },
+                    { permission: PermissionType.VIEW_DASHBOARD, granted: true },
+                    { permission: PermissionType.VIEW_CONTROLS, granted: true },
+                    { permission: PermissionType.VIEW_DOCUMENTS, granted: true },
+                    { permission: PermissionType.UPLOAD_FILES, granted: true },
+                    { permission: PermissionType.DOWNLOAD_FILES, granted: true },
                 ]
             }
         };

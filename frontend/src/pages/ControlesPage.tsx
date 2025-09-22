@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { FaEdit, FaSave, FaTimes } from 'react-icons/fa';
 import { actionButtonStyles } from '../styles/actionButtonStyles';
+import { useAuth } from '../context/AuthContext';
 
 interface Therapist {
   id: number;
@@ -30,6 +31,13 @@ const PERMISSION_MODULES: PermissionModule[] = [
     label: 'Dashboard',
     permissions: [
       { key: 'VIEW_DASHBOARD', label: 'Ver Dashboard', description: 'Puede acceder al dashboard del sistema' },
+    ]
+  },
+  {
+    name: 'analysis',
+    label: 'Análisis de Gráficas',
+    permissions: [
+      { key: 'VIEW_ANALYSIS', label: 'Ver Gráficas', description: 'Puede acceder al módulo de análisis de gráficas' },
     ]
   },
   {
@@ -99,7 +107,10 @@ const PERMISSION_MODULES: PermissionModule[] = [
     name: 'documents',
     label: 'Archivero',
     permissions: [
-      { key: 'MANAGE_DOCUMENTS', label: 'Ver Archivero, Subir Nuevo Archivo, Descargar Archivos', description: 'Puede ver, subir y descargar documentos' },
+      { key: 'VIEW_DOCUMENTS', label: 'Ver Archivero', description: 'Puede ver la lista de archivos en el archivero' },
+      { key: 'UPLOAD_FILES', label: 'Subir Nuevo Archivo', description: 'Puede subir nuevos archivos al archivero' },
+      { key: 'DOWNLOAD_FILES', label: 'Descargar Archivos', description: 'Puede descargar archivos del archivero' },
+      { key: 'MANAGE_DOCUMENTS', label: 'Gestionar Documentos', description: 'Puede eliminar documentos del archivero' },
     ]
   },
   {
@@ -121,6 +132,22 @@ const PERMISSION_MODULES: PermissionModule[] = [
 ];
 
 function ControlesPage() {
+  const { user } = useAuth();
+
+  // Check permission
+  const hasPermission = user && (user.role === 'ADMIN' || user.permissions?.['MANAGE_PERMISSIONS']);
+  if (!hasPermission) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4">🔒</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Acceso Denegado</h1>
+          <p className="text-gray-600">No tienes permisos para acceder a esta sección.</p>
+        </div>
+      </div>
+    );
+  }
+
   const [therapists, setTherapists] = useState<Therapist[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -212,7 +239,20 @@ function ControlesPage() {
         'MANAGE_CATEGORIES': ['VIEW_EVENTS'],
 
         // Documents
-        // 'MANAGE_DOCUMENTS': [], // No prerequisites
+        'VIEW_DOCUMENTS': [],
+        'UPLOAD_FILES': ['VIEW_DOCUMENTS'],
+        'DOWNLOAD_FILES': ['VIEW_DOCUMENTS'],
+        'MANAGE_DOCUMENTS': ['VIEW_DOCUMENTS'],
+
+        // Dashboard
+        'VIEW_DASHBOARD': [],
+
+        // Analysis
+        'VIEW_ANALYSIS': [],
+
+        // Controls
+        'VIEW_CONTROLS': [],
+        'MANAGE_PERMISSIONS': ['VIEW_CONTROLS'],
 
         // Reports
         'CREATE_REPORTS': ['VIEW_REPORTS'],
@@ -231,6 +271,30 @@ function ControlesPage() {
         dependencies[permissionKey].forEach(dep => {
           newPermissions[dep] = true;
         });
+      }
+
+      // If unchecking a permission, disable all permissions that depend on it
+      if (!isChecked) {
+        // Find all permissions that depend on this one
+        const dependentPermissions = Object.keys(dependencies).filter(key =>
+          dependencies[key].includes(permissionKey)
+        );
+
+        // Recursively disable dependent permissions
+        const disableDependents = (perms: string[]) => {
+          perms.forEach(perm => {
+            newPermissions[perm] = false;
+            // Also disable permissions that depend on this one
+            const furtherDependents = Object.keys(dependencies).filter(key =>
+              dependencies[key].includes(perm)
+            );
+            if (furtherDependents.length > 0) {
+              disableDependents(furtherDependents);
+            }
+          });
+        };
+
+        disableDependents(dependentPermissions);
       }
 
       return newPermissions;
@@ -270,16 +334,13 @@ function ControlesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white rounded-xl shadow-sm ring-1 ring-gray-100 px-4 py-3 mb-2">
         <h1 className="text-3xl font-bold text-gray-900">Controles de Acceso</h1>
         <p className="text-gray-600">Gestiona los permisos de los terapeutas</p>
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Terapeutas y sus Permisos</h2>
-        </div>
-
+        
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">

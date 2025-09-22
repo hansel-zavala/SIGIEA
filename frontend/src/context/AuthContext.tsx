@@ -7,7 +7,10 @@ interface User {
   id: number;
   role: string;
   name: string;
+  email?: string;
   permissions?: Record<string, boolean>;
+  therapistProfile?: any;
+  guardian?: any;
 }
 
 interface StoredUser extends User {
@@ -44,22 +47,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               id: decodedToken.id || fullUser.id,
               role: decodedToken.role || fullUser.role,
               name: decodedToken.name || fullUser.name,
+              email: fullUser.email,
               permissions: fullUser.permissions?.reduce((acc: Record<string, boolean>, p: { permission: string; granted: boolean }) => { acc[p.permission] = p.granted; return acc; }, {}) || {},
+              therapistProfile: fullUser.therapistProfile,
+              guardian: fullUser.guardian,
             };
             setUser(userWithPermissions);
           } catch (profileError) {
             console.error('Error loading user profile:', profileError);
             // Fallback to profile data
-            const response = await api.get('users/profile');
-            if (response) {
+            try {
+              const response = await api.get('users/profile');
               const fullUser = response.data;
               setUser({
                 id: fullUser.id,
                 role: fullUser.role,
                 name: fullUser.name,
+                email: fullUser.email,
                 permissions: fullUser.permissions || [],
+                therapistProfile: fullUser.therapistProfile,
+                guardian: fullUser.guardian,
               });
-            } else {
+            } catch (fallbackError) {
+              console.error('Fallback also failed:', fallbackError);
               setUser(null); // Force logout
             }
           }
@@ -86,7 +96,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const fullUser = response.data;
       const userWithPermissions: User = {
         ...decodedUser,
+        email: fullUser.email,
         permissions: fullUser.permissions?.reduce((acc: Record<string, boolean>, p: { permission: string; granted: boolean }) => { acc[p.permission] = p.granted; return acc; }, {}) || {},
+        therapistProfile: fullUser.therapistProfile,
+        guardian: fullUser.guardian,
       };
       const userToStore: StoredUser = { ...userWithPermissions, token: data.token };
       localStorage.setItem('user', JSON.stringify(userToStore));

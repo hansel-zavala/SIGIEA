@@ -26,13 +26,17 @@ const protect = async (req: AuthRequest, res: Response, next: NextFunction) => {
           therapistProfile: {
             select: {
               id: true,
+              specialty: true,
               permissions: {
                 select: { permission: true, granted: true }
               }
             }
           },
           guardian: {
-            select: { id: true }
+            select: {
+              id: true,
+              parentesco: true
+            }
           }
         },
       });

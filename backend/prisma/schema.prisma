@@ -300,6 +300,11 @@ enum PermissionType {
   VIEW_MATRICULA
   // Controls
   VIEW_CONTROLS
+  // Archivero
+  UPLOAD_FILES
+  DOWNLOAD_FILES
+  // Analisis de Graficas
+  VIEW_ANALYSIS
   MANAGE_PERMISSIONS
 }
 

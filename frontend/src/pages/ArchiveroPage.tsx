@@ -79,6 +79,21 @@ const formatDateTime = (value: string | Date): string => {
 
 function ArchiveroPage() {
   const { user } = useAuth();
+
+  // Check permission
+  const hasPermission = user && (user.role === 'ADMIN' || user.permissions?.['VIEW_DOCUMENTS']);
+  if (!hasPermission) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4">🔒</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Acceso Denegado</h1>
+          <p className="text-gray-600">No tienes permisos para acceder a esta sección.</p>
+        </div>
+      </div>
+    );
+  }
+
   const { showToast } = useToast();
 
   const [activeTab, setActiveTab] = useState<OwnerTabKey>('STUDENT');
@@ -110,6 +125,8 @@ function ArchiveroPage() {
 
   const isAdmin = user?.role === 'ADMIN';
   const canManageDocuments = user?.role === 'ADMIN' || user?.permissions?.['MANAGE_DOCUMENTS'];
+  const canUploadFiles = user?.role === 'ADMIN' || user?.permissions?.['UPLOAD_FILES'];
+  const canDownloadFiles = user?.role === 'ADMIN' || user?.permissions?.['DOWNLOAD_FILES'];
 
   const currentCategoryOptions = useMemo(() => CATEGORY_SUGGESTIONS[activeTab] ?? [], [activeTab]);
 
@@ -585,13 +602,15 @@ function ArchiveroPage() {
                   <td className="px-5 py-4 text-gray-600">{formatDateTime(document.createdAt)}</td>
                   <td className="px-5 py-4">
                     <div className="flex justify-end gap-3">
-                      <button
-                        type="button"
-                        onClick={() => handleDownload(document)}
-                        className="flex items-center gap-2 rounded-md border border-violet-500 px-3 py-2 text-violet-600 transition hover:bg-violet-50"
-                      >
-                        <FaDownload /> Descargar
-                      </button>
+                      {canDownloadFiles && (
+                        <button
+                          type="button"
+                          onClick={() => handleDownload(document)}
+                          className="flex items-center gap-2 rounded-md border border-violet-500 px-3 py-2 text-violet-600 transition hover:bg-violet-50"
+                        >
+                          <FaDownload /> Descargar
+                        </button>
+                      )}
                       {canManageDocuments && !document.readOnly && (
                         <button
                           type="button"
@@ -667,17 +686,17 @@ function ArchiveroPage() {
           </section>
 
           <section className="space-y-5">
-            {canManageDocuments && renderUploadForm()}
+            {canUploadFiles && renderUploadForm()}
             {renderDocumentFilters()}
             {renderDocumentTable()}
           </section>
         </div>
       ) : (
         <div className="space-y-5">
-          {canManageDocuments && renderUploadForm()}
-          {renderDocumentFilters()}
-          {renderDocumentTable()}
-        </div>
+           {canUploadFiles && renderUploadForm()}
+           {renderDocumentFilters()}
+           {renderDocumentTable()}
+         </div>
       )}
     </div>
   );

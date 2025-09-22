@@ -1,6 +1,6 @@
 // frontend/src/components/Sidebar/Sidebar.tsx
 import { NavLink } from 'react-router-dom';
-import { FaHome, FaUserGraduate, FaBook, FaFileSignature, FaUsers, FaUserMd, FaCalendarDay, FaClipboardList, FaWpforms, FaFolderOpen, FaCog } from 'react-icons/fa';
+import { FaHome, FaUserGraduate, FaBook, FaFileSignature, FaUsers, FaUserMd, FaCalendarDay, FaClipboardList, FaWpforms, FaFolderOpen, FaCog, FaChartBar } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import logo from '../../assets/apo-autis-logo.png';
 
@@ -22,6 +22,7 @@ function Sidebar({ isOpen }: SidebarProps) {
     { name: 'Lecciones', to: '/lecciones', icon: <FaBook size={22} />, roles: ['ADMIN', 'THERAPIST'], permission: 'VIEW_LECCIONES' },
     { name: 'Eventos', to: '/events', icon: <FaCalendarDay size={22} />, roles: ['ADMIN', 'THERAPIST', 'PARENT'], permission: 'VIEW_EVENTS' },
     { name: 'Archivero', to: '/archivero', icon: <FaFolderOpen size={22} />, roles: ['ADMIN', 'THERAPIST'], permission: 'VIEW_DOCUMENTS' },
+    { name: 'Gráficas', to: '/analisis-graficas', icon: <FaChartBar size={22} />, roles: ['ADMIN', 'THERAPIST', 'PARENT'], permission: 'VIEW_ANALYSIS' },
     { name: 'Reportes', to: '/reports', icon: <FaClipboardList size={22} />, roles: ['ADMIN', 'THERAPIST', 'PARENT'], permission: 'VIEW_REPORTS' },
     { name: 'Plantillas', to: '/templates', icon: <FaWpforms size={22} />, roles: ['ADMIN', 'THERAPIST'], permission: 'VIEW_TEMPLATES' },
     { name: 'Controles', to: '/controles', icon: <FaCog size={22} />, roles: ['ADMIN', 'THERAPIST'], permission: 'MANAGE_PERMISSIONS' },

@@ -10,6 +10,7 @@ interface GuardianProfile {
   fullName: string;
   nombres: string;
   apellidos: string;
+  email: string;
   numeroIdentidad: string;
   telefono: string;
   parentesco: string;
@@ -46,6 +47,7 @@ function GuardianProfilePage() {
         .then(data => {
           const normalized = {
             ...data,
+            email: data.user?.email || '',
             students: Array.isArray(data?.students)
               ? data.students
               : (data?.student ? [data.student] : []),
@@ -131,6 +133,7 @@ function GuardianProfilePage() {
             <InfoField label="Parentesco" value={guardian.parentesco.replace('_', ' ')} />
             <InfoField label="Número de Identidad" value={guardian.numeroIdentidad} />
             <InfoField label="Número de Teléfono" value={guardian.telefono} />
+            <InfoField label="Correo Electrónico" value={guardian.email} />
             <InfoField label="Dirección de Emergencia" value={guardian.direccionEmergencia} />
             <div className="bg-gray-100 p-3 rounded-lg shadow-sm">
               <p className="text-sm text-gray-500 font-semibold">Estudiantes Vinculados</p>

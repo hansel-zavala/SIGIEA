@@ -26,6 +26,7 @@ import EventsPage from './pages/EventsPage';
 import AddEventPage from './pages/AddEventPage';
 import EditEventPage from './pages/EditEventPage';
 import CategoriesPage from './pages/CategoriesPage';
+import AnalisisDeGraficasPage from './pages/AnalisisDeGraficasPage';
 import ManageTemplatesPage from './pages/ManageTemplatesPage';
 import TemplatesPage from './pages/TemplatesPage';
 import ReportsListPage from './pages/ReportsListPage';
@@ -68,6 +69,7 @@ function App() {
               <Route path="events/new" element={<AddEventPage />} />
               <Route path="events/edit/:id" element={<EditEventPage />} />
               <Route path="categories" element={<CategoriesPage />} />
+              <Route path="analisis-graficas" element={<AnalisisDeGraficasPage />} />
               <Route path="report-templates" element={<ManageTemplatesPage />} />
               <Route path="templates" element={<TemplatesPage />} />
               <Route path="templates/new" element={<ManageTemplatesPage />} />

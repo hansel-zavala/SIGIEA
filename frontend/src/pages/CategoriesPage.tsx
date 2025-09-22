@@ -211,8 +211,8 @@ function CategoriesPage() {
             </div>
           </div>
           <div className="flex justify-end gap-3 pt-4">
-            <button type="button" onClick={handleCloseModal} className="bg-gray-200 py-2 px-4 rounded">Cancelar</button>
-            <button type="submit" className="bg-blue-600 text-white py-2 px-4 rounded">Guardar</button>
+            <button type="button" onClick={handleCloseModal} className="py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-gray-400 to-gray-500 hover:from-gray-500 hover:to-gray-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">Cancelar</button> 
+            <button type="submit" className="py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">Guardar</button>
           </div>
         </form>
       </Modal>

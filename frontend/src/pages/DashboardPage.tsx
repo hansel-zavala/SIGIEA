@@ -112,7 +112,7 @@ function DashboardPage() {
     }
 
     const normalizedStart = toDateOnly(event.startDate);
-    const normalizedEnd = addDays(event.endDate || event.startDate, 1);
+    const normalizedEnd = toDateOnly(event.endDate || event.startDate);
 
     return {
       ...baseEvent,

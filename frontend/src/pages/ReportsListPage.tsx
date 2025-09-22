@@ -16,6 +16,21 @@ const REPORTS_LIST_PAGE_SIZE_KEY = 'reports-list-page-size';
 
 function ReportsListPage() {
   const { user } = useAuth();
+
+  // Check permission
+  const hasPermission = user && (user.role === 'ADMIN' || user.permissions?.['VIEW_REPORTS']);
+  if (!hasPermission) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4">🔒</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Acceso Denegado</h1>
+          <p className="text-gray-600">No tienes permisos para acceder a esta sección.</p>
+        </div>
+      </div>
+    );
+  }
+
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

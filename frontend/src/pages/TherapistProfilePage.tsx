@@ -6,6 +6,7 @@ import { FaUserMd, FaEdit, FaUserGraduate } from 'react-icons/fa';
 import Pagination from '../components/ui/Pagination';
 import ExportMenu from '../components/ExportMenu';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import { downloadBlob, inferFilenameFromResponse } from '../utils/downloadFile';
 
 
@@ -34,6 +35,7 @@ const formatAttentionTypes = (atenciones: any) => {
 };
 
 function TherapistProfilePage() {
+  const { user } = useAuth();
   const [therapist, setTherapist] = useState<TherapistProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -42,6 +44,8 @@ function TherapistProfilePage() {
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [isExporting, setIsExporting] = useState(false);
   const { showToast } = useToast();
+
+  const canEditTherapists = user?.role === 'ADMIN' || user?.permissions?.['EDIT_THERAPISTS'];
 
   useEffect(() => {
     if (id) {
@@ -124,12 +128,14 @@ function TherapistProfilePage() {
           </div>
         </div>
         <div className="flex gap-4">
-          <Link to={`/therapists/edit/${therapist.id}`}>
-            <button className="min-w-[220px] py-3 px-4 text-white font-bold rounded-lg bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">
-              <FaEdit />
-              <span>Editar Terapeuta</span>
-            </button>
-          </Link>
+          {canEditTherapists && (
+            <Link to={`/therapists/edit/${therapist.id}`}>
+              <button className="min-w-[220px] py-3 px-4 text-white font-bold rounded-lg bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">
+                <FaEdit />
+                <span>Editar Terapeuta</span>
+              </button>
+            </Link>
+          )}
         </div>
       </div>
       

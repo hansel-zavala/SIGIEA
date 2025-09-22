@@ -38,7 +38,7 @@ const normalizeDateInput = (
     const [yearStr, monthStr, dayStr] = trimmed.split('-');
     const year = Number(yearStr);
     const month = Number(monthStr);
-    const day = Number(dayStr);
+    const day = Number(dayStr) + (type === 'end' ? 1 : 0);
 
     if (
       Number.isNaN(year) ||
@@ -48,10 +48,10 @@ const normalizeDateInput = (
       throw new Error(INVALID_DATE_ERROR);
     }
 
-    const hours = type === 'end' ? 23 : 0;
-    const minutes = type === 'end' ? 59 : 0;
-    const seconds = type === 'end' ? 59 : 0;
-    const milliseconds = type === 'end' ? 999 : 0;
+    const hours = 0;
+    const minutes = 0;
+    const seconds = 0;
+    const milliseconds = 0;
 
     const dateValue = new Date(year, month - 1, day, hours, minutes, seconds, milliseconds);
     if (Number.isNaN(dateValue.getTime())) {

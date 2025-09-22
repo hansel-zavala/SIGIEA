@@ -15,15 +15,15 @@ const router = express.Router();
 
 router.get('/', protect, authorize([
   { role: [Role.ADMIN] },
-  { role: [Role.THERAPIST], permission: PermissionType.MANAGE_DOCUMENTS }
+  { role: [Role.THERAPIST], permission: PermissionType.VIEW_DOCUMENTS }
 ]), listDocuments);
 router.post('/', protect, authorize([
   { role: [Role.ADMIN] },
-  { role: [Role.THERAPIST], permission: PermissionType.MANAGE_DOCUMENTS }
+  { role: [Role.THERAPIST], permission: PermissionType.UPLOAD_FILES }
 ]), documentUpload.single('file'), createDocument);
 router.get('/:id/download', protect, authorize([
   { role: [Role.ADMIN] },
-  { role: [Role.THERAPIST], permission: PermissionType.MANAGE_DOCUMENTS }
+  { role: [Role.THERAPIST], permission: PermissionType.DOWNLOAD_FILES }
 ]), downloadDocument);
 router.delete('/:id', protect, authorize([
   { role: [Role.ADMIN] },

@@ -12,6 +12,21 @@ const TEMPLATES_PAGE_SIZE_KEY = 'templates-page-size';
 
 function TemplatesPage() {
   const { user } = useAuth();
+
+  // Check permission
+  const hasPermission = user && (user.role === 'ADMIN' || user.permissions?.['VIEW_TEMPLATES']);
+  if (!hasPermission) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4">🔒</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Acceso Denegado</h1>
+          <p className="text-gray-600">No tienes permisos para acceder a esta sección.</p>
+        </div>
+      </div>
+    );
+  }
+
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);

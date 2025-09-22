@@ -1,6 +1,7 @@
 // frontend/src/components/Sidebar/Sidebar.tsx
 import { NavLink } from 'react-router-dom';
-import { FaHome, FaUserGraduate, FaBook, FaFileSignature, FaUsers, FaUserMd, FaCalendarDay, FaClipboardList, FaWpforms, FaFolderOpen } from 'react-icons/fa';
+import { FaHome, FaUserGraduate, FaBook, FaFileSignature, FaUsers, FaUserMd, FaCalendarDay, FaClipboardList, FaWpforms, FaFolderOpen, FaCog } from 'react-icons/fa';
+import { useAuth } from '../../context/AuthContext';
 import logo from '../../assets/apo-autis-logo.png';
 
 interface SidebarProps {
@@ -8,18 +9,29 @@ interface SidebarProps {
 }
 
 function Sidebar({ isOpen }: SidebarProps) {
-  const modules = [
-    { name: 'Dashboard', to: '/', icon: <FaHome size={22} /> },
-    { name: 'Matrícula', to: '/matricula', icon: <FaFileSignature size={22} /> },
-    { name: 'Estudiantes', to: '/students', icon: <FaUserGraduate size={22} /> },
-    { name: 'Padres', to: '/guardians', icon: <FaUsers size={22} /> },
-    { name: 'Terapeutas', to: '/therapists', icon: <FaUserMd size={22} /> },
-    { name: 'Lecciones', to: '/lecciones', icon: <FaBook size={22} /> },
-    { name: 'Eventos', to: '/events', icon: <FaCalendarDay size={22} /> },
-    { name: 'Archivero', to: '/archivero', icon: <FaFolderOpen size={22} /> },
-    { name: 'Reportes', to: '/reports', icon: <FaClipboardList size={22} />, adminOnly: false },
-    { name: 'Plantillas', to: '/templates', icon: <FaWpforms size={22} />, adminOnly: true },
+  const { user } = useAuth();
+
+  console.log('Sidebar user:', user);
+
+  const allModules = [
+    { name: 'Dashboard', to: '/', icon: <FaHome size={22} />, roles: ['ADMIN', 'THERAPIST', 'PARENT'] },
+    { name: 'Matrícula', to: '/matricula', icon: <FaFileSignature size={22} />, roles: ['ADMIN'] },
+    { name: 'Estudiantes', to: '/students', icon: <FaUserGraduate size={22} />, roles: ['ADMIN', 'THERAPIST', 'PARENT'] },
+    { name: 'Padres', to: '/guardians', icon: <FaUsers size={22} />, roles: ['ADMIN', 'THERAPIST'] },
+    { name: 'Terapeutas', to: '/therapists', icon: <FaUserMd size={22} />, roles: ['ADMIN'] },
+    { name: 'Lecciones', to: '/lecciones', icon: <FaBook size={22} />, roles: ['ADMIN', 'THERAPIST'] },
+    { name: 'Eventos', to: '/events', icon: <FaCalendarDay size={22} />, roles: ['ADMIN', 'THERAPIST', 'PARENT'] },
+    { name: 'Archivero', to: '/archivero', icon: <FaFolderOpen size={22} />, roles: ['ADMIN', 'THERAPIST'] },
+    { name: 'Reportes', to: '/reports', icon: <FaClipboardList size={22} />, roles: ['ADMIN', 'THERAPIST', 'PARENT'] },
+    { name: 'Plantillas', to: '/templates', icon: <FaWpforms size={22} />, roles: ['ADMIN'] },
+    { name: 'Controles', to: '/controles', icon: <FaCog size={22} />, roles: ['ADMIN'] },
   ];
+
+  const modules = allModules.filter(module =>
+    user && module.roles.includes(user.role)
+  );
+
+  console.log('Filtered modules:', modules);
 
   return (
     <aside

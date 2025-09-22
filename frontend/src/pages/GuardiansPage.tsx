@@ -311,7 +311,7 @@ function GuardiansPage() {
           <div className="bborder-t border-gray-200 bg-gray-50 px-4 py-3">
         <Pagination
             itemsPerPage={itemsPerPage}
-            totalItems={guardians.length}
+            totalItems={totalItems}
             currentPage={currentPage}
             onPageChange={handlePageChange}
             onItemsPerPageChange={handleItemsPerPageChange}

@@ -2,7 +2,7 @@
 
 import { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Role } from '@prisma/client';
 import { AuthRequest } from '../types/express.js';
 
 const prisma = new PrismaClient();
@@ -16,13 +16,35 @@ const protect = async (req: AuthRequest, res: Response, next: NextFunction) => {
       token = req.headers.authorization.split(' ')[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { id: number };
 
-      req.user = await prisma.user.findUnique({
+      const user = await prisma.user.findUnique({
         where: { id: decoded.id },
-        select: { id: true, email: true, name: true, role: true },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          therapistProfile: {
+            select: {
+              id: true,
+              permissions: {
+                select: { permission: true, granted: true }
+              }
+            }
+          },
+          guardian: {
+            select: { id: true }
+          }
+        },
       });
 
-      if (req.user) {
-        const newToken = jwt.sign({ id: req.user.id }, process.env.JWT_SECRET as string, {
+      if (user) {
+        req.user = {
+          ...user,
+          permissions: user.therapistProfile?.permissions || [],
+          therapistProfile: user.therapistProfile || undefined,
+          guardian: user.guardian || undefined
+        };
+        const newToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET as string, {
           expiresIn: '8h',
         });
         res.setHeader('X-New-Token', newToken);
@@ -42,7 +64,7 @@ const protect = async (req: AuthRequest, res: Response, next: NextFunction) => {
 };
 
 const isAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (req.user && req.user.role === 'admin') {
+  if (req.user && req.user.role === Role.ADMIN) {
     next();
   } else {
     res.status(403).json({ message: 'Acceso denegado. Se requiere rol de administrador.' });

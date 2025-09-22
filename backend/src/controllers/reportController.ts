@@ -1,8 +1,8 @@
 // backend/src/controllers/reportController.ts
 import { Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Role } from '@prisma/client';
 import { AuthRequest } from '../types/express.js';
-import { renderReportById } from '../services/reportRenderService.js';
+import { renderReportById } from '../services/reportRenderService.js'; 
 
 const prisma = new PrismaClient();
 
@@ -104,7 +104,7 @@ export const submitReportAnswers = async (req: AuthRequest , res: Response) => {
     if (!report) return res.status(404).json({ error: 'Reporte no encontrado.' });
     const user = req.user;
     if (!user) return res.status(401).json({ error: 'No autenticado.' });
-    const isAdmin = user.role === 'admin';
+    const isAdmin = user.role === Role.ADMIN;
     if (!isAdmin && report.therapistId !== user.id) {
       return res.status(403).json({ error: 'No autorizado para editar este reporte.' });
     }

@@ -1,8 +1,9 @@
 // backend/src/controllers/guardianController.ts
 import { Request, Response } from 'express';
+import { Role } from '@prisma/client';
 import prisma from '../db.js';
 import bcrypt from 'bcrypt';
-import { toCsv, sendCsvResponse, buildTimestampedFilename } from '../utils/csv.js';
+import { toCsv, sendCsvResponse, buildTimestampedFilename } from '../utils/csv.js'; 
 import { sendExcelResponse } from '../utils/excel.js';
 import { sendPdfTableResponse } from '../utils/pdf.js';
 
@@ -142,7 +143,7 @@ export const updateGuardian = async (req: Request, res: Response) => {
           data: {
             email,
             password: await bcrypt.hash(String(password), 10),
-            role: 'padre',
+            role: Role.PARENT,
             name: `${guardianData.nombres ?? guardian?.nombres ?? ''} ${guardianData.apellidos ?? guardian?.apellidos ?? ''}`.trim(),
           }
         });

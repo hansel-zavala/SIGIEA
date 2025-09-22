@@ -9,12 +9,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  ADMIN
+  THERAPIST
+  PARENT
+}
+
 model User {
   id               Int                @id @default(autoincrement())
   email            String             @unique
   password         String
   name             String?
-  role             String             @default("admin")
+  role             Role               @default(ADMIN)
   therapistProfile TherapistProfile?
   guardian         Guardian?
   createdLecciones Leccion[]
@@ -237,8 +243,30 @@ model TherapistProfile {
   userId            Int       @unique
   assignedStudents  Student[]
   therapySessions   TherapySession[]
+  permissions       TherapistPermission[]
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
+}
+
+enum PermissionType {
+  VIEW_STUDENTS
+  EDIT_STUDENTS
+  MANAGE_SESSIONS
+  VIEW_REPORTS
+  CREATE_REPORTS
+  MANAGE_DOCUMENTS
+}
+
+model TherapistPermission {
+  id          Int             @id @default(autoincrement())
+  therapist   TherapistProfile @relation(fields: [therapistId], references: [id])
+  therapistId Int
+  permission  PermissionType
+  granted     Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@unique([therapistId, permission])
 }
 
 model TherapySession {

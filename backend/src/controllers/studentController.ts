@@ -1,7 +1,8 @@
 // backend/src/controllers/studentController.ts
 
 import { Request, Response } from 'express';
-import { Parentesco, PrismaClient } from '@prisma/client';
+import { Parentesco, PrismaClient, Role } from '@prisma/client';
+import { AuthRequest } from '../types/express.js';
 import bcrypt from 'bcrypt';
 import { toCsv, sendCsvResponse, buildTimestampedFilename } from '../utils/csv.js';
 import { sendExcelResponse } from '../utils/excel.js';
@@ -74,7 +75,7 @@ export const createStudent = async (req: Request, res: Response) => {
           data: {
             email: g.email,
             password: hashedMap[g.email],
-            role: 'padre',
+            role: Role.PARENT,
             name: `${g.nombres} ${g.apellidos}`,
           }
         });
@@ -103,7 +104,7 @@ export const createStudent = async (req: Request, res: Response) => {
                   create: {
                     email: g.email,
                     password: hashedMap[g.email],
-                    role: 'padre',
+                    role: Role.PARENT,
                     name: `${g.nombres} ${g.apellidos}`,
                   }
                 }
@@ -179,7 +180,7 @@ export const addGuardianToStudent = async (req: Request, res: Response) => {
           data: {
             email: body.email,
             password: await bcrypt.hash(String(body.password), 10),
-            role: 'padre',
+            role: Role.PARENT,
             name: `${updated.nombres} ${updated.apellidos}`,
           }
         });
@@ -202,7 +203,7 @@ export const addGuardianToStudent = async (req: Request, res: Response) => {
           create: {
             email: body.email,
             password: await bcrypt.hash(String(body.password), 10),
-            role: 'padre',
+            role: Role.PARENT,
             name: `${body.nombres} ${body.apellidos}`,
           }
         };
@@ -224,7 +225,7 @@ export const addGuardianToStudent = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'No se pudo agregar el guardián.' });
   }
 };
-export const getAllStudents = async (req: Request, res: Response) => {
+export const getAllStudents = async (req: AuthRequest, res: Response) => {
   try {
     const { search, page = '1', limit = '10', status } = req.query;
     const pageNum = parseInt(page as string, 10);
@@ -261,6 +262,13 @@ export const getAllStudents = async (req: Request, res: Response) => {
           },
         },
       ];
+    }
+
+    // Role-based filtering
+    if (req.user?.role === Role.THERAPIST && req.user.therapistProfile) {
+      whereCondition.therapistId = req.user.therapistProfile.id;
+    } else if (req.user?.role === Role.PARENT && req.user.guardian) {
+      whereCondition.guardians = { some: { id: req.user.guardian.id } };
     }
 
     const [students, totalStudents] = await prisma.$transaction([
@@ -450,13 +458,20 @@ export const reactivateStudent = async (req: Request, res: Response) => {
   }
 };
 
-export const exportStudents = async (req: Request, res: Response) => {
+export const exportStudents = async (req: AuthRequest, res: Response) => {
   try {
     const { status = 'all', format = 'csv' } = req.query as { status: string; format: string };
 
     const where: any = {};
-    if (status === 'active') {where.isActive = true;} 
+    if (status === 'active') {where.isActive = true;}
       else if (status === 'inactive') {where.isActive = false;
+    }
+
+    // Role-based filtering
+    if (req.user?.role === Role.THERAPIST && req.user.therapistProfile) {
+      where.therapistId = req.user.therapistProfile.id;
+    } else if (req.user?.role === Role.PARENT && req.user.guardian) {
+      where.guardians = { some: { id: req.user.guardian.id } };
     }
 
     const students = await prisma.student.findMany({

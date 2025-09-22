@@ -8,15 +8,16 @@ interface LeccionDetail {
   id: number;
   title: string;
   isActive: boolean;
-  category: string | null;
-  keySkill: string | null;
-  objective: string | null;
-  description: string | null;
+  category?: string | null;
+  keySkill?: string | null;
+  objective?: string | null;
+  description?: string | null;
   createdAt: string;
   updatedAt: string;
-  createdBy: {
-    name: string | null;
-    email: string;
+  createdBy?: {
+    id: number;
+    name?: string | null;
+    email?: string | null;
   } | null;
 }
 

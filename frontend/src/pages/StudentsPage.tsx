@@ -303,7 +303,7 @@ function StudentsPage() {
           <div className="border-t border-gray-200 bg-gray-50 px-4 py-3">
         <Pagination
             itemsPerPage={itemsPerPage}
-            totalItems={students.length}
+            totalItems={totalItems}
             currentPage={currentPage}
             onPageChange={handlePageChange}
             onItemsPerPageChange={handleItemsPerPageChange}

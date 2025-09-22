@@ -3,7 +3,7 @@
 import { Request, Response } from 'express';
 import prisma from '../db.js';
 import bcrypt from 'bcrypt';
-import { Prisma } from '@prisma/client';
+import { Prisma, Role, PermissionType } from '@prisma/client';
 import { toCsv, sendCsvResponse, buildTimestampedFilename } from '../utils/csv.js';
 import { sendExcelResponse } from '../utils/excel.js';
 import { sendPdfTableResponse } from '../utils/pdf.js';
@@ -54,9 +54,19 @@ export const createTherapist = async (req: Request, res: Response) => {
                 create: {
                     email,
                     password: hashedPassword,
-                    role: 'terapeuta',
+                    role: Role.THERAPIST,
                     name: fullName,
                 }
+            },
+            permissions: {
+                create: [
+                    { permission: PermissionType.VIEW_STUDENTS, granted: true },
+                    { permission: PermissionType.EDIT_STUDENTS, granted: true },
+                    { permission: PermissionType.MANAGE_SESSIONS, granted: true },
+                    { permission: PermissionType.VIEW_REPORTS, granted: true },
+                    { permission: PermissionType.CREATE_REPORTS, granted: true },
+                    { permission: PermissionType.MANAGE_DOCUMENTS, granted: true },
+                ]
             }
         };
         

@@ -10,7 +10,7 @@ import { protect, isAdmin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-router.use(protect, isAdmin);
+router.use(protect);
 
 router.get('/', getAllCategories);
 router.post('/', createCategory);

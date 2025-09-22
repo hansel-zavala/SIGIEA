@@ -1,11 +1,13 @@
 // frontend/src/context/AuthContext.tsx
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { jwtDecode } from 'jwt-decode';
+import api from '../services/api';
 
 interface User {
   id: number;
   role: string;
   name: string;
+  permissions?: { permission: string; granted: boolean }[];
 }
 
 interface StoredUser extends User {
@@ -27,28 +29,76 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      const storedUserJSON = localStorage.getItem('user');
-      if (storedUserJSON) {
-        const storedUser: StoredUser = JSON.parse(storedUserJSON);
-        const decodedToken: User = jwtDecode(storedUser.token);
-        setUser(decodedToken);
-        setToken(storedUser.token);
+    const loadUser = async () => {
+      try {
+        const storedUserJSON = localStorage.getItem('user');
+        if (storedUserJSON) {
+          const storedUser: StoredUser = JSON.parse(storedUserJSON);
+          const decodedToken: User = jwtDecode(storedUser.token);
+
+          // Load full profile with permissions
+          try {
+            const response = await api.get('users/profile');
+            const fullUser = response.data;
+            const userWithPermissions: User = {
+              id: decodedToken.id || fullUser.id,
+              role: decodedToken.role || fullUser.role,
+              name: decodedToken.name || fullUser.name,
+              permissions: fullUser.permissions || [],
+            };
+            setUser(userWithPermissions);
+          } catch (profileError) {
+            console.error('Error loading user profile:', profileError);
+            // Fallback to profile data
+            const response = await api.get('users/profile');
+            if (response) {
+              const fullUser = response.data;
+              setUser({
+                id: fullUser.id,
+                role: fullUser.role,
+                name: fullUser.name,
+                permissions: fullUser.permissions || [],
+              });
+            } else {
+              setUser(null); // Force logout
+            }
+          }
+
+          setToken(storedUser.token);
+        }
+      } catch (error) {
+        console.error("Failed to decode token from localStorage", error);
+        localStorage.removeItem('user');
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Failed to decode token from localStorage", error);
-      localStorage.removeItem('user');
-    } finally {
-      setLoading(false);
-    }
+    };
+
+    loadUser();
   }, []);
 
-  const login = (data: { token: string }) => {
+  const login = async (data: { token: string }) => {
     const decodedUser: User = jwtDecode(data.token);
-    const userToStore: StoredUser = { ...decodedUser, token: data.token };
 
-    localStorage.setItem('user', JSON.stringify(userToStore));
-    setUser(decodedUser);
+    // Load full profile with permissions
+    try {
+      const response = await api.get('users/profile');
+      const fullUser = response.data;
+      const userWithPermissions: User = {
+        ...decodedUser,
+        permissions: fullUser.permissions || [],
+      };
+      const userToStore: StoredUser = { ...userWithPermissions, token: data.token };
+      localStorage.setItem('user', JSON.stringify(userToStore));
+      setUser(userWithPermissions);
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+      // Fallback to decoded user
+      const userToStore: StoredUser = { ...decodedUser, token: data.token };
+      localStorage.setItem('user', JSON.stringify(userToStore));
+      setUser(decodedUser);
+    }
+
     setToken(data.token);
   };
 

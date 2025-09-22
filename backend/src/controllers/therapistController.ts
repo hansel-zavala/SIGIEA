@@ -66,6 +66,8 @@ export const createTherapist = async (req: Request, res: Response) => {
                     { permission: PermissionType.VIEW_REPORTS, granted: true },
                     { permission: PermissionType.CREATE_REPORTS, granted: true },
                     { permission: PermissionType.MANAGE_DOCUMENTS, granted: true },
+                    { permission: PermissionType.VIEW_GUARDIANS, granted: true },
+                    { permission: PermissionType.VIEW_EVENTS, granted: true },
                 ]
             }
         };

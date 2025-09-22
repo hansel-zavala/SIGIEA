@@ -249,12 +249,41 @@ model TherapistProfile {
 }
 
 enum PermissionType {
+  // Students
   VIEW_STUDENTS
   EDIT_STUDENTS
   MANAGE_SESSIONS
+  // Reports
   VIEW_REPORTS
   CREATE_REPORTS
+  EDIT_REPORTS
+  // Documents
   MANAGE_DOCUMENTS
+  // Guardians
+  VIEW_GUARDIANS
+  EDIT_GUARDIANS
+  // Events
+  VIEW_EVENTS
+  EDIT_EVENTS
+  CREATE_EVENTS
+  // Therapists
+  VIEW_THERAPISTS
+  EDIT_THERAPISTS
+  CREATE_THERAPISTS
+  // Categories
+  MANAGE_CATEGORIES
+  // Lecciones
+  VIEW_LECCIONES
+  EDIT_LECCIONES
+  CREATE_LECCIONES
+  // Templates
+  MANAGE_TEMPLATES
+  // Users
+  MANAGE_USERS
+  // Dashboard
+  VIEW_DASHBOARD
+  // Controls
+  MANAGE_PERMISSIONS
 }
 
 model TherapistPermission {

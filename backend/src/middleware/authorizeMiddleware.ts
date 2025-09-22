@@ -88,13 +88,79 @@ const canViewStudents = authorize({ permission: PermissionType.VIEW_STUDENTS });
 
 const canEditStudents = authorize({ permission: PermissionType.EDIT_STUDENTS });
 
+const canDeleteStudents = authorize({ permission: PermissionType.DELETE_STUDENTS });
+
+const canExportStudents = authorize({ permission: PermissionType.EXPORT_STUDENTS });
+
 const canManageSessions = authorize({ permission: PermissionType.MANAGE_SESSIONS });
 
 const canViewReports = authorize({ permission: PermissionType.VIEW_REPORTS });
 
 const canCreateReports = authorize({ permission: PermissionType.CREATE_REPORTS });
 
+const canEditReports = authorize({ permission: PermissionType.EDIT_REPORTS });
+
+const canExportReports = authorize({ permission: PermissionType.EXPORT_REPORTS });
+
+const canViewDocuments = authorize({ permission: PermissionType.VIEW_DOCUMENTS });
+
 const canManageDocuments = authorize({ permission: PermissionType.MANAGE_DOCUMENTS });
+
+const canViewGuardians = authorize({ permission: PermissionType.VIEW_GUARDIANS });
+
+const canEditGuardians = authorize({ permission: PermissionType.EDIT_GUARDIANS });
+
+const canCreateGuardians = authorize({ permission: PermissionType.CREATE_GUARDIANS });
+
+const canDeleteGuardians = authorize({ permission: PermissionType.DELETE_GUARDIANS });
+
+const canExportGuardians = authorize({ permission: PermissionType.EXPORT_GUARDIANS });
+
+const canViewEvents = authorize({ permission: PermissionType.VIEW_EVENTS });
+
+const canEditEvents = authorize({ permission: PermissionType.EDIT_EVENTS });
+
+const canCreateEvents = authorize({ permission: PermissionType.CREATE_EVENTS });
+
+const canDeleteEvents = authorize({ permission: PermissionType.DELETE_EVENTS });
+
+const canExportEvents = authorize({ permission: PermissionType.EXPORT_EVENTS });
+
+const canViewTherapists = authorize({ permission: PermissionType.VIEW_THERAPISTS });
+
+const canEditTherapists = authorize({ permission: PermissionType.EDIT_THERAPISTS });
+
+const canCreateTherapists = authorize({ permission: PermissionType.CREATE_THERAPISTS });
+
+const canDeleteTherapists = authorize({ permission: PermissionType.DELETE_THERAPISTS });
+
+const canExportTherapists = authorize({ permission: PermissionType.EXPORT_THERAPISTS });
+
+const canManageCategories = authorize({ permission: PermissionType.MANAGE_CATEGORIES });
+
+const canViewLecciones = authorize({ permission: PermissionType.VIEW_LECCIONES });
+
+const canEditLecciones = authorize({ permission: PermissionType.EDIT_LECCIONES });
+
+const canCreateLecciones = authorize({ permission: PermissionType.CREATE_LECCIONES });
+
+const canDeleteLecciones = authorize({ permission: PermissionType.DELETE_LECCIONES });
+
+const canExportLecciones = authorize({ permission: PermissionType.EXPORT_LECCIONES });
+
+const canViewTemplates = authorize({ permission: PermissionType.VIEW_TEMPLATES });
+
+const canManageTemplates = authorize({ permission: PermissionType.MANAGE_TEMPLATES });
+
+const canManageUsers = authorize({ permission: PermissionType.MANAGE_USERS });
+
+const canViewDashboard = authorize({ permission: PermissionType.VIEW_DASHBOARD });
+
+const canViewMatricula = authorize({ permission: PermissionType.VIEW_MATRICULA });
+
+const canViewControls = authorize({ permission: PermissionType.VIEW_CONTROLS });
+
+const canManagePermissions = authorize({ permission: PermissionType.MANAGE_PERMISSIONS });
 
 // Resource ownership checks
 const isStudentTherapist = async (req: AuthRequest): Promise<boolean> => {
@@ -133,10 +199,43 @@ export {
   isParent,
   canViewStudents,
   canEditStudents,
+  canDeleteStudents,
+  canExportStudents,
   canManageSessions,
   canViewReports,
   canCreateReports,
+  canEditReports,
+  canExportReports,
+  canViewDocuments,
   canManageDocuments,
+  canViewGuardians,
+  canEditGuardians,
+  canCreateGuardians,
+  canDeleteGuardians,
+  canExportGuardians,
+  canViewEvents,
+  canEditEvents,
+  canCreateEvents,
+  canDeleteEvents,
+  canExportEvents,
+  canViewTherapists,
+  canEditTherapists,
+  canCreateTherapists,
+  canDeleteTherapists,
+  canExportTherapists,
+  canManageCategories,
+  canViewLecciones,
+  canEditLecciones,
+  canCreateLecciones,
+  canDeleteLecciones,
+  canExportLecciones,
+  canViewTemplates,
+  canManageTemplates,
+  canManageUsers,
+  canViewDashboard,
+  canViewMatricula,
+  canViewControls,
+  canManagePermissions,
   isStudentTherapist,
   isParentOfStudent
 };

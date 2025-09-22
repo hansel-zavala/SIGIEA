@@ -7,7 +7,7 @@ interface User {
   id: number;
   role: string;
   name: string;
-  permissions?: { permission: string; granted: boolean }[];
+  permissions?: Record<string, boolean>;
 }
 
 interface StoredUser extends User {
@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               id: decodedToken.id || fullUser.id,
               role: decodedToken.role || fullUser.role,
               name: decodedToken.name || fullUser.name,
-              permissions: fullUser.permissions || [],
+              permissions: fullUser.permissions?.reduce((acc: Record<string, boolean>, p: { permission: string; granted: boolean }) => { acc[p.permission] = p.granted; return acc; }, {}) || {},
             };
             setUser(userWithPermissions);
           } catch (profileError) {
@@ -86,7 +86,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const fullUser = response.data;
       const userWithPermissions: User = {
         ...decodedUser,
-        permissions: fullUser.permissions || [],
+        permissions: fullUser.permissions?.reduce((acc: Record<string, boolean>, p: { permission: string; granted: boolean }) => { acc[p.permission] = p.granted; return acc; }, {}) || {},
       };
       const userToStore: StoredUser = { ...userWithPermissions, token: data.token };
       localStorage.setItem('user', JSON.stringify(userToStore));

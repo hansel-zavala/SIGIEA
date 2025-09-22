@@ -1,5 +1,5 @@
 // frontend/src/pages/LeccionesPage.tsx
-import { useState, useEffect, useMemo, useCallback } from "react"; 
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import leccionService from "../services/leccionService";
 import type { LeccionStatusFilter } from "../services/leccionService";
@@ -8,6 +8,7 @@ import SearchInput from "../components/ui/SearchInput";
 import { FaBook, FaPencilAlt, FaTrash, FaPlus, FaSearch, FaUndoAlt } from "react-icons/fa";
 import { ConfirmationDialog } from "../components/ui/ConfirmationDialog";
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import Pagination from "../components/ui/Pagination";
 import { actionButtonStyles } from "../styles/actionButtonStyles";
 import ExportMenu from "../components/ExportMenu";
@@ -24,6 +25,7 @@ interface LeccionSummary {
 const LESSONS_PAGE_SIZE_KEY = 'lecciones-items-per-page';
 
 function LeccionesPage() {
+  const { user } = useAuth();
   const [lecciones, setLecciones] = useState<LeccionSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -40,6 +42,11 @@ function LeccionesPage() {
   const [statusFilter, setStatusFilter] = useState<LeccionStatusFilter>('active');
   const { showToast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
+
+  const canCreateLecciones = user?.role === 'ADMIN' || user?.permissions?.['CREATE_LECCIONES'];
+  const canEditLecciones = user?.role === 'ADMIN' || user?.permissions?.['EDIT_LECCIONES'];
+  const canDeleteLecciones = user?.role === 'ADMIN' || user?.permissions?.['DELETE_LECCIONES'];
+  const canExportLecciones = user?.role === 'ADMIN' || user?.permissions?.['EXPORT_LECCIONES'];
 
   const fetchLecciones = useCallback(async () => {
     setLoading(true);
@@ -175,12 +182,14 @@ function LeccionesPage() {
           </div>
                 
           <div className="flex flex-col gap-2 md:flex-row md:items-center">
-            <Link to="/lecciones/new" className="md:ml-4">
-              <button className="w-full min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duración-200 flex items-center justify-center gap-3 shadow-md md:w-auto">
-                <FaPlus className="text-xl" />
-                <span className="text-lg">Crear Nueva Lección</span>
-              </button>
-            </Link>
+            {canCreateLecciones && (
+              <Link to="/lecciones/new" className="md:ml-4">
+                <button className="w-full min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duración-200 flex items-center justify-center gap-3 shadow-md md:w-auto">
+                  <FaPlus className="text-xl" />
+                  <span className="text-lg">Crear Nueva Lección</span>
+                </button>
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -204,17 +213,19 @@ function LeccionesPage() {
           Todas
         </button>
         <div className="flex-1"></div>
-        <ExportMenu
-              defaultStatus={statusFilter}
-              onExport={handleExportLecciones}
-              statuses={[
-                { value: 'all', label: 'Todas' },
-                { value: 'active', label: 'Activas' },
-                { value: 'inactive', label: 'Inactivas' },
-              ]}
-              triggerLabel={isExporting ? 'Exportando…' : 'Exportar'}
-              disabled={isExporting}
-            />
+        {canExportLecciones && (
+          <ExportMenu
+                defaultStatus={statusFilter}
+                onExport={handleExportLecciones}
+                statuses={[
+                  { value: 'all', label: 'Todas' },
+                  { value: 'active', label: 'Activas' },
+                  { value: 'inactive', label: 'Inactivas' },
+                ]}
+                triggerLabel={isExporting ? 'Exportando…' : 'Exportar'}
+                disabled={isExporting}
+              />
+        )}
       </div>
 
       <div className="flex justify-between items-center mb-4 gap-4">
@@ -274,32 +285,36 @@ function LeccionesPage() {
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
-                        <Link
-                          to={`/lecciones/edit/${leccion.id}`}
-                          title="Editar"
-                          className={actionButtonStyles.edit}
-                        >
-                          <FaPencilAlt className="text-lg" />
-                        </Link>
-                        {leccion.isActive ? (
-                          <button
-                            onClick={() => openDeleteDialog(leccion.id)}
-                            title="Desactivar"
-                            className={actionButtonStyles.delete}
+                        {canEditLecciones && (
+                          <Link
+                            to={`/lecciones/edit/${leccion.id}`}
+                            title="Editar"
+                            className={actionButtonStyles.edit}
                           >
-                            <FaTrash className="text-lg" />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleActivate(leccion.id)}
-                            title="Activar"
-                            className={actionButtonStyles.reactivate}
-                          >
-                            <FaUndoAlt className="text-lg" />
-                          </button>
+                            <FaPencilAlt className="text-lg" />
+                          </Link>
                         )}
-                    </div>
-                  </td>
+                        {canDeleteLecciones && (
+                          leccion.isActive ? (
+                            <button
+                              onClick={() => openDeleteDialog(leccion.id)}
+                              title="Desactivar"
+                              className={actionButtonStyles.delete}
+                            >
+                              <FaTrash className="text-lg" />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleActivate(leccion.id)}
+                              title="Activar"
+                              className={actionButtonStyles.reactivate}
+                            >
+                              <FaUndoAlt className="text-lg" />
+                            </button>
+                          )
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))
               ) : (

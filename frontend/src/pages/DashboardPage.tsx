@@ -9,39 +9,77 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import EventDetailModal from '../components/modals/EventDetailModal.js';
+import { useAuth } from '../context/AuthContext';
 
 function DashboardPage() {
   const location = useLocation();
+  const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [events, setEvents] = useState<EventType[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
 
+  // Check permissions
+  const canViewStudents = user?.role === 'ADMIN' || user?.permissions?.['VIEW_STUDENTS'];
+  const canViewTherapists = user?.role === 'ADMIN' || user?.permissions?.['VIEW_THERAPISTS'];
+  const canViewGuardians = user?.role === 'ADMIN' || user?.permissions?.['VIEW_GUARDIANS'];
+  const canViewLecciones = user?.role === 'ADMIN' || user?.permissions?.['VIEW_LECCIONES'];
+  const canViewEvents = user?.role === 'ADMIN' || user?.permissions?.['VIEW_EVENTS'];
+  const canManageCategories = user?.role === 'ADMIN' || user?.permissions?.['MANAGE_CATEGORIES'];
+
   useEffect(() => {
-    const loadDashboardData = () => {
+    const loadDashboardData = async () => {
       setLoading(true);
-      Promise.all([
-        dashboardService.getStats(),
-        eventService.getAllEvents(),
-        categoryService.getAllCategories()
-      ]).then(([statsData, eventsData, categoriesData]) => {
+      setError('');
+
+      try {
+        // Always load stats (dashboard permission is required to access this page)
+        const statsData = await dashboardService.getStats();
         setStats(statsData);
-        setEvents(eventsData);
-        setCategories(categoriesData);
-      }).catch(() => {
+
+        // Load events only if user has permission
+        if (canViewEvents) {
+          try {
+            const eventsData = await eventService.getAllEvents();
+            setEvents(eventsData);
+          } catch (error) {
+            console.warn('No se pudieron cargar los eventos:', error);
+            setEvents([]);
+          }
+        } else {
+          setEvents([]);
+        }
+
+        // Load categories only if user has permission
+        if (canManageCategories) {
+          try {
+            const categoriesData = await categoryService.getAllCategories();
+            setCategories(categoriesData);
+          } catch (error) {
+            console.warn('No se pudieron cargar las categorías:', error);
+            setCategories([]);
+          }
+        } else {
+          setCategories([]);
+        }
+      } catch (error) {
+        console.error('Error cargando datos del dashboard:', error);
         setError('No se pudo cargar la información del dashboard.');
-      }).finally(() => {
+        setStats(null);
+        setEvents([]);
+        setCategories([]);
+      } finally {
         setLoading(false);
-      });
+      }
     };
-    
+
     loadDashboardData();
 
-  }, [location]);
+  }, [location, canViewEvents, canManageCategories]);
 
   const toDateOnly = (value: string) => {
     const date = new Date(value);
@@ -140,39 +178,47 @@ function DashboardPage() {
       <section aria-label="Resumen" className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
         {stats ? (
           <>
-            <Link to="/students" className="cursor-pointer">
-              <StatCard
-                title="Alumnos Matriculados"
-                value={stats.students}
-                icon={<FaUserGraduate size={24} />}
-                color="pink"
-                growth={stats.studentGrowthPercentage}
-              />
-            </Link>
-            <Link to="/therapists" className="cursor-pointer">
-              <StatCard
-                title="Terapeutas Activos"
-                value={stats.therapists}
-                icon={<FaUserMd size={24} />}
-                color="blue"
-              />
-            </Link>
-            <Link to="/guardians" className="cursor-pointer">
-              <StatCard
-                title="Padres Registrados"
-                value={stats.parents}
-                icon={<FaUsers size={24} />}
-                color="green"
-              />
-            </Link>
-            <Link to="/lecciones" className="cursor-pointer">
-              <StatCard
-                title="Lecciones Creadas"
-                value={stats.lecciones}
-                icon={<FaBook size={24} />}
-                color="purple"
-              />
-            </Link>
+            {canViewStudents && (
+              <Link to="/students" className="cursor-pointer">
+                <StatCard
+                  title="Alumnos Matriculados"
+                  value={stats.students}
+                  icon={<FaUserGraduate size={24} />}
+                  color="pink"
+                  growth={stats.studentGrowthPercentage}
+                />
+              </Link>
+            )}
+            {canViewTherapists && (
+              <Link to="/therapists" className="cursor-pointer">
+                <StatCard
+                  title="Terapeutas Activos"
+                  value={stats.therapists}
+                  icon={<FaUserMd size={24} />}
+                  color="blue"
+                />
+              </Link>
+            )}
+            {canViewGuardians && (
+              <Link to="/guardians" className="cursor-pointer">
+                <StatCard
+                  title="Padres Registrados"
+                  value={stats.parents}
+                  icon={<FaUsers size={24} />}
+                  color="green"
+                />
+              </Link>
+            )}
+            {canViewLecciones && (
+              <Link to="/lecciones" className="cursor-pointer">
+                <StatCard
+                  title="Lecciones Creadas"
+                  value={stats.lecciones}
+                  icon={<FaBook size={24} />}
+                  color="purple"
+                />
+              </Link>
+            )}
           </>
         ) : isStatsLoading ? (
           Array.from({ length: 4 }).map((_, index) => (
@@ -188,56 +234,57 @@ function DashboardPage() {
         )}
       </section>
 
-      <section className="grid grid-cols-1 gap-8 xl:grid-cols-3">
-        <div className="xl:col-span-2">
-          <div className="mb-2">
-            <div className="flex items-center justify-between rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-gray-100">
-              <div className="flex items-center gap-2">
-                <FaCalendarAlt className="text-[var(--brand-primary)]" />
-                <h3 className="text-lg font-semibold tracking-tight">Calendario de Eventos</h3>
-              </div>
-              <div className="flex items-center gap-2 overflow-x-auto py-1 text-xs text-gray-500">
-                {categories.length > 0 ? (
-                  categories.map((cat) => (
-                    <span
-                      key={cat.id}
-                      className="inline-flex items-center gap-2 rounded-full bg-violet-50/70 px-2.5 py-1 text-gray-700 ring-1 ring-black/5 whitespace-nowrap"
-                    >
-                      <span style={{ backgroundColor: cat.color }} className="inline-block h-2.5 w-2.5 rounded-full" />
-                      {cat.name}
-                    </span>
-                  ))
-                ) : (
-                  <span>{loading ? 'Cargando categorías...' : 'Sin categorías disponibles.'}</span>
-                )}
+      {canViewEvents && (
+        <section className="grid grid-cols-1 gap-8 xl:grid-cols-3">
+          <div className="xl:col-span-2">
+            <div className="mb-2">
+              <div className="flex items-center justify-between rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-gray-100">
+                <div className="flex items-center gap-2">
+                  <FaCalendarAlt className="text-[var(--brand-primary)]" />
+                  <h3 className="text-lg font-semibold tracking-tight">Calendario de Eventos</h3>
+                </div>
+                <div className="flex items-center gap-2 overflow-x-auto py-1 text-xs text-gray-500">
+                  {categories.length > 0 ? (
+                    categories.map((cat) => (
+                      <span
+                        key={cat.id}
+                        className="inline-flex items-center gap-2 rounded-full bg-violet-50/70 px-2.5 py-1 text-gray-700 ring-1 ring-black/5 whitespace-nowrap"
+                      >
+                        <span style={{ backgroundColor: cat.color }} className="inline-block h-2.5 w-2.5 rounded-full" />
+                        {cat.name}
+                      </span>
+                    ))
+                  ) : (
+                    <span>{loading ? 'Cargando categorías...' : 'Sin categorías disponibles.'}</span>
+                  )}
+                </div>
               </div>
             </div>
+            <div className="custom-calendar-container rounded-xl bg-white p-4 shadow-md ring-1 ring-gray-100">
+              {isCalendarLoading ? (
+                <div className="flex h-72 items-center justify-center text-gray-500">Cargando calendario...</div>
+              ) : (
+                <FullCalendar
+                  plugins={[dayGridPlugin, interactionPlugin]}
+                  initialView="dayGridMonth"
+                  headerToolbar={{
+                    left: '',
+                    center: 'title',
+                    right: 'prev,next'
+                  }}
+                  events={calendarEvents}
+                  locale="es"
+                  height="auto"
+                  eventClick={handleEventClick}
+                  eventDidMount={(info) => {
+                    if (info.event.extendedProps.categoryColor) {
+                      info.el.style.setProperty('--fc-event-border-color', info.event.extendedProps.categoryColor);
+                    }
+                  }}
+                />
+              )}
+            </div>
           </div>
-          <div className="custom-calendar-container rounded-xl bg-white p-4 shadow-md ring-1 ring-gray-100">
-            {isCalendarLoading ? (
-              <div className="flex h-72 items-center justify-center text-gray-500">Cargando calendario...</div>
-            ) : (
-              <FullCalendar
-                plugins={[dayGridPlugin, interactionPlugin]}
-                initialView="dayGridMonth"
-                headerToolbar={{
-                  left: '',
-                  center: 'title',
-                  right: 'prev,next'
-                }}
-                events={calendarEvents}
-                locale="es"
-                height="auto"
-                eventClick={handleEventClick}
-                eventDidMount={(info) => {
-                  if (info.event.extendedProps.categoryColor) {
-                    info.el.style.setProperty('--fc-event-border-color', info.event.extendedProps.categoryColor);
-                  }
-                }}
-              />
-            )}
-          </div>
-        </div>
 
         <aside className="space-y-4">
           <div className="rounded-xl bg-white p-5 shadow-md ring-1 ring-gray-100">
@@ -271,6 +318,7 @@ function DashboardPage() {
           </div>
         </aside>
       </section>
+      )}
 
       <EventDetailModal event={selectedEvent} isOpen={isModalOpen} onClose={handleCloseModal} />
     </div>

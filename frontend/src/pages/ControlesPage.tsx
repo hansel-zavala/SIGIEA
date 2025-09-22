@@ -1,8 +1,9 @@
 // frontend/src/pages/ControlesPage.tsx
 
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import { FaEdit, FaSave, FaTimes } from 'react-icons/fa';
+import { actionButtonStyles } from '../styles/actionButtonStyles';
 
 interface Therapist {
   id: number;
@@ -17,13 +18,106 @@ interface Permission {
   description: string;
 }
 
-const PERMISSIONS: Permission[] = [
-  { key: 'VIEW_STUDENTS', label: 'Ver Estudiantes', description: 'Puede ver la lista de estudiantes asignados' },
-  { key: 'EDIT_STUDENTS', label: 'Editar Estudiantes', description: 'Puede modificar información de estudiantes' },
-  { key: 'MANAGE_SESSIONS', label: 'Gestionar Sesiones', description: 'Puede crear y editar sesiones de terapia' },
-  { key: 'VIEW_REPORTS', label: 'Ver Reportes', description: 'Puede ver reportes de sus estudiantes' },
-  { key: 'CREATE_REPORTS', label: 'Crear Reportes', description: 'Puede crear nuevos reportes' },
-  { key: 'MANAGE_DOCUMENTS', label: 'Gestionar Documentos', description: 'Puede subir y gestionar documentos' },
+interface PermissionModule {
+  name: string;
+  label: string;
+  permissions: Permission[];
+}
+
+const PERMISSION_MODULES: PermissionModule[] = [
+  {
+    name: 'dashboard',
+    label: 'Dashboard',
+    permissions: [
+      { key: 'VIEW_DASHBOARD', label: 'Ver Dashboard', description: 'Puede acceder al dashboard del sistema' },
+    ]
+  },
+  {
+    name: 'matricula',
+    label: 'Matrícula',
+    permissions: [
+      { key: 'VIEW_MATRICULA', label: 'Ver Matrícula', description: 'Puede acceder al módulo de matrícula' },
+    ]
+  },
+  {
+    name: 'students',
+    label: 'Estudiante',
+    permissions: [
+      { key: 'VIEW_STUDENTS', label: 'Ver Estudiante', description: 'Puede ver la lista de estudiantes asignados' },
+      { key: 'EDIT_STUDENTS', label: 'Editar Estudiante', description: 'Puede modificar información de estudiantes' },
+      { key: 'DELETE_STUDENTS', label: 'Eliminar / Reactivar ', description: 'Puede eliminar/reactivar estudiantes' },
+      { key: 'MANAGE_SESSIONS', label: 'Gestionar Horario Estudiante', description: 'Puede crear y editar sesiones de terapia' },
+      { key: 'EXPORT_STUDENTS', label: 'Exportar Listado', description: 'Puede exportar listas de estudiantes' },
+    ]
+  },
+  {
+    name: 'guardians',
+    label: 'Padres',
+    permissions: [
+      { key: 'VIEW_GUARDIANS', label: 'Ver Padre', description: 'Puede ver la lista de padres asignados' },
+      { key: 'CREATE_GUARDIANS', label: 'Crear Nuevo Padre', description: 'Puede crear nuevos padres' },
+      { key: 'EDIT_GUARDIANS', label: 'Editar Padre', description: 'Puede modificar información de padres' },
+      { key: 'DELETE_GUARDIANS', label: 'Eliminar / Reactivar', description: 'Puede eliminar/reactivar padres' },
+      { key: 'EXPORT_GUARDIANS', label: 'Exportar Listado', description: 'Puede exportar listas de padres' },
+    ]
+  },
+  {
+    name: 'therapists',
+    label: 'Terapeuta',
+    permissions: [
+      { key: 'VIEW_THERAPISTS', label: 'Ver Terapeuta', description: 'Puede ver la lista de terapeutas' },
+      { key: 'CREATE_THERAPISTS', label: 'Crear Terapeuta', description: 'Puede crear nuevos terapeutas' },
+      { key: 'EDIT_THERAPISTS', label: 'Editar Terapeuta', description: 'Puede modificar información de terapeutas' },
+      { key: 'DELETE_THERAPISTS', label: 'Eliminar / Reactivar', description: 'Puede eliminar/reactivar terapeutas' },
+      { key: 'EXPORT_THERAPISTS', label: 'Exportar Listado', description: 'Puede exportar listas de terapeutas' },
+    ]
+  },
+  {
+    name: 'lecciones',
+    label: 'Lecciones',
+    permissions: [
+      { key: 'VIEW_LECCIONES', label: 'Ver Lecciones', description: 'Puede ver las lecciones' },
+      { key: 'CREATE_LECCIONES', label: 'Crear Lecciones', description: 'Puede crear nuevas lecciones' },
+      { key: 'EDIT_LECCIONES', label: 'Editar Lecciones', description: 'Puede modificar lecciones' },
+      { key: 'DELETE_LECCIONES', label: 'Eliminar / Reactivar', description: 'Puede eliminar/reactivar lecciones' },
+      { key: 'EXPORT_LECCIONES', label: 'Exportar Listado', description: 'Puede exportar listas de lecciones' },
+    ]
+  },
+  {
+    name: 'events',
+    label: 'Eventos',
+    permissions: [
+      { key: 'VIEW_EVENTS', label: 'Ver Eventos', description: 'Puede ver los eventos del sistema' },
+      { key: 'CREATE_EVENTS', label: 'Crear Evento', description: 'Puede crear nuevos eventos' },
+      { key: 'EDIT_EVENTS', label: 'Editar Evento', description: 'Puede modificar eventos' },
+      { key: 'DELETE_EVENTS', label: 'Eliminar / Reactivar', description: 'Puede eliminar/reactivar eventos' },
+      { key: 'MANAGE_CATEGORIES', label: 'Gestionar Categorías', description: 'Puede crear y gestionar categorías' },
+      { key: 'EXPORT_EVENTS', label: 'Exportar Listado', description: 'Puede exportar listas de eventos' },
+    ]
+  },
+  {
+    name: 'documents',
+    label: 'Archivero',
+    permissions: [
+      { key: 'MANAGE_DOCUMENTS', label: 'Ver Archivero, Subir Nuevo Archivo, Descargar Archivos', description: 'Puede ver, subir y descargar documentos' },
+    ]
+  },
+  {
+    name: 'reports',
+    label: 'Reportes',
+    permissions: [
+      { key: 'VIEW_REPORTS', label: 'Ver Reporte', description: 'Puede ver reportes de sus estudiantes' },
+      { key: 'CREATE_REPORTS', label: 'Generar Reportes', description: 'Puede crear nuevos reportes' },
+    ]
+  },
+  {
+    name: 'templates',
+    label: 'Plantillas',
+    permissions: [
+      { key: 'VIEW_TEMPLATES', label: 'Ver Plantilla', description: 'Puede ver plantillas de reportes' },
+      { key: 'MANAGE_TEMPLATES', label: 'Crear Plantilla', description: 'Puede crear y gestionar plantillas de reportes' },
+    ]
+  },
 ];
 
 function ControlesPage() {
@@ -39,7 +133,7 @@ function ControlesPage() {
 
   const loadTherapists = async () => {
     try {
-      const response = await axios.get('controles/therapists');
+      const response = await api.get('controles/therapists');
       setTherapists(response.data.data || []);
       setError(null);
     } catch (error: any) {
@@ -63,7 +157,7 @@ function ControlesPage() {
 
   const savePermissions = async (therapistId: number) => {
     try {
-      await axios.put(`controles/therapists/${therapistId}/permissions`, {
+      await api.put(`controles/therapists/${therapistId}/permissions`, {
         permissions: editPermissions
       });
       setTherapists(therapists.map(t =>
@@ -77,10 +171,86 @@ function ControlesPage() {
   };
 
   const togglePermission = (permissionKey: string) => {
-    setEditPermissions(prev => ({
-      ...prev,
-      [permissionKey]: !prev[permissionKey]
-    }));
+    setEditPermissions(prev => {
+      const newPermissions = { ...prev };
+      const isChecked = !prev[permissionKey];
+
+      // Set the toggled permission
+      newPermissions[permissionKey] = isChecked;
+
+      // Define dependencies: if you check a permission, automatically check its prerequisites
+      const dependencies: Record<string, string[]> = {
+        // Students
+        'EDIT_STUDENTS': ['VIEW_STUDENTS'],
+        'DELETE_STUDENTS': ['VIEW_STUDENTS'],
+        'EXPORT_STUDENTS': ['VIEW_STUDENTS'],
+        'MANAGE_SESSIONS': ['VIEW_STUDENTS'],
+
+        // Guardians
+        'EDIT_GUARDIANS': ['VIEW_GUARDIANS'],
+        'CREATE_GUARDIANS': ['VIEW_GUARDIANS'],
+        'DELETE_GUARDIANS': ['VIEW_GUARDIANS'],
+        'EXPORT_GUARDIANS': ['VIEW_GUARDIANS'],
+
+        // Therapists
+        'EDIT_THERAPISTS': ['VIEW_THERAPISTS'],
+        'CREATE_THERAPISTS': ['VIEW_THERAPISTS'],
+        'DELETE_THERAPISTS': ['VIEW_THERAPISTS'],
+        'EXPORT_THERAPISTS': ['VIEW_THERAPISTS'],
+
+        // Lecciones
+        'EDIT_LECCIONES': ['VIEW_LECCIONES'],
+        'CREATE_LECCIONES': ['VIEW_LECCIONES'],
+        'DELETE_LECCIONES': ['VIEW_LECCIONES'],
+        'EXPORT_LECCIONES': ['VIEW_LECCIONES'],
+
+        // Events
+        'EDIT_EVENTS': ['VIEW_EVENTS'],
+        'CREATE_EVENTS': ['VIEW_EVENTS'],
+        'DELETE_EVENTS': ['VIEW_EVENTS'],
+        'EXPORT_EVENTS': ['VIEW_EVENTS'],
+        'MANAGE_CATEGORIES': ['VIEW_EVENTS'],
+
+        // Documents
+        // 'MANAGE_DOCUMENTS': [], // No prerequisites
+
+        // Reports
+        'CREATE_REPORTS': ['VIEW_REPORTS'],
+        'EDIT_REPORTS': ['VIEW_REPORTS'],
+        'EXPORT_REPORTS': ['VIEW_REPORTS'],
+
+        // Templates
+        'MANAGE_TEMPLATES': ['VIEW_TEMPLATES'],
+
+        // Controls
+        // 'MANAGE_PERMISSIONS': [], // No prerequisites
+      };
+
+      // If checking a permission, ensure prerequisites are also checked
+      if (isChecked && dependencies[permissionKey]) {
+        dependencies[permissionKey].forEach(dep => {
+          newPermissions[dep] = true;
+        });
+      }
+
+      return newPermissions;
+    });
+  };
+
+  const selectAllModule = (module: PermissionModule) => {
+    const newPermissions = { ...editPermissions };
+    module.permissions.forEach(perm => {
+      newPermissions[perm.key] = true;
+    });
+    setEditPermissions(newPermissions);
+  };
+
+  const deselectAllModule = (module: PermissionModule) => {
+    const newPermissions = { ...editPermissions };
+    module.permissions.forEach(perm => {
+      newPermissions[perm.key] = false;
+    });
+    setEditPermissions(newPermissions);
   };
 
   if (loading) {
@@ -115,11 +285,11 @@ function ControlesPage() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Terapeuta
+                  Nombre del Terapeuta
                 </th>
-                {PERMISSIONS.map(perm => (
-                  <th key={perm.key} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {perm.label}
+                {PERMISSION_MODULES.map(module => (
+                  <th key={module.name} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {module.label}
                   </th>
                 ))}
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -136,23 +306,45 @@ function ControlesPage() {
                       <div className="text-sm text-gray-500">{therapist.email}</div>
                     </div>
                   </td>
-                  {PERMISSIONS.map(perm => (
-                    <td key={perm.key} className="px-6 py-4 whitespace-nowrap">
+                  {PERMISSION_MODULES.map(module => (
+                    <td key={module.name} className="px-6 py-4 align-top">
                       {editingId === therapist.id ? (
-                        <input
-                          type="checkbox"
-                          checked={editPermissions[perm.key] || false}
-                          onChange={() => togglePermission(perm.key)}
-                          className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-gray-300 rounded"
-                        />
+                        <div className="space-y-2">
+                          <div className="flex space-x-1">
+                            <button
+                              onClick={() => selectAllModule(module)}
+                              className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded hover:bg-green-200"
+                            >
+                              Todos
+                            </button>
+                            <button
+                              onClick={() => deselectAllModule(module)}
+                              className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded hover:bg-red-200"
+                            >
+                              Ninguno
+                            </button>
+                          </div>
+                          <div className="space-y-1">
+                            {module.permissions.map(perm => (
+                              <label key={perm.key} className="flex items-center text-sm">
+                                <input
+                                  type="checkbox"
+                                  checked={editPermissions[perm.key] || false}
+                                  onChange={() => togglePermission(perm.key)}
+                                  className="h-3 w-3 text-violet-600 focus:ring-violet-500 border-gray-300 rounded"
+                                />
+                                <span className="ml-2 text-gray-700">{perm.label}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
                       ) : (
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          therapist.permissions[perm.key]
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {therapist.permissions[perm.key] ? 'Sí' : 'No'}
-                        </span>
+                        <div className="text-sm text-gray-900">
+                          {module.permissions
+                            .filter(perm => therapist.permissions[perm.key])
+                            .map(perm => perm.label)
+                            .join(', ') || 'Ninguno'}
+                        </div>
                       )}
                     </td>
                   ))}
@@ -161,13 +353,13 @@ function ControlesPage() {
                       <div className="flex space-x-2">
                         <button
                           onClick={() => savePermissions(therapist.id)}
-                          className="text-green-600 hover:text-green-900"
+                          className={actionButtonStyles.save}
                         >
                           <FaSave size={16} />
                         </button>
                         <button
                           onClick={cancelEditing}
-                          className="text-red-600 hover:text-red-900"
+                          className={actionButtonStyles.delete}
                         >
                           <FaTimes size={16} />
                         </button>
@@ -175,7 +367,7 @@ function ControlesPage() {
                     ) : (
                       <button
                         onClick={() => startEditing(therapist)}
-                        className="text-violet-600 hover:text-violet-900"
+                        className={actionButtonStyles.edit2}
                       >
                         <FaEdit size={16} />
                       </button>
@@ -190,13 +382,18 @@ function ControlesPage() {
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h3 className="text-lg font-medium text-blue-900 mb-2">Información sobre Permisos</h3>
-        <ul className="list-disc list-inside text-blue-800 space-y-1">
-          {PERMISSIONS.map(perm => (
-            <li key={perm.key}>
-              <strong>{perm.label}:</strong> {perm.description}
-            </li>
-          ))}
-        </ul>
+        {PERMISSION_MODULES.map(module => (
+          <div key={module.name} className="mb-4">
+            <h4 className="font-semibold text-blue-900 mb-2">{module.label}</h4>
+            <ul className="list-disc list-inside text-blue-800 space-y-1 ml-4">
+              {module.permissions.map(perm => (
+                <li key={perm.key}>
+                  <strong>{perm.label}:</strong> {perm.description}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </div>
     </div>
   );

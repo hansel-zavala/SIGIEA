@@ -9,6 +9,7 @@ import Pagination from "../components/ui/Pagination";
 import { FaUserCircle, FaPencilAlt, FaTrash, FaCalendarPlus, FaPlus, FaUndo, FaSearch } from "react-icons/fa";
 import { ConfirmationDialog } from "../components/ui/ConfirmationDialog";
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import ExportMenu from '../components/ExportMenu';
 import { downloadBlob, inferFilenameFromResponse } from '../utils/downloadFile';
 import { actionButtonStyles } from '../styles/actionButtonStyles';
@@ -46,6 +47,7 @@ function StudentsPage() {
   const [confirmAction, setConfirmAction] = useState<"deactivate" | "reactivate" | null>(null);
   const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
   const { showToast } = useToast();
+  const { user } = useAuth();
   const [isExporting, setIsExporting] = useState(false);
 
   const fetchStudents = () => {
@@ -172,13 +174,15 @@ function StudentsPage() {
 
 
         <div className="flex flex-col gap-2 md:flex-row md:items-center">
-          <Link to="/matricula">
-            <button className="min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">
-              <FaPlus className="text-xl" />
-              <span className="text-lg">Crear Nuevo Estudiante</span>
-            </button>
-          </Link>
-          
+          {(user?.role === 'ADMIN' || user?.permissions?.['EDIT_STUDENTS']) && (
+            <Link to="/matricula">
+              <button className="min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">
+                <FaPlus className="text-xl" />
+                <span className="text-lg">Crear Nuevo Estudiante</span>
+              </button>
+            </Link>
+          )}
+
         </div>
       </div>
       </div>
@@ -192,17 +196,19 @@ function StudentsPage() {
         <button onClick={() => handleFilterChange('inactive')} className={`px-4 py-2 text-sm rounded-md ${statusFilter === 'inactive' ? 'text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md' : 'bg-gray-200'}`}>Inactivos</button>
         <button onClick={() => handleFilterChange('all')} className={`px-4 py-2 text-sm rounded-md ${statusFilter === 'all' ? 'text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md' : 'bg-gray-200'}`}>Todos</button>
         <div className="flex-1"></div>
-        <ExportMenu
-            defaultStatus={statusFilter}
-            onExport={handleExportStudents}
-            statuses={[ 
-              { value: 'all', label: 'Todos' },
-              { value: 'active', label: 'Activos' },
-              { value: 'inactive', label: 'Inactivos' },
-            ]}
-            triggerLabel={isExporting ? 'Exportando…' : 'Exportar'}
-            disabled={isExporting}
-          />
+        {(user?.role === 'ADMIN' || user?.permissions?.['EXPORT_STUDENTS']) && (
+          <ExportMenu
+              defaultStatus={statusFilter}
+              onExport={handleExportStudents}
+              statuses={[
+                { value: 'all', label: 'Todos' },
+                { value: 'active', label: 'Activos' },
+                { value: 'inactive', label: 'Inactivos' },
+              ]}
+              triggerLabel={isExporting ? 'Exportando…' : 'Exportar'}
+              disabled={isExporting}
+            />
+        )}
       </div>
 
       {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
@@ -256,39 +262,47 @@ function StudentsPage() {
         </td>
         <td className="px-5 py-4">
           <div className="flex items-center gap-3">
-            <Link
-              to={`/students/edit/${student.id}`}
-              title="Editar Estudiante"
-              className={actionButtonStyles.edit}
-            >
-              <FaPencilAlt className="text-lg" />
-            </Link>
-
-            {student.isActive ? (
-              <button
-                onClick={() => openDeactivateDialog(student.id)}
-                title="Desactivar Estudiante"
-                className={actionButtonStyles.delete}
+            {(user?.role === 'ADMIN' || user?.permissions?.['EDIT_STUDENTS']) && (
+              <Link
+                to={`/students/edit/${student.id}`}
+                title="Editar Estudiante"
+                className={actionButtonStyles.edit}
               >
-                <FaTrash className="text-lg" />
-              </button>
-            ) : (
-              <button
-                onClick={() => openReactivateDialog(student.id)}
-                title="Reactivar Estudiante"
-                className={actionButtonStyles.reactivate}
-              >
-                <FaUndo className="text-lg" />
-              </button>
+                <FaPencilAlt className="text-lg" />
+              </Link>
             )}
 
-            <Link
-              to={`/students/${student.id}/schedule`}
-              title="Asignar Horario"
-              className={actionButtonStyles.schedule}
-            >
-              <FaCalendarPlus className="text-lg" />
-            </Link>
+            {student.isActive ? (
+              (user?.role === 'ADMIN' || user?.permissions?.['DELETE_STUDENTS']) && (
+                <button
+                  onClick={() => openDeactivateDialog(student.id)}
+                  title="Desactivar Estudiante"
+                  className={actionButtonStyles.delete}
+                >
+                  <FaTrash className="text-lg" />
+                </button>
+              )
+            ) : (
+              (user?.role === 'ADMIN' || user?.permissions?.['DELETE_STUDENTS']) && (
+                <button
+                  onClick={() => openReactivateDialog(student.id)}
+                  title="Reactivar Estudiante"
+                  className={actionButtonStyles.reactivate}
+                >
+                  <FaUndo className="text-lg" />
+                </button>
+              )
+            )}
+
+            {(user?.role === 'ADMIN' || user?.permissions?.['MANAGE_SESSIONS']) && (
+              <Link
+                to={`/students/${student.id}/schedule`}
+                title="Asignar Horario"
+                className={actionButtonStyles.schedule}
+              >
+                <FaCalendarPlus className="text-lg" />
+              </Link>
+            )}
           </div>
         </td>
       </tr>

@@ -9,6 +9,7 @@ import { FaUserMd, FaPencilAlt, FaTrash, FaPlus, FaUndo, FaSearch } from 'react-
 import Badge from '../components/ui/Badge.js';
 import { ConfirmationDialog } from "../components/ui/ConfirmationDialog";
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import { actionButtonStyles } from '../styles/actionButtonStyles';
 import ExportMenu from '../components/ExportMenu';
 import { downloadBlob, inferFilenameFromResponse } from '../utils/downloadFile';
@@ -26,6 +27,7 @@ interface TherapistProfile {
 const THERAPISTS_PAGE_SIZE_KEY = 'therapists-list-page-size';
 
 function TherapistsPage() {
+  const { user } = useAuth();
   const [therapists, setTherapists] = useState<TherapistProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -44,6 +46,11 @@ function TherapistsPage() {
   const [selectedTherapistId, setSelectedTherapistId] = useState<number | null>(null);
   const { showToast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
+
+  const canCreateTherapists = user?.role === 'ADMIN' || user?.permissions?.['CREATE_THERAPISTS'];
+  const canEditTherapists = user?.role === 'ADMIN' || user?.permissions?.['EDIT_THERAPISTS'];
+  const canDeleteTherapists = user?.role === 'ADMIN' || user?.permissions?.['DELETE_THERAPISTS'];
+  const canExportTherapists = user?.role === 'ADMIN' || user?.permissions?.['EXPORT_THERAPISTS'];
 
 
   const fetchTherapists = () => {
@@ -168,12 +175,14 @@ function TherapistsPage() {
           </div>
         </div>
         <div className="flex flex-col gap-2 md:flex-row md:items-center">
-          <Link to="/therapists/new">
-            <button className="min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">
-              <FaPlus className="text-xl" />
-                <span className="text-lg">Crear Nuevo Terapeuta</span>
-            </button>
-          </Link>
+          {canCreateTherapists && (
+            <Link to="/therapists/new">
+              <button className="min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">
+                <FaPlus className="text-xl" />
+                  <span className="text-lg">Crear Nuevo Terapeuta</span>
+              </button>
+            </Link>
+          )}
         </div>
       </div>
       </div>
@@ -189,17 +198,19 @@ function TherapistsPage() {
         <button onClick={() => handleFilterChange('inactive')} className={`px-4 py-2 text-sm rounded-md ${statusFilter === 'inactive' ? 'text-white font-bold bg-violet-500' : 'bg-gray-200'}`}>Inactivos</button>
         <button onClick={() => handleFilterChange('all')} className={`px-4 py-2 text-sm rounded-md ${statusFilter === 'all' ? 'text-white font-bold bg-violet-500' : 'bg-gray-200'}`}>Todos</button>
       <div className="flex-1"></div>
-      <ExportMenu
-            defaultStatus={statusFilter}
-            onExport={handleExportTherapists} 
-            statuses={[
-              { value: 'all', label: 'Todos' },
-              { value: 'active', label: 'Activos' },
-              { value: 'inactive', label: 'Inactivos' },
-            ]}
-            triggerLabel={isExporting ? 'Exportando…' : 'Exportar'}
-            disabled={isExporting}
-          />
+      {canExportTherapists && (
+        <ExportMenu
+              defaultStatus={statusFilter}
+              onExport={handleExportTherapists}
+              statuses={[
+                { value: 'all', label: 'Todos' },
+                { value: 'active', label: 'Activos' },
+                { value: 'inactive', label: 'Inactivos' },
+              ]}
+              triggerLabel={isExporting ? 'Exportando…' : 'Exportar'}
+              disabled={isExporting}
+            />
+      )}
       </div> 
 
       <div className="flex justify-between items-center mb-4 gap-4">
@@ -251,29 +262,33 @@ function TherapistsPage() {
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
-                      <Link
-                        to={`/therapists/edit/${therapist.id}`}
-                        title="Editar"
-                        className={actionButtonStyles.edit}
-                      >
-                        <FaPencilAlt className="text-lg" />
-                      </Link>
-                      {therapist.isActive ? (
-                        <button
-                          onClick={() => openDeactivateDialog(therapist.id)}
-                          title="Desactivar"
-                          className={actionButtonStyles.delete}
+                      {canEditTherapists && (
+                        <Link
+                          to={`/therapists/edit/${therapist.id}`}
+                          title="Editar"
+                          className={actionButtonStyles.edit}
                         >
-                          <FaTrash className="text-lg" />
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => openReactivateDialog(therapist.id)}
-                          title="Reactivar"
-                          className={actionButtonStyles.reactivate}
-                        >
-                          <FaUndo className="text-lg" />
-                        </button>
+                          <FaPencilAlt className="text-lg" />
+                        </Link>
+                      )}
+                      {canDeleteTherapists && (
+                        therapist.isActive ? (
+                          <button
+                            onClick={() => openDeactivateDialog(therapist.id)}
+                            title="Desactivar"
+                            className={actionButtonStyles.delete}
+                          >
+                            <FaTrash className="text-lg" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => openReactivateDialog(therapist.id)}
+                            title="Reactivar"
+                            className={actionButtonStyles.reactivate}
+                          >
+                            <FaUndo className="text-lg" />
+                          </button>
+                        )
                       )}
                     </div>
                   </td>

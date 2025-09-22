@@ -108,7 +108,8 @@ function ArchiveroPage() {
   const [uploading, setUploading] = useState(false);
   const fileInputKeyRef = useRef(0);
 
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === 'ADMIN';
+  const canManageDocuments = user?.role === 'ADMIN' || user?.permissions?.['MANAGE_DOCUMENTS'];
 
   const currentCategoryOptions = useMemo(() => CATEGORY_SUGGESTIONS[activeTab] ?? [], [activeTab]);
 
@@ -334,8 +335,8 @@ function ArchiveroPage() {
   };
 
   const handleDelete = async (document: DocumentRecord) => {
-    if (!isAdmin) {
-      showToast({ message: 'Solo los administradores pueden eliminar documentos.', type: 'error' });
+    if (!canManageDocuments) {
+      showToast({ message: 'No tienes permisos para eliminar documentos.', type: 'error' });
       return;
     }
 
@@ -591,7 +592,7 @@ function ArchiveroPage() {
                       >
                         <FaDownload /> Descargar
                       </button>
-                      {isAdmin && !document.readOnly && (
+                      {canManageDocuments && !document.readOnly && (
                         <button
                           type="button"
                           onClick={() => handleDelete(document)}
@@ -666,14 +667,14 @@ function ArchiveroPage() {
           </section>
 
           <section className="space-y-5">
-            {renderUploadForm()}
+            {canManageDocuments && renderUploadForm()}
             {renderDocumentFilters()}
             {renderDocumentTable()}
           </section>
         </div>
       ) : (
         <div className="space-y-5">
-          {renderUploadForm()}
+          {canManageDocuments && renderUploadForm()}
           {renderDocumentFilters()}
           {renderDocumentTable()}
         </div>

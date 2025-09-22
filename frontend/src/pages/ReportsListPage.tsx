@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import reportService from '../services/reportService';
 import { FaUserCircle, FaFileMedicalAlt } from 'react-icons/fa';
 import Pagination from '../components/ui/Pagination';
+import { useAuth } from '../context/AuthContext';
 
 interface Student {
   id: number;
@@ -14,6 +15,7 @@ interface Student {
 const REPORTS_LIST_PAGE_SIZE_KEY = 'reports-list-page-size';
 
 function ReportsListPage() {
+  const { user } = useAuth();
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -24,6 +26,8 @@ function ReportsListPage() {
     const parsed = stored ? Number(stored) : NaN;
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 10;
   });
+
+  const canCreateReports = user?.role === 'ADMIN' || user?.permissions?.['CREATE_REPORTS'];
 
   useEffect(() => {
     reportService.getStudentsForReporting()
@@ -110,12 +114,14 @@ function ReportsListPage() {
                 </td>
                 <td className="px-5 py-4 text-gray-600">{student.therapist?.fullName || 'No asignado'}</td>
                 <td className="px-5 py-4">
-                  <Link to={`/reports/new/${student.id}`}>
-                    <button className="py-2 px-4 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center gap-2">
-                      <FaFileMedicalAlt />
-                      <span>Generar Reporte</span>
-                    </button>
-                  </Link>
+                  {canCreateReports && (
+                    <Link to={`/reports/new/${student.id}`}>
+                      <button className="py-2 px-4 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center gap-2">
+                        <FaFileMedicalAlt />
+                        <span>Generar Reporte</span>
+                      </button>
+                    </Link>
+                  )}
                 </td>
               </tr>
             )) : (

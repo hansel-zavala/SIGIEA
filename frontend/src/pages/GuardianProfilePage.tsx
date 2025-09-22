@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import guardianService from '../services/guardianService';
 import { FaUserCircle, FaEdit, FaUserGraduate } from 'react-icons/fa';
+import { useAuth } from '../context/AuthContext';
 
 interface GuardianProfile {
   id: number;
@@ -30,10 +31,14 @@ const InfoField = ({ label, value }: { label: string; value: string | undefined 
 );
 
 function GuardianProfilePage() {
+  const { user } = useAuth();
   const [guardian, setGuardian] = useState<GuardianProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const { id } = useParams<{ id: string }>();
+
+  const canViewStudents = user?.role === 'ADMIN' || user?.permissions?.['VIEW_STUDENTS'];
+  const canEditGuardians = user?.role === 'ADMIN' || user?.permissions?.['EDIT_GUARDIANS'];
 
   useEffect(() => {
     if (id) {
@@ -77,11 +82,15 @@ function GuardianProfilePage() {
                   const inactive = s.isActive === false;
                   const chipClass = inactive
                     ? 'text-gray-400 bg-gray-100 px-2 py-1 rounded'
-                    : 'text-violet-600 hover:underline bg-violet-50 px-2 py-1 rounded';
+                    : canViewStudents
+                      ? 'text-violet-600 hover:underline bg-violet-50 px-2 py-1 rounded'
+                      : 'text-gray-400 bg-gray-100 px-2 py-1 rounded';
                   return inactive ? (
                     <span key={s.id} className={chipClass} title="Estudiante inactivo">{name}</span>
-                  ) : (
+                  ) : canViewStudents ? (
                     <Link key={s.id} to={`/students/${s.id}`} className={chipClass}>{name}</Link>
+                  ) : (
+                    <span key={s.id} className={chipClass} title="Sin permisos para ver estudiantes">{name}</span>
                   );
                 })
               ) : (
@@ -92,13 +101,15 @@ function GuardianProfilePage() {
         </div>
         
         <div className="flex gap-4">
-          <Link to={`/guardians/edit/${guardian.id}`}>
-            <button className="min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">
-              <FaEdit />
-              <span>Editar Padre</span>
-            </button>
-          </Link>
-          {(() => {
+          {canEditGuardians && (
+            <Link to={`/guardians/edit/${guardian.id}`}>
+              <button className="min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">
+                <FaEdit />
+                <span>Editar Padre</span>
+              </button>
+            </Link>
+          )}
+          {canViewStudents && (() => {
             const firstActive = guardian.students?.find(s => s.isActive !== false);
             if (!firstActive) return null;
             return (
@@ -132,8 +143,10 @@ function GuardianProfilePage() {
                       <li key={s.id}>
                         {inactive ? (
                           <span className="text-gray-400" title="Estudiante inactivo">{name}</span>
-                        ) : (
+                        ) : canViewStudents ? (
                           <Link to={`/students/${s.id}`} className="text-violet-600 hover:underline">{name}</Link>
+                        ) : (
+                          <span className="text-gray-400" title="Sin permisos para ver estudiantes">{name}</span>
                         )}
                       </li>
                     );

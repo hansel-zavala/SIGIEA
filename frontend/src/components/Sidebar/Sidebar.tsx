@@ -14,21 +14,22 @@ function Sidebar({ isOpen }: SidebarProps) {
   console.log('Sidebar user:', user);
 
   const allModules = [
-    { name: 'Dashboard', to: '/', icon: <FaHome size={22} />, roles: ['ADMIN', 'THERAPIST', 'PARENT'] },
-    { name: 'Matrícula', to: '/matricula', icon: <FaFileSignature size={22} />, roles: ['ADMIN'] },
-    { name: 'Estudiantes', to: '/students', icon: <FaUserGraduate size={22} />, roles: ['ADMIN', 'THERAPIST', 'PARENT'] },
-    { name: 'Padres', to: '/guardians', icon: <FaUsers size={22} />, roles: ['ADMIN', 'THERAPIST'] },
-    { name: 'Terapeutas', to: '/therapists', icon: <FaUserMd size={22} />, roles: ['ADMIN'] },
-    { name: 'Lecciones', to: '/lecciones', icon: <FaBook size={22} />, roles: ['ADMIN', 'THERAPIST'] },
-    { name: 'Eventos', to: '/events', icon: <FaCalendarDay size={22} />, roles: ['ADMIN', 'THERAPIST', 'PARENT'] },
-    { name: 'Archivero', to: '/archivero', icon: <FaFolderOpen size={22} />, roles: ['ADMIN', 'THERAPIST'] },
-    { name: 'Reportes', to: '/reports', icon: <FaClipboardList size={22} />, roles: ['ADMIN', 'THERAPIST', 'PARENT'] },
-    { name: 'Plantillas', to: '/templates', icon: <FaWpforms size={22} />, roles: ['ADMIN'] },
-    { name: 'Controles', to: '/controles', icon: <FaCog size={22} />, roles: ['ADMIN'] },
+    { name: 'Dashboard', to: '/', icon: <FaHome size={22} />, roles: ['ADMIN', 'THERAPIST', 'PARENT'], permission: 'VIEW_DASHBOARD' },
+    { name: 'Matrícula', to: '/matricula', icon: <FaFileSignature size={22} />, roles: ['ADMIN', 'THERAPIST'], permission: 'VIEW_MATRICULA' },
+    { name: 'Estudiantes', to: '/students', icon: <FaUserGraduate size={22} />, roles: ['ADMIN', 'THERAPIST', 'PARENT'], permission: 'VIEW_STUDENTS' },
+    { name: 'Padres', to: '/guardians', icon: <FaUsers size={22} />, roles: ['ADMIN', 'THERAPIST'], permission: 'VIEW_GUARDIANS' },
+    { name: 'Terapeutas', to: '/therapists', icon: <FaUserMd size={22} />, roles: ['ADMIN', 'THERAPIST'], permission: 'VIEW_THERAPISTS' },
+    { name: 'Lecciones', to: '/lecciones', icon: <FaBook size={22} />, roles: ['ADMIN', 'THERAPIST'], permission: 'VIEW_LECCIONES' },
+    { name: 'Eventos', to: '/events', icon: <FaCalendarDay size={22} />, roles: ['ADMIN', 'THERAPIST', 'PARENT'], permission: 'VIEW_EVENTS' },
+    { name: 'Archivero', to: '/archivero', icon: <FaFolderOpen size={22} />, roles: ['ADMIN', 'THERAPIST'], permission: 'VIEW_DOCUMENTS' },
+    { name: 'Reportes', to: '/reports', icon: <FaClipboardList size={22} />, roles: ['ADMIN', 'THERAPIST', 'PARENT'], permission: 'VIEW_REPORTS' },
+    { name: 'Plantillas', to: '/templates', icon: <FaWpforms size={22} />, roles: ['ADMIN', 'THERAPIST'], permission: 'VIEW_TEMPLATES' },
+    { name: 'Controles', to: '/controles', icon: <FaCog size={22} />, roles: ['ADMIN', 'THERAPIST'], permission: 'MANAGE_PERMISSIONS' },
   ];
 
   const modules = allModules.filter(module =>
-    user && module.roles.includes(user.role)
+    user && module.roles.includes(user.role) &&
+    (!module.permission || user.role === 'ADMIN' || user.permissions?.[module.permission])
   );
 
   console.log('Filtered modules:', modules);

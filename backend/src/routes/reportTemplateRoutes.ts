@@ -9,19 +9,42 @@ import {
     updateTemplateMeta,
     updateTemplateFull,
 } from '../controllers/reportTemplateController.js';
-import { protect, isAdmin } from '../middleware/authMiddleware.js';
+import { protect } from '../middleware/authMiddleware.js';
+import { authorize } from '../middleware/authorizeMiddleware.js';
+import { Role, PermissionType } from '@prisma/client';
 
 const router = express.Router();
 
-router.use(protect, isAdmin);
+router.use(protect);
 
-router.get('/', getAllTemplates);
-router.get('/:id', getTemplateById);
-router.post('/', createTemplate);
-router.post('/:id/clone', cloneTemplate);
-router.patch('/:id/publish', publishTemplate);
-router.patch('/:id', updateTemplateMeta);
+router.get('/', authorize([
+  { role: [Role.ADMIN] },
+  { role: [Role.THERAPIST], permission: PermissionType.VIEW_TEMPLATES }
+]), getAllTemplates);
+router.get('/:id', authorize([
+  { role: [Role.ADMIN] },
+  { role: [Role.THERAPIST], permission: PermissionType.VIEW_TEMPLATES }
+]), getTemplateById);
+router.post('/', authorize([
+  { role: [Role.ADMIN] },
+  { role: [Role.THERAPIST], permission: PermissionType.MANAGE_TEMPLATES }
+]), createTemplate);
+router.post('/:id/clone', authorize([
+  { role: [Role.ADMIN] },
+  { role: [Role.THERAPIST], permission: PermissionType.MANAGE_TEMPLATES }
+]), cloneTemplate);
+router.patch('/:id/publish', authorize([
+  { role: [Role.ADMIN] },
+  { role: [Role.THERAPIST], permission: PermissionType.MANAGE_TEMPLATES }
+]), publishTemplate);
+router.patch('/:id', authorize([
+  { role: [Role.ADMIN] },
+  { role: [Role.THERAPIST], permission: PermissionType.MANAGE_TEMPLATES }
+]), updateTemplateMeta);
 // Actualiza completamente una plantilla (secciones e ítems)
-router.put('/:id/full', updateTemplateFull);
+router.put('/:id/full', authorize([
+  { role: [Role.ADMIN] },
+  { role: [Role.THERAPIST], permission: PermissionType.MANAGE_TEMPLATES }
+]), updateTemplateFull);
 
 export default router;

@@ -1,10 +1,11 @@
 // frontend/src/pages/EventsPage.tsx
-import { useState, useEffect, useMemo } from "react"; 
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import eventService, { type Event } from "../services/eventService";
 import { FaCalendarAlt, FaPlus, FaPencilAlt, FaTrash, FaTags, FaSearch, FaUndo } from "react-icons/fa";
 import { ConfirmationDialog } from "../components/ui/ConfirmationDialog";
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import Pagination from "../components/ui/Pagination";
 import SearchInput from "../components/ui/SearchInput";
 import { actionButtonStyles } from "../styles/actionButtonStyles";
@@ -14,6 +15,7 @@ import { downloadBlob, inferFilenameFromResponse } from "../utils/downloadFile";
 const EVENTS_PAGE_SIZE_KEY = 'events-page-size';
 
 function EventsPage() {
+  const { user } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -30,6 +32,12 @@ function EventsPage() {
   });
   const { showToast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
+
+  const canCreateEvents = user?.role === 'ADMIN' || user?.permissions?.['CREATE_EVENTS'];
+  const canEditEvents = user?.role === 'ADMIN' || user?.permissions?.['EDIT_EVENTS'];
+  const canDeleteEvents = user?.role === 'ADMIN' || user?.permissions?.['DELETE_EVENTS'];
+  const canExportEvents = user?.role === 'ADMIN' || user?.permissions?.['EXPORT_EVENTS'];
+  const canManageCategories = user?.role === 'ADMIN' || user?.permissions?.['MANAGE_CATEGORIES'];
 
   const fetchEvents = (
     status: 'active' | 'inactive' | 'all' = statusFilter,
@@ -182,18 +190,22 @@ const handleDelete = async (eventId: number) => {
           </div>
         </div>
         <div className="flex flex-col gap-3 md:flex-row md:items-center">
-          <Link to="/categories" className="md:ml-4">
-            <button className="w-full min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-gray-300 to-gray-500 hover:from-gray-500 hover:to-gray-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md md:w-auto">
-              <FaTags className="text-xl" />
-              <span className="text-lg">Gestionar Categorías</span>
-            </button>
-          </Link>
-          <Link to="/events/new" className="md:ml-3">
-            <button className="w-full min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md md:w-auto">
-              <FaPlus className="text-xl" />
-              <span className="text-lg">Crear Nuevo Evento</span>
-            </button>
-          </Link>
+          {canManageCategories && (
+            <Link to="/categories" className="md:ml-4">
+              <button className="w-full min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-gray-300 to-gray-500 hover:from-gray-500 hover:to-gray-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md md:w-auto">
+                <FaTags className="text-xl" />
+                <span className="text-lg">Gestionar Categorías</span>
+              </button>
+            </Link>
+          )}
+          {canCreateEvents && (
+            <Link to="/events/new" className="md:ml-3">
+              <button className="w-full min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md md:w-auto">
+                <FaPlus className="text-xl" />
+                <span className="text-lg">Crear Nuevo Evento</span>
+              </button>
+            </Link>
+          )}
         </div>
         <div className="md:ml-3">
         </div>
@@ -216,17 +228,19 @@ const handleDelete = async (eventId: number) => {
             onClick={() => { setStatusFilter('all'); setCurrentPage(1); }}
             className={`px-4 py-2 text-sm rounded-md ${statusFilter === 'all' ? 'text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md' : 'bg-gray-200'}`}>Todos</button>
           <div className="flex-1"></div>
-          <ExportMenu
-            defaultStatus={statusFilter}
-            onExport={handleExportEvents}
-            statuses={[
-              { value: 'all', label: 'Todos' },
-              { value: 'active', label: 'Activos' },
-              { value: 'inactive', label: 'Inactivos' },
-            ]}
-            triggerLabel={isExporting ? 'Exportando…' : 'Exportar'}
-            disabled={isExporting}
-          />
+          {canExportEvents && (
+            <ExportMenu
+              defaultStatus={statusFilter}
+              onExport={handleExportEvents}
+              statuses={[
+                { value: 'all', label: 'Todos' },
+                { value: 'active', label: 'Activos' },
+                { value: 'inactive', label: 'Inactivos' },
+              ]}
+              triggerLabel={isExporting ? 'Exportando…' : 'Exportar'}
+              disabled={isExporting}
+            />
+          )}
         </div>
 
       <div className="flex justify-between items-center mb-4 gap-4">
@@ -276,29 +290,33 @@ const handleDelete = async (eventId: number) => {
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
-                      <Link
-                        to={`/events/edit/${event.id}`}
-                        title="Editar Evento"
-                        className={actionButtonStyles.edit}
-                      >
-                        <FaPencilAlt className="text-lg" />
-                      </Link>
-                      {event.isActive ? (
-                        <button
-                          onClick={() => openDeleteDialog(event.id)}
-                          title="Desactivar Evento"
-                          className={actionButtonStyles.delete}
+                      {canEditEvents && (
+                        <Link
+                          to={`/events/edit/${event.id}`}
+                          title="Editar Evento"
+                          className={actionButtonStyles.edit}
                         >
-                          <FaTrash className="text-lg" />
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleReactivate(event.id)}
-                          title="Reactivar Evento"
-                          className={actionButtonStyles.reactivate}
-                        >
-                          <FaUndo className="text-lg" />
-                        </button>
+                          <FaPencilAlt className="text-lg" />
+                        </Link>
+                      )}
+                      {canDeleteEvents && (
+                        event.isActive ? (
+                          <button
+                            onClick={() => openDeleteDialog(event.id)}
+                            title="Desactivar Evento"
+                            className={actionButtonStyles.delete}
+                          >
+                            <FaTrash className="text-lg" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleReactivate(event.id)}
+                            title="Reactivar Evento"
+                            className={actionButtonStyles.reactivate}
+                          >
+                            <FaUndo className="text-lg" />
+                          </button>
+                        )
                       )}
                     </div>
                   </td>

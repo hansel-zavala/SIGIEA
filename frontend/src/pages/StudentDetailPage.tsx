@@ -5,6 +5,7 @@ import studentService from "../services/studentService";
 import therapySessionService from "../services/therapySessionService";
 import reportService from "../services/reportService";
 import { FaCalendarAlt, FaFileAlt, FaPrint, FaPencilAlt, FaEye, FaFilePdf, FaFileWord, FaPlus } from "react-icons/fa";
+import { useAuth } from '../context/AuthContext';
 import Badge from "../components/ui/Badge";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -103,6 +104,7 @@ function StudentDetailPage() {
     behavior: "",
     progress: "",
   });
+  const { user } = useAuth();
 
 
   useEffect(() => {
@@ -304,35 +306,39 @@ function StudentDetailPage() {
     <>
       <div className="space-y-8">
         <div>
-          <div className="flex items-center justify-between bg-white rounded-xl shadow-sm ring-1 ring-gray-100 px-4 py-3 mb-2">
-            <h2 className="text-2xl font-bold text-gray-800">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white rounded-xl shadow-sm ring-1 ring-gray-100 px-4 py-3 mb-2">
+            <h2 className="text-2xl font-bold text-gray-800 shrink-0">
               Perfil de: {student?.fullName}
             </h2>
-            <div className="flex gap-2">
-              <Link to={`/students/edit/${studentId}`}>
-                <button className="min-w-[100px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">
-                  <FaPencilAlt /> Editar
-                </button>
-              </Link>
-              <button
-                onClick={() => setIsDetailModalOpen(true)}
-                className="py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-blue-400 to-blue-500 hover:from-blue-500 hover:to-blue-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md"
+            <div className="flex flex-wrap items-center gap-2">
+              {(user?.role === 'ADMIN' || user?.permissions?.['EDIT_STUDENTS']) && (
+                <Link to={`/students/edit/${studentId}`}>
+                  <button className="min-w-[100px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">
+                    <FaPencilAlt /> Editar
+                  </button>
+                </Link>
+              )}
+            <button
+              onClick={() => setIsDetailModalOpen(true)}
+              className="py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-blue-400 to-blue-500 hover:from-blue-500 hover:to-blue-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md"
               >
-                <FaFileAlt /> Ver Ficha Completa
-              </button>
-              <button
-                onClick={handlePrint}
-                className="py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-purple-400 to-purple-500 hover:from-purple-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md"
+              <FaFileAlt /> Ver Ficha Completa
+            </button>
+            <button
+              onClick={handlePrint}
+              className="py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-purple-400 to-purple-500 hover:from-purple-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md"
               >
-                <FaPrint /> Imprimir Matricula
-              </button>
-              <Link to={`/students/${studentId}/guardians/new`}>
-                <button
-                  className="py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md"
-                >
-                  <FaPlus /> Nuevo Padre/Tutor
-                </button>
-              </Link>
+              <FaPrint /> Imprimir Matricula
+            </button>
+              {(user?.role === 'ADMIN' || user?.permissions?.['VIEW_GUARDIANS']) && (
+                <Link to={`/students/${studentId}/guardians/new`}>
+                  <button
+                    className="py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md"
+                  >
+                    <FaPlus /> Nuevo Padre/Tutor
+                  </button>
+                </Link>
+              )}
             </div>
           </div>
           
@@ -515,11 +521,13 @@ function StudentDetailPage() {
       <div>
         <div className="flex items-center justify-between bg-white rounded-xl shadow-sm ring-1 ring-gray-100 px-4 py-3 mb-2">
           <h3 className="text-2xl font-bold text-gray-800">Próximas Sesiones</h3>
-          <Link to={`/students/${student.id}/schedule`}>
-            <button className="py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-purple-400 to-purple-500 hover:from-purple-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-m">
-              <FaCalendarAlt /> Gestionar Horario
-            </button>
-          </Link>
+          {(user?.role === 'ADMIN' || user?.permissions?.['MANAGE_SESSIONS']) && (
+            <Link to={`/students/${student.id}/schedule`}>
+              <button className="py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-purple-400 to-purple-500 hover:from-purple-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-m">
+                <FaCalendarAlt /> Gestionar Horario
+              </button>
+            </Link>
+          )}
         </div>
         <div className="bg-white p-4 rounded-lg shadow-md">
           <FullCalendar

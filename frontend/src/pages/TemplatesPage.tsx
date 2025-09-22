@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import reportTemplateService, { type ReportTemplate } from '../services/reportTemplateService';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import Pagination from '../components/ui/Pagination';
 
 type StatusFilter = 'all' | 'draft' | 'published';
@@ -10,12 +11,15 @@ type StatusFilter = 'all' | 'draft' | 'published';
 const TEMPLATES_PAGE_SIZE_KEY = 'templates-page-size';
 
 function TemplatesPage() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [templates, setTemplates] = useState<ReportTemplate[]>([]);
   const { showToast } = useToast();
+
+  const canManageTemplates = user?.role === 'ADMIN' || user?.permissions?.['MANAGE_TEMPLATES'];
 
   const statusParam = (searchParams.get('status') as StatusFilter) || 'all';
   const [status, setStatus] = useState<StatusFilter>(statusParam);
@@ -133,10 +137,12 @@ function TemplatesPage() {
             className="py-2 px-4 rounded-md bg-green-100 hover:bg-green-200 text-green-800"
             onClick={() => setStatus('published')}
           >Publicadas ({counts.published})</button>
-          <button
-            className="py-2 px-4 rounded-md bg-violet-500 hover:bg-violet-600 text-white font-semibold"
-            onClick={() => navigate('/templates/new')}
-          >Nueva Plantilla</button>
+          {canManageTemplates && (
+            <button
+              className="py-2 px-4 rounded-md bg-violet-500 hover:bg-violet-600 text-white font-semibold"
+              onClick={() => navigate('/templates/new')}
+            >Nueva Plantilla</button>
+          )}
         </div>
       </div>
 
@@ -174,21 +180,25 @@ function TemplatesPage() {
                   <td className="px-4 py-2 text-sm text-gray-600">{formatDate((t as any).updatedAt)}</td>
                   <td className="px-4 py-2">
                     <div className="flex gap-2 justify-end">
-                      <button
-                        className={`px-3 py-1 rounded-md text-white ${t.publishedAt ? 'bg-gray-500 hover:bg-gray-600' : 'bg-green-600 hover:bg-green-700'}`}
-                        onClick={() => handlePublishToggle(t)}
-                        title={t.publishedAt ? 'Despublicar' : 'Publicar'}
-                      >{t.publishedAt ? 'Despublicar' : 'Publicar'}</button>
-                      <button
-                        className="px-3 py-1 rounded-md bg-blue-600 hover:bg-blue-700 text-white"
-                        onClick={() => handleEdit(t)}
-                        title="Editar"
-                      >Editar</button>
-                      <button
-                        className="px-3 py-1 rounded-md bg-red-600 hover:bg-red-700 text-white"
-                        onClick={() => handleDelete(t)}
-                        title="Eliminar"
-                      >Eliminar</button>
+                      {canManageTemplates && (
+                        <>
+                          <button
+                            className={`px-3 py-1 rounded-md text-white ${t.publishedAt ? 'bg-gray-500 hover:bg-gray-600' : 'bg-green-600 hover:bg-green-700'}`}
+                            onClick={() => handlePublishToggle(t)}
+                            title={t.publishedAt ? 'Despublicar' : 'Publicar'}
+                          >{t.publishedAt ? 'Despublicar' : 'Publicar'}</button>
+                          <button
+                            className="px-3 py-1 rounded-md bg-blue-600 hover:bg-blue-700 text-white"
+                            onClick={() => handleEdit(t)}
+                            title="Editar"
+                          >Editar</button>
+                          <button
+                            className="px-3 py-1 rounded-md bg-red-600 hover:bg-red-700 text-white"
+                            onClick={() => handleDelete(t)}
+                            title="Eliminar"
+                          >Eliminar</button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>

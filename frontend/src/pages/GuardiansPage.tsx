@@ -9,6 +9,7 @@ import { FaUserCircle, FaPencilAlt, FaTrash, FaUndo, FaSearch } from 'react-icon
 import Badge from '../components/ui/Badge';
 import { ConfirmationDialog } from "../components/ui/ConfirmationDialog";
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import ExportMenu from '../components/ExportMenu';
 import { downloadBlob, inferFilenameFromResponse } from '../utils/downloadFile';
 import { actionButtonStyles } from '../styles/actionButtonStyles';
@@ -28,6 +29,7 @@ interface Guardian {
 const GUARDIANS_PAGE_SIZE_KEY = 'guardians-list-page-size';
 
 function GuardiansPage() {
+  const { user } = useAuth();
   const [guardians, setGuardians] = useState<Guardian[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -46,6 +48,10 @@ function GuardiansPage() {
   const [selectGuardianId, setSelectedStudentId] = useState<number | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const { showToast } = useToast();
+
+  const canEditGuardians = user?.role === 'ADMIN' || user?.permissions?.['EDIT_GUARDIANS'];
+  const canDeleteGuardians = user?.role === 'ADMIN' || user?.permissions?.['DELETE_GUARDIANS'];
+  const canExportGuardians = user?.role === 'ADMIN' || user?.permissions?.['EXPORT_GUARDIANS'];
 
 
 
@@ -191,17 +197,19 @@ function GuardiansPage() {
         <button onClick={() => handleFilterChange('inactive')} className={`px-4 py-2 text-sm rounded-md ${statusFilter === 'inactive' ? 'text-white font-bold bg-violet-500' : 'bg-gray-200'}`}>Inactivos</button>
         <button onClick={() => handleFilterChange('all')} className={`px-4 py-2 text-sm rounded-md ${statusFilter === 'all' ? 'text-white font-bold bg-violet-500' : 'bg-gray-200'}`}>Todos</button>
       <div className="flex-1"></div>
-      <ExportMenu
-            defaultStatus={statusFilter}
-            onExport={handleExportGuardians}
-            statuses={[ 
-              { value: 'all', label: 'Todos' },
-              { value: 'active', label: 'Activos' },
-              { value: 'inactive', label: 'Inactivos' },
-            ]}
-            triggerLabel={isExporting ? 'Exportando…' : 'Exportar'}
-            disabled={isExporting}
-          />
+      {canExportGuardians && (
+        <ExportMenu
+              defaultStatus={statusFilter}
+              onExport={handleExportGuardians}
+              statuses={[
+                { value: 'all', label: 'Todos' },
+                { value: 'active', label: 'Activos' },
+                { value: 'inactive', label: 'Inactivos' },
+              ]}
+              triggerLabel={isExporting ? 'Exportando…' : 'Exportar'}
+              disabled={isExporting}
+            />
+      )}
       </div>
 
       {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
@@ -274,29 +282,33 @@ function GuardiansPage() {
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
-                        <Link
-                          to={`/guardians/edit/${guardian.id}`}
-                          title="Editar Guardián"
-                          className={actionButtonStyles.edit}
-                        >
-                          <FaPencilAlt className="text-lg" />
-                        </Link>
-                        {guardian.isActive ? (
-                          <button
-                            onClick={() => openDeactivateDialog(guardian.id)}
-                            title="Desactivar Guardián"
-                            className={actionButtonStyles.delete}
+                        {canEditGuardians && (
+                          <Link
+                            to={`/guardians/edit/${guardian.id}`}
+                            title="Editar Guardián"
+                            className={actionButtonStyles.edit}
                           >
-                            <FaTrash className="text-lg" />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => openReactivateDialog(guardian.id)}
-                            title="Reactivar Guardián"
-                            className={actionButtonStyles.reactivate}
-                          >
-                            <FaUndo className="text-lg" />
-                          </button>
+                            <FaPencilAlt className="text-lg" />
+                          </Link>
+                        )}
+                        {canDeleteGuardians && (
+                          guardian.isActive ? (
+                            <button
+                              onClick={() => openDeactivateDialog(guardian.id)}
+                              title="Desactivar Guardián"
+                              className={actionButtonStyles.delete}
+                            >
+                              <FaTrash className="text-lg" />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => openReactivateDialog(guardian.id)}
+                              title="Reactivar Guardián"
+                              className={actionButtonStyles.reactivate}
+                            >
+                              <FaUndo className="text-lg" />
+                            </button>
+                          )
                         )}
                       </div>
                     </td>

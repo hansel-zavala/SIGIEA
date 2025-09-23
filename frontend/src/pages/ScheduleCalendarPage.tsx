@@ -15,6 +15,7 @@ import Label from '../components/ui/Label';
 import Select from '../components/ui/Select';
 import Input from '../components/ui/Input';
 import { FaTrash, FaEdit } from 'react-icons/fa';
+import { useToast } from '../context/ToastContext';
 
 interface Leccion { id: number; title: string; }
 interface TherapySession { id: number; startTime: string; endTime: string; leccion: Leccion; leccionId: number; duration?: number; }
@@ -34,17 +35,19 @@ const calculateAge = (birthDate: string) => {
 
 function ScheduleCalendarPage() {
     const { studentId } = useParams<{ studentId: string }>();
+    const { showToast } = useToast();
     const [student, setStudent] = useState<any>(null);
     const [events, setEvents] = useState<EventInput[]>([]);
     const [lecciones, setLecciones] = useState<Leccion[]>([]);
     const [therapists, setTherapists] = useState<TherapistProfile[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedDays, setSelectedDays] = useState<string[]>([]);
-    const [startTime, setStartTime] = useState('08:00');
+    const [startTime, setStartTime] = useState('07:00');
     const [duration, setDuration] = useState(45);
     const [leccionId, setLeccionId] = useState('');
     const [therapistId, setTherapistId] = useState('');
     const [weeksToSchedule, setWeeksToSchedule] = useState(4);
+    const [therapistSessions, setTherapistSessions] = useState<TherapySession[]>([]);
     const dayOptions = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
     const [isManageModalOpen, setIsManageModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -83,6 +86,60 @@ function ScheduleCalendarPage() {
         fetchData();
     }, [studentId]);
 
+    const calculateSuggestedStartTime = (sessions: TherapySession[], selectedDays: string[], therapist: TherapistProfile | undefined) => {
+        if (!therapist || selectedDays.length === 0) return '07:00';
+
+        const dayMap: { [key: string]: string } = {
+            "Lunes": "Monday",
+            "Martes": "Tuesday",
+            "Miércoles": "Wednesday",
+            "Jueves": "Thursday",
+            "Viernes": "Friday",
+            "Sábado": "Saturday",
+            "Domingo": "Sunday"
+        };
+
+        let maxEndTime = '07:00';
+
+        for (const day of selectedDays) {
+            const dayName = dayMap[day];
+            if (!dayName) continue;
+
+            const daySessions = sessions.filter(session => {
+                const sessionDate = new Date(session.startTime);
+                return sessionDate.toLocaleDateString('en-US', { weekday: 'long' }) === dayName;
+            });
+
+            if (daySessions.length > 0) {
+                const latestEnd = daySessions.reduce((latest, session) => {
+                    const endTime = new Date(session.endTime).toTimeString().substring(0, 5);
+                    return endTime > latest ? endTime : latest;
+                }, '00:00');
+                if (latestEnd > maxEndTime) maxEndTime = latestEnd;
+            }
+        }
+
+        return maxEndTime;
+    };
+
+
+    const updateSuggestedStartTime = async () => {
+        if (!therapistId || !studentId) return;
+        try {
+            const therapist = await therapistService.getTherapistById(parseInt(therapistId));
+            const studentSessions = await therapySessionService.getSessionsByStudent(parseInt(studentId));
+            setTherapistSessions(studentSessions); // Use student sessions for now
+            const suggested = calculateSuggestedStartTime(studentSessions, selectedDays, therapist);
+            setStartTime(suggested);
+        } catch (error) {
+            console.error("Error al obtener sesiones del terapeuta:", error);
+        }
+    };
+
+    useEffect(() => {
+        updateSuggestedStartTime();
+    }, [therapistId, selectedDays, therapists, duration]);
+
     const handleSelectChange = (name: string, value: string | null) => {
         if (name === 'leccionId') setLeccionId(value || '');
         //if (name === 'therapistId') setTherapistId(value || '');
@@ -92,31 +149,85 @@ function ScheduleCalendarPage() {
         setEditFormData(prev => ({...prev, [name]: value || ''}));
     };
 
+    const validateSchedule = (startTime: string, duration: number, selectedDays: string[], therapist: TherapistProfile | undefined, sessions: TherapySession[]): { valid: boolean; message: string } => {
+        if (!therapist) return { valid: false, message: "Terapeuta no encontrado." };
+
+        const start = new Date(`1970-01-01T${startTime}:00`);
+        const end = new Date(start.getTime() + duration * 60000);
+        const startStr = start.toTimeString().substring(0, 5);
+        const endStr = end.toTimeString().substring(0, 5);
+
+        // Check work hours
+        if (therapist.workStartTime && therapist.workEndTime) {
+            const workStart = new Date(`1970-01-01T${therapist.workStartTime}`);
+            const workEnd = new Date(`1970-01-01T${therapist.workEndTime}`);
+            if (start < workStart || end > workEnd) {
+                return { valid: false, message: `El horario debe estar entre ${therapist.workStartTime} y ${therapist.workEndTime}.` };
+            }
+        }
+
+        // Check overlaps
+        const dayMap: { [key: string]: string } = {
+            "Lunes": "Monday", "Martes": "Tuesday", "Miércoles": "Wednesday",
+            "Jueves": "Thursday", "Viernes": "Friday", "Sábado": "Saturday", "Domingo": "Sunday"
+        };
+
+        for (const day of selectedDays) {
+            const dayName = dayMap[day];
+            if (!dayName) continue;
+
+            const daySessions = sessions.filter(session => {
+                const sessionDate = new Date(session.startTime);
+                return sessionDate.toLocaleDateString('en-US', { weekday: 'long' }) === dayName;
+            });
+
+            for (const session of daySessions) {
+                const sessionStart = new Date(session.startTime).toTimeString().substring(0, 5);
+                const sessionEnd = new Date(session.endTime).toTimeString().substring(0, 5);
+                if ((startStr < sessionEnd && endStr > sessionStart)) {
+                    return { valid: false, message: `Conflicto en ${day}: Ya hay una sesión de ${sessionStart} a ${sessionEnd}. Sugerencia: Iniciar a las ${sessionEnd}.` };
+                }
+            }
+        }
+
+        return { valid: true, message: "" };
+    };
+
     const handleCreateSessions = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!studentId || selectedDays.length === 0 || !leccionId || !therapistId) {
-            alert("Por favor, completa todos los campos."); return;
+            showToast({ message: "Por favor, completa todos los campos.", type: "error" });
+            return;
         }
 
         const assignedTherapist = therapists.find(t => t.id === parseInt(therapistId));
         if (assignedTherapist && assignedTherapist.workDays) {
             for (const day of selectedDays) {
                 if (!assignedTherapist.workDays.includes(day)) {
-                    alert(`Error: El terapeuta no trabaja los días ${day}. Por favor, selecciona un día válido.`);
+                    showToast({ message: `Error: El terapeuta no trabaja los días ${day}. Por favor, selecciona un día válido.`, type: "error" });
                     return;
                 }
             }
         }
 
+        // Validation
+        const validation = validateSchedule(startTime, duration, selectedDays, assignedTherapist, therapistSessions);
+        if (!validation.valid) {
+            showToast({ message: validation.message, type: "error" });
+            return;
+        }
+
         const sessionData = { studentId: parseInt(studentId), therapistId: parseInt(therapistId), leccionId: parseInt(leccionId), daysOfWeek: selectedDays, startTime, duration, weeksToSchedule };
         try {
             await therapySessionService.createRecurringSessions(sessionData);
-            alert("¡Horario creado exitosamente!");
+            showToast({ message: "¡Horario creado exitosamente!", type: "success" });
             const sessionsData = await therapySessionService.getSessionsByStudent(parseInt(studentId));
             setEvents(sessionsData.map(sessionToEvent));
             setSelectedDays([]); setLeccionId('');
+            // Update suggested time after creation
+            updateSuggestedStartTime();
         } catch (error: any) {
-            alert(`Error: ${error.response?.data?.error || "No se pudo crear el horario."}`);
+            showToast({ message: `Error: ${error.response?.data?.error || "No se pudo crear el horario."}`, type: "error" });
         }
     };
     
@@ -160,12 +271,12 @@ function ScheduleCalendarPage() {
         };
         try {
             await therapySessionService.updateSession(parseInt(studentId), selectedSession.id, dataToUpdate);
-            alert("Sesión actualizada correctamente.");
+            showToast({ message: "Sesión actualizada correctamente.", type: "success" });
             const sessionsData = await therapySessionService.getSessionsByStudent(parseInt(studentId));
             setEvents(sessionsData.map(sessionToEvent));
             closeEditModal();
         } catch (error: any) {
-            alert(`Error: ${error.response?.data?.error || "No se pudo actualizar la sesión."}`);
+            showToast({ message: `Error: ${error.response?.data?.error || "No se pudo actualizar la sesión."}`, type: "error" });
         }
     };
     
@@ -175,9 +286,10 @@ function ScheduleCalendarPage() {
             try {
                 await therapySessionService.deleteSession(parseInt(studentId), selectedSession.id);
                 setEvents(prev => prev.filter(event => event.id !== String(selectedSession.id)));
+                showToast({ message: "Sesión eliminada correctamente.", type: "success" });
                 closeManageModal();
             } catch (error) {
-                alert("No se pudo eliminar la sesión.");
+                showToast({ message: "No se pudo eliminar la sesión.", type: "error" });
             }
         }
     };
@@ -200,13 +312,28 @@ function ScheduleCalendarPage() {
             {student && (
                 <div>
                     <h2 className="text-2xl font-bold text-gray-800 mb-4">Gestionando Horario para: {student.fullName}</h2>
-                    <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
-                        <div><h3 className="font-semibold text-gray-600">Terapeuta Asignado</h3><p>{student.therapist?.fullName || 'No especificado'}</p></div>
-                        <div><h3 className="font-semibold text-gray-600">Edad</h3><p>{studentAge !== null ? `${studentAge} años` : 'N/A'}</p></div>
-                        <div><h3 className="font-semibold text-gray-400">Género</h3><p>{student?.genero || 'No asignado'}</p></div>
-                        <div><h3 className="font-semibold text-gray-600">Padre de Familia</h3><p>{father?.fullName || 'No especificado'}</p></div>
-                        <div><h3 className="font-semibold text-gray-600">Fecha de Ingreso</h3><p>{admissionDate || 'N/A'}</p></div>
-                    </div>
+                    <div className="overflow-hidden rounded-xl bg-white shadow-md border border-gray-200">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr className="text-left">
+                  <th className="px-6 py-3 font-medium text-gray-600">Terapeuta Asignado</th>
+                  <th className="px-6 py-3 font-medium text-gray-600">Edad</th>
+                  <th className="px-6 py-3 font-medium text-gray-600">Género</th>
+                  <th className="px-6 py-3 font-medium text-gray-600">Padre de Familia</th>
+                  <th className="px-6 py-3 font-medium text-gray-600">Fecha de Ingreso</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white">
+                <tr>
+                  <td className="px-6 py-4 text-gray-700">{student?.therapist?.fullName || "No especificado"}</td>
+                  <td className="px-6 py-4 text-gray-700">{studentAge !== null ? `${studentAge} años` : "N/A"}</td>
+                  <td className="px-6 py-4 text-gray-700">{student?.genero || "No asignado"}</td>
+                  <td className="px-6 py-4 text-gray-700">{(father?.fullName || student?.guardians?.[0]?.fullName) || "No especificado"}</td>
+                  <td className="px-6 py-4 text-gray-700">{admissionDate || "N/A"}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
                     <div className=" p-2"></div>
                 </div>
             )}
@@ -248,13 +375,14 @@ function ScheduleCalendarPage() {
                         </div>
                         <div>
                             <Label htmlFor="startTime">Hora de Inicio</Label>
-                            <Input 
-                                id="startTime" 
-                                type="time" 
-                                value={startTime} 
-                                onChange={e => setStartTime(e.target.value)} 
-                                required 
+                            <Input
+                                id="startTime"
+                                type="time"
+                                value={startTime}
+                                onChange={e => setStartTime(e.target.value)}
+                                required
                             />
+                            <p className="text-sm text-gray-500 mt-1">Sugerido: {startTime} (basado en sesiones previas)</p>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>

@@ -37,6 +37,7 @@ import ProfilePage from './pages/ProfilePage';
 import AddGuardionPage from './pages/AddGuardionPage';
 import ArchiveroPage from './pages/ArchiveroPage';
 import ControlesPage from './pages/ControlesPage';
+import ParentStudentViewPage from './pages/ParentStudentViewPage';
 
 function App() {
   const { user } = useAuth();
@@ -81,6 +82,7 @@ function App() {
               <Route path="controles" element={<ControlesPage />} />
               <Route path="profile" element={<ProfilePage />} />
               <Route path="students/:id/guardians/new" element={<AddGuardionPage />} />
+              <Route path="mi-estudiante" element={<ParentStudentViewPage />} />
             </Route>
 
             <Route path="/students/:id/print" element={<PrintMatriculaPage />} />

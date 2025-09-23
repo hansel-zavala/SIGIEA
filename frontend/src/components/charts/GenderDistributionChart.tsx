@@ -1,14 +1,10 @@
+import { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { FaMale, FaFemale } from 'react-icons/fa';
-
-interface GenderChartProps {
-  maleCount: number;
-  femaleCount: number;
-  total: number;
-}
+import dashboardService from '../../services/dashboardService';
 
 // Professional color palette
-const GENDER_COLORS = ['#2563EB', '#ff74e3ff']; // Professional blue for male, Slate for female
+const GENDER_COLORS = ['#2563EB', '#BE219FFF']; // Professional blue for male, Slate for female
 
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
@@ -33,35 +29,75 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-function GenderChart({ maleCount, femaleCount, total: apiTotal }: GenderChartProps) {
-  // Calculate actual total from counts to ensure accuracy
-  const total = maleCount + femaleCount;
+function GenderDistributionChart() {
+    const [maleCount, setMaleCount] = useState(0);
+    const [femaleCount, setFemaleCount] = useState(0);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
 
-  const data = [
-    { name: 'Masculino', value: maleCount },
-    { name: 'Femenino', value: femaleCount },
-  ];
+    useEffect(() => {
+        const fetchGenderData = async () => {
+            try {
+                setLoading(true);
+                const data = await dashboardService.getGenderDistribution();
+                setMaleCount(data.maleCount);
+                setFemaleCount(data.femaleCount);
+            } catch (err) {
+                console.error("Error fetching gender distribution data:", err);
+                setError('Failed to load gender distribution data.');
+            } finally {
+                setLoading(false);
+            }
+        };
 
-  const malePercentage = total > 0 ? ((maleCount / total) * 100).toFixed(1) : '0';
-  const femalePercentage = total > 0 ? ((femaleCount / total) * 100).toFixed(1) : '0';
+        fetchGenderData();
+    }, []);
+
+    const total = maleCount + femaleCount;
+
+    const data = [
+      { name: 'Masculino', value: maleCount },
+      { name: 'Femenino', value: femaleCount },
+    ];
+
+    const malePercentage = total > 0 ? ((maleCount / total) * 100).toFixed(1) : '0.0';
+    const femalePercentage = total > 0 ? ((femaleCount / total) * 100).toFixed(1) : '0.0';
+
+
+    if (loading) {
+        return (
+          <div className="flex items-center justify-center h-full">
+            <p>Loading...</p>
+          </div>
+        );
+    }
+
+    if (error) {
+        return (
+          <div className="flex items-center justify-center h-full text-red-500">
+            <p>{error}</p>
+          </div>
+        );
+    }
+
 
   return (
-    <div className="h-full flex flex-col items-center justify-center">
+    <div className="h-full w-full flex flex-col items-center justify-center">
       {/* Clean pie chart */}
-      <div className="mb-8 bg-white p-4 rounded-xl shadow-md border border-gray-100">
+      <div className="mb-8 w-full bg-white p-4 rounded-xl shadow-md border border-gray-100">
         <h3 className="text-xl font-semibold text-gray-800 mb-2 text-center">Distribución por Género</h3>
         <div className="text-center mb-4">
           <div className="text-2xl font-bold text-gray-900">
             {total.toLocaleString('es-HN')} Estudiantes
           </div>
         </div>
-        <ResponsiveContainer width={320} height={360}>
+        <ResponsiveContainer width="100%" height={420}>
           <PieChart>
             <Pie
               data={data}
               cx="50%"
               cy="50%"
-              outerRadius={100}
+              outerRadius={140}
               paddingAngle={2}
               dataKey="value"
               stroke="#ffffff"
@@ -116,4 +152,4 @@ function GenderChart({ maleCount, femaleCount, total: apiTotal }: GenderChartPro
   );
 }
 
-export default GenderChart;
+export default GenderDistributionChart;

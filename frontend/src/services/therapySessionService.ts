@@ -51,9 +51,20 @@ const updateSession = async (studentId: number, sessionId: number, data: any) =>
     }
 }
 
+const getSessionsByTherapist = async (therapistId: number) => {
+    try {
+        const response = await api.get(`/therapists/${therapistId}/sessions`);
+        return response.data;
+    } catch (error) {
+        console.error("Error al obtener las sesiones del terapeuta:", error);
+        throw error;
+    }
+}
+
 export default {
   createRecurringSessions,
   getSessionsByStudent,
   deleteSession,
-  updateSession
+  updateSession,
+  getSessionsByTherapist
 };

@@ -374,6 +374,56 @@ export const updateStudent = async (req: Request, res: Response) => {
         if (studentData.dateOfBirth) studentData.dateOfBirth = new Date(studentData.dateOfBirth);
         if (studentData.anoIngreso) studentData.anoIngreso = new Date(studentData.anoIngreso);
 
+        // Validation for therapist assignment conflicts
+        if (therapistId) {
+            const currentStudent = await prisma.student.findUnique({
+                where: { id: parseInt(id) },
+                include: { therapySessions: true }
+            });
+
+            if (!currentStudent) {
+                return res.status(404).json({ error: 'Estudiante no encontrado.' });
+            }
+
+            if (parseInt(therapistId) !== currentStudent.therapistId) {
+                // Check for schedule conflicts
+                for (const session of currentStudent.therapySessions) {
+                    const conflictingSession = await prisma.therapySession.findFirst({
+                        where: {
+                            therapistId: parseInt(therapistId),
+                            studentId: { not: parseInt(id) },
+                            OR: [
+                                {
+                                    AND: [
+                                        { startTime: { lte: session.startTime } },
+                                        { endTime: { gt: session.startTime } }
+                                    ]
+                                },
+                                {
+                                    AND: [
+                                        { startTime: { lt: session.endTime } },
+                                        { endTime: { gte: session.endTime } }
+                                    ]
+                                },
+                                {
+                                    AND: [
+                                        { startTime: { gte: session.startTime } },
+                                        { endTime: { lte: session.endTime } }
+                                    ]
+                                }
+                            ]
+                        }
+                    });
+
+                    if (conflictingSession) {
+                        return res.status(400).json({
+                            error: 'El terapeuta tiene un conflicto de horario con otra sesión programada.'
+                        });
+                    }
+                }
+            }
+        }
+
         const updatedStudent = await prisma.student.update({
             where: { id: parseInt(id) },
             data: {

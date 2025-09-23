@@ -2,6 +2,7 @@
 import { Request, Response } from 'express';
 import prisma from '../db.js';
 import { Prisma, EventAudience } from '@prisma/client';
+import { AuthRequest } from '../types/express.js';
 import { toCsv, sendCsvResponse, buildTimestampedFilename } from '../utils/csv.js';
 import { sendExcelResponse } from '../utils/excel.js';
 import { sendPdfTableResponse } from '../utils/pdf.js';
@@ -67,7 +68,7 @@ const normalizeDateInput = (
   return dateValue;
 };
 
-export const getAllEvents = async (req: Request, res: Response) => {
+export const getAllEvents = async (req: AuthRequest, res: Response) => {
   try {
     await prisma.event.updateMany({
       where: {
@@ -86,6 +87,11 @@ export const getAllEvents = async (req: Request, res: Response) => {
       // No explicit filter, include all statuses
     } else {
       where.isActive = true;
+    }
+
+    // Role-based filtering
+    if (req.user?.role === 'PARENT') {
+      where.audience = { in: ['General', 'Padres'] };
     }
 
     const searchTerm = typeof search === 'string' ? search.trim() : '';

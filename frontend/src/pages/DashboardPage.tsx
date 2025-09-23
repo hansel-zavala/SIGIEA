@@ -4,7 +4,7 @@ import dashboardService, { type DashboardStats } from '../services/dashboardServ
 import eventService, { type Event as EventType } from '../services/eventService.js';
 import categoryService, { type Category } from '../services/categoryService.js';
 import StatCard from '../components/ui/StatCard.js';
-import { FaUserGraduate, FaUserMd, FaUsers, FaBook, FaCalendarAlt } from 'react-icons/fa';
+import { FaUserGraduate, FaUserMd, FaUsers, FaBook, FaCalendarAlt, FaClock, FaFileAlt } from 'react-icons/fa';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -24,11 +24,12 @@ function DashboardPage() {
   const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
 
   // Check permissions
+  const isParent = user?.role === 'PARENT';
   const canViewStudents = user?.role === 'ADMIN' || user?.permissions?.['VIEW_STUDENTS'];
   const canViewTherapists = user?.role === 'ADMIN' || user?.permissions?.['VIEW_THERAPISTS'];
   const canViewGuardians = user?.role === 'ADMIN' || user?.permissions?.['VIEW_GUARDIANS'];
   const canViewLecciones = user?.role === 'ADMIN' || user?.permissions?.['VIEW_LECCIONES'];
-  const canViewEvents = user?.role === 'ADMIN' || user?.permissions?.['VIEW_EVENTS'];
+  const canViewEvents = user?.role === 'ADMIN' || user?.role === 'PARENT' || user?.permissions?.['VIEW_EVENTS'];
   const canManageCategories = user?.role === 'ADMIN' || user?.permissions?.['MANAGE_CATEGORIES'];
 
   useEffect(() => {
@@ -178,46 +179,77 @@ function DashboardPage() {
       <section aria-label="Resumen" className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
         {stats ? (
           <>
-            {canViewStudents && (
-              <Link to="/students" className="cursor-pointer">
+            {isParent ? (
+              <>
                 <StatCard
-                  title="Alumnos Matriculados"
-                  value={stats.students}
-                  icon={<FaUserGraduate size={24} />}
-                  color="pink"
-                  growth={stats.studentGrowthPercentage}
-                />
-              </Link>
-            )}
-            {canViewTherapists && (
-              <Link to="/therapists" className="cursor-pointer">
-                <StatCard
-                  title="Terapeutas Activos"
-                  value={stats.therapists}
-                  icon={<FaUserMd size={24} />}
+                  title="Total de Sesiones"
+                  value={stats.totalSessions || 0}
+                  icon={<FaCalendarAlt size={24} />}
                   color="blue"
                 />
-              </Link>
-            )}
-            {canViewGuardians && (
-              <Link to="/guardians" className="cursor-pointer">
                 <StatCard
-                  title="Padres Registrados"
-                  value={stats.parents}
-                  icon={<FaUsers size={24} />}
+                  title="Sesiones Completadas"
+                  value={stats.completedSessions || 0}
+                  icon={<FaUserMd size={24} />}
                   color="green"
                 />
-              </Link>
-            )}
-            {canViewLecciones && (
-              <Link to="/lecciones" className="cursor-pointer">
                 <StatCard
-                  title="Lecciones Creadas"
-                  value={stats.lecciones}
-                  icon={<FaBook size={24} />}
+                  title="Próximas Sesiones"
+                  value={stats.upcomingSessions || 0}
+                  icon={<FaClock size={24} />}
+                  color="pink"
+                />
+                <StatCard
+                  title="Reportes Recientes"
+                  value={stats.recentReports || 0}
+                  icon={<FaFileAlt size={24} />}
                   color="purple"
                 />
-              </Link>
+              </>
+            ) : (
+              <>
+                {canViewStudents && (
+                  <Link to="/students" className="cursor-pointer">
+                    <StatCard
+                      title="Alumnos Matriculados"
+                      value={stats.students || 0}
+                      icon={<FaUserGraduate size={24} />}
+                      color="pink"
+                      growth={stats.studentGrowthPercentage}
+                    />
+                  </Link>
+                )}
+                {canViewTherapists && (
+                  <Link to="/therapists" className="cursor-pointer">
+                    <StatCard
+                      title="Terapeutas Activos"
+                      value={stats.therapists || 0}
+                      icon={<FaUserMd size={24} />}
+                      color="blue"
+                    />
+                  </Link>
+                )}
+                {canViewGuardians && (
+                  <Link to="/guardians" className="cursor-pointer">
+                    <StatCard
+                      title="Padres Registrados"
+                      value={stats.parents || 0}
+                      icon={<FaUsers size={24} />}
+                      color="green"
+                    />
+                  </Link>
+                )}
+                {canViewLecciones && (
+                  <Link to="/lecciones" className="cursor-pointer">
+                    <StatCard
+                      title="Lecciones Creadas"
+                      value={stats.lecciones || 0}
+                      icon={<FaBook size={24} />}
+                      color="purple"
+                    />
+                  </Link>
+                )}
+              </>
             )}
           </>
         ) : isStatsLoading ? (
@@ -319,6 +351,7 @@ function DashboardPage() {
         </aside>
       </section>
       )}
+
 
       <EventDetailModal event={selectedEvent} isOpen={isModalOpen} onClose={handleCloseModal} />
     </div>

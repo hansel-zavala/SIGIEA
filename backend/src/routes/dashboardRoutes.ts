@@ -7,7 +7,10 @@ import {
   getTherapistWorkload,
   getMostFrequentTherapies,
   getSessionComparison,
-  getGenderDistribution
+  getGenderDistribution,
+  getStudentBirthDepartmentDistribution,
+  getTherapistAttendanceTrends,
+  getTherapistAttendanceById
 } from '../controllers/dashboardController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { authorize } from '../middleware/authorizeMiddleware.js';
@@ -56,5 +59,23 @@ router.get('/gender-distribution', protect, authorize([
   { role: [Role.THERAPIST], permission: PermissionType.VIEW_DASHBOARD },
   { role: [Role.PARENT] }
 ]), getGenderDistribution);
+
+router.get('/student-birth-department-distribution', protect, authorize([
+  { role: [Role.ADMIN] },
+  { role: [Role.THERAPIST], permission: PermissionType.VIEW_DASHBOARD },
+  { role: [Role.PARENT] }
+]), getStudentBirthDepartmentDistribution);
+
+router.get('/therapist-attendance-trends', protect, authorize([
+  { role: [Role.ADMIN] },
+  { role: [Role.THERAPIST], permission: PermissionType.VIEW_DASHBOARD },
+  { role: [Role.PARENT] }
+]), getTherapistAttendanceTrends);
+
+router.get('/therapist-attendance/:id', protect, authorize([
+  { role: [Role.ADMIN] },
+  { role: [Role.THERAPIST], permission: PermissionType.VIEW_DASHBOARD },
+  { role: [Role.PARENT] }
+]), getTherapistAttendanceById);
 
 export default router;

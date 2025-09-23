@@ -4,6 +4,7 @@ import { Request, Response } from 'express';
 import prisma from '../db.js';
 import bcrypt from 'bcrypt';
 import { Prisma, Role, PermissionType } from '@prisma/client';
+import { AuthRequest } from '../types/express.js';
 import { toCsv, sendCsvResponse, buildTimestampedFilename } from '../utils/csv.js';
 import { sendExcelResponse } from '../utils/excel.js';
 import { sendPdfTableResponse } from '../utils/pdf.js';
@@ -97,14 +98,26 @@ export const createTherapist = async (req: Request, res: Response) => {
     }
 };
 
-export const getAllTherapists = async (req: Request, res: Response) => {
+export const getAllTherapists = async (req: AuthRequest, res: Response) => {
     try {
         const { search, page = '1', limit = '10', status } = req.query;
         const pageNum = parseInt(page as string, 10);
         const limitNum = parseInt(limit as string, 10);
         const skip = (pageNum - 1) * limitNum;
 
-        const whereCondition: Prisma.TherapistProfileWhereInput = {}; 
+        const whereCondition: Prisma.TherapistProfileWhereInput = {};
+
+        // Role-based filtering
+        if (req.user?.role === 'PARENT' && req.user.guardian) {
+            // Parents only see therapists assigned to their students
+            whereCondition.assignedStudents = {
+                some: {
+                    guardians: {
+                        some: { id: req.user.guardian.id }
+                    }
+                }
+            };
+        }
 
         if (status === 'active') {
             whereCondition.isActive = true;

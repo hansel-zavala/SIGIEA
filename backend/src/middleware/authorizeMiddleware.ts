@@ -164,7 +164,11 @@ const canManagePermissions = authorize({ permission: PermissionType.MANAGE_PERMI
 
 // Resource ownership checks
 const isStudentTherapist = async (req: AuthRequest): Promise<boolean> => {
-  const studentId = parseInt(req.params.id);
+  // Support both routes: /students/:id and /students/:studentId/sessions
+  const paramId = (req.params as any)?.id ?? (req.params as any)?.studentId;
+  const studentId = parseInt(String(paramId));
+  if (Number.isNaN(studentId)) return false;
+
   const therapistProfile = await prisma.therapistProfile.findUnique({
     where: { userId: req.user!.id }
   });
@@ -177,7 +181,11 @@ const isStudentTherapist = async (req: AuthRequest): Promise<boolean> => {
 };
 
 const isParentOfStudent = async (req: AuthRequest): Promise<boolean> => {
-  const studentId = parseInt(req.params.id);
+  // Support both routes: /students/:id and /students/:studentId/sessions
+  const paramId = (req.params as any)?.id ?? (req.params as any)?.studentId;
+  const studentId = parseInt(String(paramId));
+  if (Number.isNaN(studentId)) return false;
+
   const guardian = await prisma.guardian.findUnique({
     where: { userId: req.user!.id }
   });
@@ -190,6 +198,31 @@ const isParentOfStudent = async (req: AuthRequest): Promise<boolean> => {
     }
   });
   return !!studentGuardian;
+};
+
+/**
+ * Allow parents to view a therapist profile only if that therapist is assigned
+ * to at least one of their children.
+ */
+const isParentOfTherapistsAssignedToChild = async (req: AuthRequest): Promise<boolean> => {
+  const therapistId = parseInt(String((req.params as any)?.id));
+  if (Number.isNaN(therapistId)) return false;
+
+  const guardian = await prisma.guardian.findUnique({
+    where: { userId: req.user!.id }
+  });
+  if (!guardian) return false;
+
+  const hasChildWithTherapist = await prisma.student.findFirst({
+    where: {
+      isActive: true,
+      therapistId,
+      guardians: { some: { id: guardian.id } }
+    },
+    select: { id: true }
+  });
+
+  return !!hasChildWithTherapist;
 };
 
 export {
@@ -237,5 +270,6 @@ export {
   canViewControls,
   canManagePermissions,
   isStudentTherapist,
-  isParentOfStudent
+  isParentOfStudent,
+  isParentOfTherapistsAssignedToChild
 };

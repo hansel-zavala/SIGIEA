@@ -26,12 +26,22 @@ function Sidebar({ isOpen }: SidebarProps) {
     { name: 'Reportes', to: '/reports', icon: <FaClipboardList size={22} />, roles: ['ADMIN', 'THERAPIST', 'PARENT'], permission: 'VIEW_REPORTS' },
     { name: 'Plantillas', to: '/templates', icon: <FaWpforms size={22} />, roles: ['ADMIN', 'THERAPIST'], permission: 'VIEW_TEMPLATES' },
     { name: 'Controles', to: '/controles', icon: <FaCog size={22} />, roles: ['ADMIN', 'THERAPIST'], permission: 'MANAGE_PERMISSIONS' },
+    { name: 'Mi Estudiante', to: '/mi-estudiante', icon: <FaUserGraduate size={22} />, roles: ['PARENT'], permission: 'VIEW_STUDENTS' },
   ];
 
-  const modules = allModules.filter(module =>
-    user && module.roles.includes(user.role) &&
-    (!module.permission || user.role === 'ADMIN' || user.permissions?.[module.permission])
-  );
+  // For PARENT role, strictly control visible modules (hide Estudiantes, Eventos, Gráficas y Reportes)
+  const modules = (() => {
+    if (!user) return [];
+    if (user.role === 'PARENT') {
+      const allowedForParent = new Set(['Dashboard', 'Mi Estudiante']);
+      return allModules.filter(m => allowedForParent.has(m.name));
+    }
+    // For ADMIN/THERAPIST honor permissions as before (PARENT bypass removed)
+    return allModules.filter(module =>
+      module.roles.includes(user.role) &&
+      (!module.permission || user.role === 'ADMIN' || user.permissions?.[module.permission])
+    );
+  })();
 
   console.log('Filtered modules:', modules);
 

@@ -48,6 +48,20 @@ export const createReport = async (req: AuthRequest , res: Response) => {
 export const getReportsByStudent = async (req: AuthRequest , res: Response) => {
   try {
     const { studentId } = req.params;
+
+    // Check if parent has access to this student
+    if (req.user?.role === 'PARENT' && req.user.guardian) {
+      const hasAccess = await prisma.student.findFirst({
+        where: {
+          id: parseInt(studentId),
+          guardians: { some: { id: req.user.guardian.id } }
+        }
+      });
+      if (!hasAccess) {
+        return res.status(403).json({ error: 'No autorizado para ver reportes de este estudiante.' });
+      }
+    }
+
     const reports = await prisma.report.findMany({
       where: { studentId: parseInt(studentId) },
       include: {
@@ -88,6 +102,15 @@ export const getReportById = async (req: AuthRequest , res: Response) => {
         if (!report) {
             return res.status(404).json({ error: 'Reporte no encontrado.' });
         }
+
+        // Check if parent has access to this student's report
+        if (req.user?.role === 'PARENT' && req.user.guardian) {
+            const hasAccess = report.student.guardians.some(g => g.id === req.user!.guardian!.id);
+            if (!hasAccess) {
+                return res.status(403).json({ error: 'No autorizado para ver este reporte.' });
+            }
+        }
+
         res.json(report);
     } catch (error) {
         res.status(500).json({ error: 'No se pudo obtener el detalle del reporte.' });

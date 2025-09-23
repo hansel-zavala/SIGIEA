@@ -13,7 +13,8 @@ import BarChart from '../components/charts/BarChart.js';
 import TherapistAttendanceChart from '../components/charts/TherapistAttendanceChart.js';
 import TherapistAttendanceTrendsChart from '../components/charts/TherapistAttendanceTrendsChart.js';
 import StudentBirthDepartmentChart from '../components/charts/StudentBirthDepartmentChart.js';
-import GenderChart from '../components/charts/GenderChart.js';
+import GenderDistributionChart from '../components/charts/GenderDistributionChart.js';
+import therapistService, { type TherapistProfile } from '../services/therapistService.js';
 
 interface Trend {
   metric: string;
@@ -247,6 +248,9 @@ function AnalisisDeGraficasPage() {
   const [frequentTherapies, setFrequentTherapies] = useState<FrequentTherapies[]>([]);
   const [sessionComparison, setSessionComparison] = useState<SessionComparison[]>([]);
   const [genderDistribution, setGenderDistribution] = useState<{ maleCount: number; femaleCount: number; total: number } | null>(null);
+  const [therapists, setTherapists] = useState<TherapistProfile[]>([]);
+  const [selectedTherapistId, setSelectedTherapistId] = useState<number | null>(null);
+  const [sessionComparisonLoading, setSessionComparisonLoading] = useState(false);
 
   const analysis = generateAdvancedAnalysis(
     therapyAttendance,
@@ -283,6 +287,36 @@ function AnalisisDeGraficasPage() {
 
     loadChartData();
   }, []);
+ 
+  // Cargar terapeutas para el filtro de comparativa de sesiones
+  useEffect(() => {
+    const loadTherapists = async () => {
+      try {
+        const res = await therapistService.getAllTherapists('', 1, 1000, 'active');
+        setTherapists(res.data);
+      } catch (e) {
+        console.error('No se pudieron cargar los terapeutas para el filtro:', e);
+      }
+    };
+    loadTherapists();
+  }, []);
+
+  // Re-cargar comparativa de sesiones cuando cambie el filtro de terapeuta
+  useEffect(() => {
+    const loadSessionComparison = async () => {
+      try {
+        setSessionComparisonLoading(true);
+        const data = await dashboardService.getSessionComparison(selectedTherapistId ?? undefined);
+        setSessionComparison(data);
+      } catch (e) {
+        console.error('No se pudo cargar la comparación de sesiones filtrada:', e);
+        setError('No se pudo cargar la comparación de sesiones.');
+      } finally {
+        setSessionComparisonLoading(false);
+      }
+    };
+    loadSessionComparison();
+  }, [selectedTherapistId]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -375,19 +409,15 @@ function AnalisisDeGraficasPage() {
           <p className="text-red-500">{error}</p>
         ) : (
         <>
-          <section aria-label='Pulso del Centro' className='grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6'>
+          <section aria-label='Pulso del Centro' className='grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-6'>
             {therapyAttendance && (
-              <ChartContainer title='Tasa de Asistencia a Terapias (Últimos 7 días)' trends={analysis.chartTrends.therapyAttendance}>
-                <GaugeChart value={therapyAttendance.attendanceRate} />
+              <ChartContainer title='Tasa de Asistencia a Terapias (Últimos 7 días)' trends={analysis.chartTrends.therapyAttendance} contentHeight={520}>
+                <GaugeChart value={therapyAttendance.attendanceRate} height={380} />
               </ChartContainer>
             )}
             {genderDistribution && (
-              <ChartContainer title='Distribución por Género'>
-                <GenderChart
-                  maleCount={genderDistribution.maleCount}
-                  femaleCount={genderDistribution.femaleCount}
-                  total={genderDistribution.total}
-                />
+              <ChartContainer title='Distribución por Género' contentHeight={600}>
+                <GenderDistributionChart />
               </ChartContainer>
             )}
           </section>
@@ -417,8 +447,42 @@ function AnalisisDeGraficasPage() {
           </section>
 
           <section aria-label='Seguimiento y Progreso' className='grid grid-cols-1 xl:grid-cols-1 gap-8'>
-            <ChartContainer title='Comparativa de Sesiones: Planificadas, Completadas, Ausente y Cancelada'>
-              <BarChart data={sessionComparison} barKeys={[{ key: 'planned', name: 'Planificadas' }, { key: 'completed', name: 'Completadas' }, { key: 'absent', name: 'Ausente' }, { key: 'cancelled', name: 'Cancelada' }]} xAxisKey='month' />
+            <ChartContainer
+              title='Comparativa de Sesiones: Planificadas, Completadas, Ausente y Cancelada'
+              headerRight={
+                <div className="flex items-center">
+                  <label className="mr-2 text-sm text-gray-700">Filtrar por terapeuta:</label>
+                  <select
+                    value={selectedTherapistId ?? ''}
+                    onChange={(e) => setSelectedTherapistId(e.target.value ? Number(e.target.value) : null)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    disabled={sessionComparisonLoading}
+                  >
+                    <option value="">Todos</option>
+                    {therapists.map(t => (
+                      <option key={t.id} value={t.id}>
+                        {t.nombres} {t.apellidos}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              }
+              printContextNote={
+                selectedTherapistId
+                  ? `Datos de terapeuta: ${(() => { const t = therapists.find(tt => tt.id === selectedTherapistId); return t ? t.nombres + ' ' + t.apellidos : 'ID ' + selectedTherapistId; })()}`
+                  : 'Datos de: Todos los terapeutas'
+              }
+            >
+              <BarChart
+                data={sessionComparison}
+                barKeys={[
+                  { key: 'planned', name: 'Planificadas' },
+                  { key: 'completed', name: 'Completadas' },
+                  { key: 'absent', name: 'Ausente' },
+                  { key: 'cancelled', name: 'Cancelada' }
+                ]}
+                xAxisKey='month'
+              />
             </ChartContainer>
           </section>
 

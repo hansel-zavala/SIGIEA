@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import reportService from '../services/reportService';
-import { FaUserCircle, FaFileMedicalAlt } from 'react-icons/fa';
+import { FaUserCircle, FaFileMedicalAlt, FaChartLine } from 'react-icons/fa';
 import Pagination from '../components/ui/Pagination';
 import { useAuth } from '../context/AuthContext';
 
@@ -129,14 +129,22 @@ function ReportsListPage() {
                 </td>
                 <td className="px-5 py-4 text-gray-600">{student.therapist?.fullName || 'No asignado'}</td>
                 <td className="px-5 py-4">
-                  {canCreateReports && (
-                    <Link to={`/reports/new/${student.id}`}>
-                      <button className="py-2 px-4 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center gap-2">
-                        <FaFileMedicalAlt />
-                        <span>Generar Reporte</span>
+                  <div className="flex items-center gap-3">
+                    {canCreateReports && (
+                      <Link to={`/reports/new/${student.id}`}>
+                        <button className="py-2 px-4 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center gap-2">
+                          <FaFileMedicalAlt />
+                          <span>Generar Reporte</span>
+                        </button>
+                      </Link>
+                    )}
+                    <Link to={`/reports/sessions/${student.id}`}>
+                      <button className="py-2 px-4 text-violet-700 font-semibold rounded-lg bg-violet-50 hover:bg-violet-100 transition-all duration-200 flex items-center gap-2 border border-violet-200">
+                        <FaChartLine />
+                        <span>Reporte de Sesiones</span>
                       </button>
                     </Link>
-                  )}
+                  </div>
                 </td>
               </tr>
             )) : (

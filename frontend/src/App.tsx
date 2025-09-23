@@ -38,6 +38,7 @@ import AddGuardionPage from './pages/AddGuardionPage';
 import ArchiveroPage from './pages/ArchiveroPage';
 import ControlesPage from './pages/ControlesPage';
 import ParentStudentViewPage from './pages/ParentStudentViewPage';
+import ReportSessionsPage from './pages/ReportSessionsPage';
 
 function App() {
   const { user } = useAuth();
@@ -78,6 +79,8 @@ function App() {
               <Route path="reports/new/:studentId" element={<FillReportPage />} />
               <Route path="reports/view/:reportId" element={<ViewReportPage />} />
               <Route path="reports/edit/:reportId" element={<FillReportPage />} />
+              <Route path="reports/sessions" element={<ReportSessionsPage />} />
+              <Route path="reports/sessions/:studentId" element={<ReportSessionsPage />} />
               <Route path="archivero" element={<ArchiveroPage />} />
               <Route path="controles" element={<ControlesPage />} />
               <Route path="profile" element={<ProfilePage />} />

@@ -1,5 +1,6 @@
 // frontend/src/pages/LoginPage.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import authService from "../services/authService";
 import { useToast } from "../context/ToastContext";
@@ -8,11 +9,23 @@ import { FaUserShield, FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons
 function LoginPage() {
   const { login } = useAuth();
   const { showToast } = useToast();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [ripples, setRipples] = useState<Array<{ id: number; x: number; y: number; size: number }>>([]);
+
+  // Mostrar mensaje de éxito si viene de reset de contraseña
+  useEffect(() => {
+    if (location.state?.message) {
+      showToast({
+        message: location.state.message,
+        type: 'success',
+      });
+    }
+  }, [location.state, showToast]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -127,7 +140,13 @@ function LoginPage() {
                   />
                   <label htmlFor="remember-me" className="ml-2 block text-sm">Recuérdame</label>
                 </div>
-                <a href="#" className="text-sm font-medium hover:underline">¿Olvidaste tu contraseña?</a>
+                <button
+                  type="button"
+                  onClick={() => navigate('/reset-password')}
+                  className="text-sm font-medium hover:underline text-left"
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
               </div>
             </div>
             

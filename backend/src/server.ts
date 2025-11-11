@@ -5,6 +5,7 @@ import express from 'express';
 import type { Request, Response } from 'express';
 import cors from 'cors';
 import userRoutes from './routes/userRoutes.js';
+import authRoutes from './routes/authRoutes.js';
 import studentRoutes from './routes/studentRoutes.js';
 import leccionRoutes from './routes/leccionRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
@@ -36,6 +37,7 @@ app.get('/', (req: Request, res: Response) => {
   res.send('API de SIGIEA funcionando correctamente!');
 });
 app.use('/api/users', userRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/lecciones', leccionRoutes);
 app.use('/api/upload', uploadRoutes);

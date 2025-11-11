@@ -1,5 +1,6 @@
 // frontend/src/services/authService.ts
 import axios from 'axios';
+import api from './api';
 
 const API_URL = 'http://localhost:3001/api/';
 
@@ -25,7 +26,31 @@ const getProfile = async () => {
     }
 };
 
+export const forgotPassword = async (email: string): Promise<any> => {
+  const response = await api.post('/auth/send-reset-code', { email });
+  return response.data;
+};
+
+export const resendResetCode = async (email: string): Promise<any> => {
+  const response = await api.post('/auth/resend-reset-code', { email });
+  return response.data;
+};
+
+export const verifyResetCode = async (email: string, code: string): Promise<any> => {
+  const response = await api.post('/auth/verify-code', { email, code });
+  return response.data;
+};
+
+export const resetPassword = async (email: string, code: string, newPassword: string): Promise<any> => {
+  const response = await api.post('/auth/reset-password', { email, code, newPassword });
+  return response.data;
+};
+
 export default {
     login,
     getProfile,
+    forgotPassword,
+    resetPassword,
+    verifyResetCode,
+    resendResetCode,
 };

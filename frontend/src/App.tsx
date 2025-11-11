@@ -4,6 +4,7 @@ import { useAuth } from './context/AuthContext';
 
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import MatriculaPage from './pages/MatriculaPage';
 import DashboardPage from './pages/DashboardPage';
 import StudentsPage from './pages/StudentsPage';
@@ -91,7 +92,10 @@ function App() {
             <Route path="/students/:id/print" element={<PrintMatriculaPage />} />
           </>
         ) : (
-          <Route path="/login" element={<LoginPage />} />
+          <>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+          </>
         )}
 
         <Route path="*" element={<Navigate to={user ? '/' : '/login'} />} />

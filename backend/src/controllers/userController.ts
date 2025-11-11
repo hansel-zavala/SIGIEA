@@ -4,6 +4,8 @@ import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import { sendPasswordResetEmail } from '../services/emailService.js';
 
 const prisma = new PrismaClient();
 
@@ -70,5 +72,110 @@ export const getUserProfile = async (req: any, res: Response) => {
     res.json(user);
   } else {
     res.status(404).json({ error: 'Usuario no encontrado.' });
+  }
+};
+
+export const forgotPassword = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (user) {
+      const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos desde ahora
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          resetCode: resetCode,
+          resetCodeExpiry: expires,
+        },
+      });
+
+      await sendPasswordResetEmail(user.email, resetCode);
+    }
+
+    res.status(200).json({ message: 'Si existe una cuenta con ese correo, se ha enviado un código de recuperación.' });
+
+  } catch (error) {
+    console.error("Error en forgotPassword:", error);
+    res.status(500).json({ error: 'No se pudo procesar la solicitud.' });
+  }
+};
+
+export const verifyResetCode = async (req: Request, res: Response) => {
+  try {
+    const { email, code } = req.body;
+
+    if (!email || !code) {
+      return res.status(400).json({ error: 'Faltan datos (email, code).' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      return res.status(400).json({ error: 'El código o el correo son inválidos.' });
+    }
+
+    if (!user.resetCode || user.resetCode !== code) {
+      return res.status(400).json({ error: 'El código es incorrecto.' });
+    }
+
+    if (!user.resetCodeExpiry || user.resetCodeExpiry < new Date()) {
+      return res.status(400).json({ error: 'El código ha expirado.' });
+    }
+
+    res.status(200).json({ message: 'Código válido.' });
+
+  } catch (error) {
+    console.error("Error en verifyResetCode:", error);
+    res.status(500).json({ error: 'No se pudo verificar el código.' });
+  }
+};
+
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { email, code, newPassword } = req.body;
+
+    if (!email || !code || !newPassword) {
+      return res.status(400).json({ error: 'Faltan datos (email, code, newPassword).' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      return res.status(400).json({ error: 'El código o el correo son inválidos.' });
+    }
+
+    if (!user.resetCode || user.resetCode !== code) {
+      return res.status(400).json({ error: 'El código es incorrecto.' });
+    }
+
+    if (!user.resetCodeExpiry || user.resetCodeExpiry < new Date()) {
+      return res.status(400).json({ error: 'El código ha expirado.' });
+    }
+
+    const isSamePassword = await bcrypt.compare(newPassword, user.password);
+    if (isSamePassword) {
+      return res.status(400).json({ error: 'La nueva contraseña no puede ser igual a la anterior.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        resetCode: null,
+        resetCodeExpiry: null,
+      },
+    });
+
+    res.status(200).json({ message: 'Contraseña actualizada correctamente.' });
+
+  } catch (error) {
+    console.error("Error en resetPassword:", error);
+    res.status(500).json({ error: 'No se pudo resetear la contraseña.' });
   }
 };

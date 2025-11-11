@@ -26,6 +26,8 @@ model User {
   createdLecciones Leccion[]
   createdReports   Report[]
   uploadedDocuments Document[]       @relation("UploadedDocuments")
+  resetCode        String?
+  resetCodeExpiry  DateTime?
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 }

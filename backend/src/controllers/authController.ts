@@ -57,16 +57,28 @@ export const resendResetCode = async (req: Request, res: Response) => {
     const { email } = req.body;
 
     if (!email) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'El correo electrónico es requerido',
-        field: 'email' 
+        field: 'email'
+      });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        error: 'El formato del correo electrónico no es válido',
+        field: 'email'
       });
     }
 
     const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
+      // No revelar si el usuario existe o no
+      return res.status(200).json({
+        message: 'Si existe una cuenta con ese correo, se ha enviado un nuevo código de recuperación.',
+        timeLeft: 15 * 60
+      });
     }
 
     if (user.resetCodeExpiry && user.resetCodeExpiry > new Date()) {
@@ -108,36 +120,45 @@ export const verifyCode = async (req: Request, res: Response) => {
     const { email, code } = req.body;
 
     if (!email || !code) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Faltan datos requeridos',
         missingFields: !email ? ['email'] : !code ? ['code'] : []
       });
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        error: 'El formato del correo electrónico no es válido',
+        field: 'email'
+      });
+    }
+
     if (!/^\d{6}$/.test(code)) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'El código debe tener 6 dígitos',
-        field: 'code' 
+        field: 'code'
       });
     }
 
     const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
+      // No revelar si el usuario existe
+      return res.status(400).json({ error: 'Código incorrecto o expirado' });
     }
 
     if (!user.resetCode || user.resetCode !== code) {
-      return res.status(400).json({ error: 'El código es incorrecto' });
+      return res.status(400).json({ error: 'Código incorrecto o expirado' });
     }
 
     if (!user.resetCodeExpiry || user.resetCodeExpiry < new Date()) {
-      return res.status(400).json({ error: 'El código ha expirado' });
+      return res.status(400).json({ error: 'Código incorrecto o expirado' });
     }
 
     const timeLeft = Math.ceil((user.resetCodeExpiry.getTime() - Date.now()) / 1000);
 
-    res.status(200).json({ 
+    res.status(200).json({
       message: 'Código verificado correctamente',
       timeLeft,
       expiresAt: user.resetCodeExpiry
@@ -154,7 +175,7 @@ export const resetPassword = async (req: Request, res: Response) => {
     const { email, code, newPassword } = req.body;
 
     if (!email || !code || !newPassword) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Faltan datos requeridos',
         missingFields: [
           ...(!email ? ['email'] : []),
@@ -164,8 +185,16 @@ export const resetPassword = async (req: Request, res: Response) => {
       });
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        error: 'El formato del correo electrónico no es válido',
+        field: 'email'
+      });
+    }
+
     if (newPassword.length < 6) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'La contraseña debe tener al menos 6 caracteres',
         field: 'newPassword',
         minLength: 6
@@ -175,21 +204,22 @@ export const resetPassword = async (req: Request, res: Response) => {
     const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
+      // No revelar si el usuario existe
+      return res.status(400).json({ error: 'Código incorrecto o expirado' });
     }
 
     if (!user.resetCode || user.resetCode !== code) {
-      return res.status(400).json({ error: 'El código es incorrecto' });
+      return res.status(400).json({ error: 'Código incorrecto o expirado' });
     }
 
     if (!user.resetCodeExpiry || user.resetCodeExpiry < new Date()) {
-      return res.status(400).json({ error: 'El código ha expirado' });
+      return res.status(400).json({ error: 'Código incorrecto o expirado' });
     }
 
     const bcrypt = require('bcrypt');
     const isSamePassword = await bcrypt.compare(newPassword, user.password);
     if (isSamePassword) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'La nueva contraseña no puede ser igual a la anterior',
         field: 'newPassword'
       });
@@ -206,8 +236,8 @@ export const resetPassword = async (req: Request, res: Response) => {
       },
     });
 
-    res.status(200).json({ 
-      message: 'Contraseña actualizada correctamente. Ya puedes iniciar sesión con tu nueva contraseña.' 
+    res.status(200).json({
+      message: 'Contraseña actualizada correctamente. Ya puedes iniciar sesión con tu nueva contraseña.'
     });
 
   } catch (error) {

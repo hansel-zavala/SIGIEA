@@ -1,7 +1,7 @@
 // backend/src/controllers/guardianController.ts
 import { Request, Response } from 'express';
 import { Role } from '@prisma/client';
-import prisma from '../db.js';
+import prisma from '../lib/prisma.js';
 import bcrypt from 'bcrypt';
 import { toCsv, sendCsvResponse, buildTimestampedFilename } from '../utils/csv.js'; 
 import { sendExcelResponse } from '../utils/excel.js';

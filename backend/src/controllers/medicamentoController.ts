@@ -1,6 +1,6 @@
 // backend/src/controllers/medicamentoController.ts
 import { Request, Response } from 'express';
-import prisma from '../db.js';
+import prisma from '../lib/prisma.js';
 
 // Obtener todos los medicamentos
 export const getAllMedicamentos = async (req: Request, res: Response) => {

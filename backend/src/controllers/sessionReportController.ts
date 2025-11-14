@@ -1,7 +1,7 @@
 // backend/src/controllers/sessionReportController.ts
 import { Response } from 'express';
 import { SessionStatus } from '@prisma/client';
-import prisma from '../db.js';
+import prisma from '../lib/prisma.js';
 import { AuthRequest } from '../types/express.js';
 
 const MONTH_NAMES = [

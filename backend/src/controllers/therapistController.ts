@@ -1,7 +1,7 @@
 // backend/src/controllers/therapistController.ts
 
 import { Request, Response } from 'express';
-import prisma from '../db.js';
+import prisma from '../lib/prisma.js';
 import bcrypt from 'bcrypt';
 import { Prisma, Role, PermissionType } from '@prisma/client';
 import { AuthRequest } from '../types/express.js';

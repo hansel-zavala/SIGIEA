@@ -1,6 +1,6 @@
 // backend/src/controllers/categoryController.ts
 import { Request, Response } from 'express';
-import prisma from '../db.js';
+import prisma from '../lib/prisma.js';
 
 export const getAllCategories = async (req: Request, res: Response) => {
   try {

@@ -4,7 +4,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import fsp from 'fs/promises';
-import prisma from '../db.js';
+import prisma from '../lib/prisma.js';
 import type { AuthRequest } from '../types/express.js';
 import {
   DocumentOwnerType,

@@ -1,6 +1,6 @@
 // backend/src/controllers/eventController.ts
 import { Request, Response } from 'express';
-import prisma from '../db.js';
+import prisma from '../lib/prisma.js';
 import { Prisma, EventAudience } from '@prisma/client';
 import { AuthRequest } from '../types/express.js';
 import { toCsv, sendCsvResponse, buildTimestampedFilename } from '../utils/csv.js';

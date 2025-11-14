@@ -1,6 +1,6 @@
 // backend/src/controllers/reportTemplateController.ts
 import { Request, Response } from 'express';
-import prisma from '../db.js';
+import prisma from '../lib/prisma.js';
 import { Prisma } from '@prisma/client';
 
 export const createTemplate = async (req: Request, res: Response) => {

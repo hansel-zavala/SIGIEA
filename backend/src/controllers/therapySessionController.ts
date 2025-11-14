@@ -1,6 +1,6 @@
 // backend/src/controllers/therapySessionController.ts
 import { Request, Response } from 'express';
-import prisma from '../db.js';
+import prisma from '../lib/prisma.js';
 
 export const createRecurringSessions = async (req: Request, res: Response) => {
     try {

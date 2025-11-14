@@ -1,6 +1,6 @@
 // backend/src/controllers/dashboardController.ts
 import { Request, Response } from 'express';
-import prisma from '../db.js';
+import prisma from '../lib/prisma.js';
 import { AuthRequest } from '../types/express.js';
 
 export const getDashboardStats = async (req: AuthRequest, res: Response) => {

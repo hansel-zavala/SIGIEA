@@ -1,7 +1,7 @@
 // Servicio orquestador para renderizar reportes a PDF o DOCX
 // Obtiene el reporte de Prisma y delega a los renderers
 
-import prisma from '../db.js';
+import prisma from '../lib/prisma.js';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { renderReportPdf } from './renderers/pdfRenderer.js';

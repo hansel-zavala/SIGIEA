@@ -4,11 +4,12 @@ import api from './api';
 
 const API_URL = 'http://localhost:3001/api/';
 
-const login = async (email: string, password: string) => {
+const login = async (email: string, password: string, rememberMe: boolean) => {
     try {
     const response = await axios.post(API_URL + 'users/login', {
         email,
         password,
+        rememberMe,
     });
 
     return response.data;

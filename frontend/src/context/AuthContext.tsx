@@ -20,7 +20,7 @@ interface StoredUser extends User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (data: { token: string }) => void;
+  login: (data: any, rememberMe: boolean) => void;
   logout: () => void;
 }
 
@@ -34,13 +34,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const storedUserJSON = localStorage.getItem('user');
+        let storedUserJSON = localStorage.getItem('user');
+
+        if (!storedUserJSON) {
+          storedUserJSON = sessionStorage.getItem('user');
+        }
+
         if (storedUserJSON) {
           const storedUser: StoredUser = JSON.parse(storedUserJSON);
           const decodedToken: User = jwtDecode(storedUser.token);
 
           // Load full profile with permissions
           try {
+            api.defaults.headers.common['Authorization'] = `Bearer ${storedUser.token}`;
             const response = await api.get('users/profile');
             const fullUser = response.data;
             const userWithPermissions: User = {
@@ -79,6 +85,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } catch (error) {
         console.error("Failed to decode token from localStorage", error);
         localStorage.removeItem('user');
+        sessionStorage.removeItem('user');
       } finally {
         setLoading(false);
       }
@@ -87,8 +94,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     loadUser();
   }, []);
 
-  const login = async (data: { token: string }) => {
+  const login = async (data: { token: string }, rememberMe: boolean) => {
     const decodedUser: User = jwtDecode(data.token);
+
+    api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
 
     // Load full profile with permissions
     try {
@@ -102,13 +111,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         guardian: fullUser.guardian,
       };
       const userToStore: StoredUser = { ...userWithPermissions, token: data.token };
-      localStorage.setItem('user', JSON.stringify(userToStore));
+      
+      if (rememberMe) {
+        localStorage.setItem('user', JSON.stringify(userToStore));
+        sessionStorage.removeItem('user'); // Limpiar el otro
+      } else {
+        sessionStorage.setItem('user', JSON.stringify(userToStore));
+        localStorage.removeItem('user'); // Limpiar el otro
+      }
+
       setUser(userWithPermissions);
     } catch (error) {
       console.error('Error loading user profile:', error);
       // Fallback to decoded user
       const userToStore: StoredUser = { ...decodedUser, token: data.token };
-      localStorage.setItem('user', JSON.stringify(userToStore));
+      
+      if (rememberMe) {
+        localStorage.setItem('user', JSON.stringify(userToStore));
+        sessionStorage.removeItem('user');
+      } else {
+        sessionStorage.setItem('user', JSON.stringify(userToStore));
+        localStorage.removeItem('user');
+      }
+
       setUser(decodedUser);
     }
 
@@ -117,8 +142,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = () => {
     localStorage.removeItem('user');
+    sessionStorage.removeItem('user');
     setUser(null);
     setToken(null);
+    delete api.defaults.headers.common['Authorization'];
   };
 
   if (loading) {

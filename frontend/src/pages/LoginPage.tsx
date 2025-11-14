@@ -15,6 +15,7 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [ripples, setRipples] = useState<Array<{ id: number; x: number; y: number; size: number }>>([]);
 
   // Mostrar mensaje de éxito si viene de reset de contraseña
@@ -31,8 +32,8 @@ function LoginPage() {
     event.preventDefault();
     setError("");
     try {
-      const data = await authService.login(email, password);
-      login(data);
+      const data = await authService.login(email, password, rememberMe);
+      login(data, rememberMe);
       const userName = data?.user?.name || data?.user?.email || 'Bienvenido';
       showToast({
         message: `¡Hola ${userName}! Nos alegra verte de nuevo.`,
@@ -56,6 +57,7 @@ function LoginPage() {
       setRipples(prev => prev.filter(r => r.id !== newRipple.id));
     }, 1000);
   };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 overflow-hidden relative bg-gradient-to-br from-indigo-700 to-bg-blue-800 font-['Poppins']">
@@ -137,6 +139,8 @@ function LoginPage() {
                     id="remember-me"
                     type="checkbox"
                     className="h-4 w-4 rounded bg-white/20 border-white/30 focus:ring-white/30"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
                   />
                   <label htmlFor="remember-me" className="ml-2 block text-sm">Recuérdame</label>
                 </div>

@@ -2,10 +2,10 @@
 
 import { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { PrismaClient, Role } from '@prisma/client';
 import { AuthRequest } from '../types/express.js';
+import prisma from '../lib/prisma.js';
+import { Role } from '@prisma/client';
 
-const prisma = new PrismaClient();
 
 
 const protect = async (req: AuthRequest, res: Response, next: NextFunction) => {

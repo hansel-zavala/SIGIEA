@@ -1,30 +1,28 @@
 // backend/src/controllers/alergiaController.ts
-import { Request, Response } from 'express';
-import prisma from '../db.js';
+import { Request, Response } from "express";
+import { alergiaService } from "../services/alergiaService.js";
 
 export const getAllAlergias = async (req: Request, res: Response) => {
   try {
-    const alergias = await prisma.alergia.findMany({
-      orderBy: { nombre: 'asc' },
-    });
+    const alergias = await alergiaService.getAllAlergias();
     res.json(alergias);
   } catch (error) {
-    res.status(500).json({ error: 'No se pudieron obtener las alergias.' });
+    res.status(500).json({ error: "No se pudieron obtener las alergias." });
   }
 };
 
 export const createAlergia = async (req: Request, res: Response) => {
   try {
     const { nombre } = req.body;
-    if (!nombre) {
-      return res.status(400).json({ error: 'El nombre es obligatorio.' });
-    }
-    const newAlergia = await prisma.alergia.create({
-      data: { nombre },
-    });
+    const newAlergia = await alergiaService.createAlergia(nombre);
     res.status(201).json(newAlergia);
   } catch (error) {
-    res.status(500).json({ error: 'No se pudo crear la alergia.' });
+    if (error instanceof Error) {
+      if (error.message === "El nombre es obligatorio.") {
+        return res.status(400).json({ error: error.message });
+      }
+    }
+    res.status(500).json({ error: "No se pudo crear la alergia." });
   }
 };
 
@@ -32,13 +30,18 @@ export const updateAlergia = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { nombre } = req.body;
-    const updatedAlergia = await prisma.alergia.update({
-      where: { id: parseInt(id) },
-      data: { nombre },
-    });
+    const updatedAlergia = await alergiaService.updateAlergia(
+      parseInt(id),
+      nombre
+    );
     res.json(updatedAlergia);
   } catch (error) {
-    res.status(500).json({ error: 'No se pudo actualizar la alergia.' });
+    if (error instanceof Error) {
+      if (error.message === "El nombre es obligatorio.") {
+        return res.status(400).json({ error: error.message });
+      }
+    }
+    res.status(500).json({ error: "No se pudo actualizar la alergia." });
   }
 };
 
@@ -48,28 +51,19 @@ export const deleteAlergia = async (req: Request, res: Response) => {
     const alergiaId = parseInt(id, 10);
 
     if (Number.isNaN(alergiaId)) {
-      return res.status(400).json({ error: 'Identificador de alergia inválido.' });
+      return res
+        .status(400)
+        .json({ error: "Identificador de alergia inválido." });
     }
 
-    const studentsWithAlergia = await prisma.student.count({
-      where: {
-        alergias: {
-          some: { id: alergiaId },
-        },
-      },
-    });
-
-    if (studentsWithAlergia > 0) {
-      return res.status(400).json({
-        error: 'No se puede eliminar la alergia porque está asignada a otros estudiantes.',
-      });
-    }
-
-    await prisma.alergia.delete({
-      where: { id: alergiaId },
-    });
-    res.json({ message: 'Alergia eliminada correctamente.' });
+    await alergiaService.deleteAlergia(alergiaId);
+    res.json({ message: "Alergia eliminada correctamente." });
   } catch (error) {
-    res.status(500).json({ error: 'No se pudo eliminar la alergia.' });
+    if (error instanceof Error) {
+      if (error.message.includes("está asignada a otros estudiantes")) {
+        return res.status(400).json({ error: error.message });
+      }
+    }
+    res.status(500).json({ error: "No se pudo eliminar la alergia." });
   }
 };

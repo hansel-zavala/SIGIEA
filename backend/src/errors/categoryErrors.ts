@@ -8,7 +8,6 @@ export class CategoryError extends Error {
   }
 }
 
-// Error para cuando se intenta eliminar una categoría en uso
 export class CategoryInUseError extends CategoryError {
   constructor(message: string) {
     super(message);
@@ -16,7 +15,6 @@ export class CategoryInUseError extends CategoryError {
   }
 }
 
-// Error para cuando el nombre ya existe (P2002)
 export class CategoryNameExistsError extends CategoryError {
   constructor(message: string) {
     super(message);

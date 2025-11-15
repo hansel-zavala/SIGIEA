@@ -14,10 +14,9 @@ export const validateCategory = [
     .isHexColor().withMessage('El color debe ser un código hexadecimal válido (ej: #FF0000).'),
 ];
 
-// Validador para la actualización (ambos campos son opcionales, pero si se envían, deben ser válidos)
 export const validateUpdateCategory = [
   body('name')
-    .optional() // Permite que el campo esté ausente
+    .optional()
     .trim()
     .notEmpty().withMessage('El nombre no puede estar vacío.')
     .isString().withMessage('El nombre debe ser texto.')

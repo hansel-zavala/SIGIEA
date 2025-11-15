@@ -20,7 +20,7 @@ export const createCategory = async (req: Request, res: Response) => {
     res.status(201).json(newCategory);
   } catch (error) {
     if (error instanceof CategoryNameExistsError) {
-      return res.status(409).json({ error: error.message }); // 409 Conflict
+      return res.status(409).json({ error: error.message });
     }
     res.status(500).json({ error: 'No se pudo crear la categoría.' });
   }
@@ -29,12 +29,12 @@ export const createCategory = async (req: Request, res: Response) => {
 export const updateCategory = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, color } = req.body; // El validador asegura que al menos uno venga
+    const { name, color } = req.body;
     const updatedCategory = await categoryService.updateCategory(parseInt(id), name, color);
     res.json(updatedCategory);
   } catch (error) {
     if (error instanceof CategoryNameExistsError) {
-      return res.status(409).json({ error: error.message }); // 409 Conflict
+      return res.status(409).json({ error: error.message });
     }
     res.status(500).json({ error: 'No se pudo actualizar la categoría.' });
   }
@@ -47,7 +47,7 @@ export const deleteCategory = async (req: Request, res: Response) => {
     res.json({ message: 'Categoría eliminada correctamente.' });
   } catch (error) {
     if (error instanceof CategoryInUseError) {
-      return res.status(400).json({ error: error.message }); // 400 Bad Request
+      return res.status(400).json({ error: error.message });
     }
     res.status(500).json({ error: 'No se pudo eliminar la categoría.' });
   }

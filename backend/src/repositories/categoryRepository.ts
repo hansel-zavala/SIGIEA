@@ -16,7 +16,7 @@ const create = (name: string, color: string) => {
 const update = (id: number, name?: string, color?: string) => {
   return prisma.category.update({
     where: { id },
-    data: { name, color }, // Solo actualiza los campos proporcionados
+    data: { name, color },
   });
 };
 
@@ -26,9 +26,6 @@ const remove = (id: number) => {
   });
 };
 
-/**
- * Cuenta cuántos eventos están usando una categoría específica.
- */
 const countEventsByCategoryId = (id: number) => {
   return prisma.event.count({
     where: { categoryId: id },

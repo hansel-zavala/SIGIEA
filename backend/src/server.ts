@@ -21,14 +21,14 @@ import reportTemplatePublicRoutes from './routes/reportTemplatePublicRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
 import tipoParentescoRoutes from './routes/tipoParentescoRoutes.js';
 import documentRoutes from './routes/documentRoutes.js';
-import controlesRoutes from './routes/controlesRoutes.js';
+import catalogRoutes from './routes/catalogRoutes.js';
 import sessionReportRoutes from './routes/sessionReportRoutes.js';
 
 const app = express();
 const PORT = 3001;
 
 app.use(cors({
-  exposedHeaders: ['X-New-Token', 'Content-Disposition'], // exponer nombre de archivo para descargas
+  exposedHeaders: ['X-New-Token', 'Content-Disposition'],
 }));
 
 
@@ -53,7 +53,7 @@ app.use('/api/report-templates', reportTemplateRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/reports-sessions', sessionReportRoutes);
 app.use('/api/documents', documentRoutes);
-app.use('/api/controles', controlesRoutes);
+app.use('/api/controles', catalogRoutes);
 app.use('/api', tipoParentescoRoutes);
 app.use('/public', express.static('public'));
 

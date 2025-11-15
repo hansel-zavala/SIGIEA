@@ -18,6 +18,12 @@ const modalStyles = {
 
 Modal.setAppElement('#root');
 
+interface FormErrors {
+  name?: string;
+  color?: string;
+  general?: string;
+}
+
 function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,6 +34,7 @@ function CategoriesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [formData, setFormData] = useState({ name: '', color: '#4287f5' });
+  const [modalErrors, setModalErrors] = useState<FormErrors | null>(null);
 
   useEffect(() => {
     fetchCategories();
@@ -72,6 +79,7 @@ function CategoriesPage() {
       setFormData({ name: '', color: '#4287f5' });
     }
     setError('');
+    setModalErrors(null);
     setIsModalOpen(true);
   };
 
@@ -80,12 +88,18 @@ function CategoriesPage() {
     setEditingCategory(null);
   };
 
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setFormData(prev => ({ ...prev, [id]: value }));
+
+    if (modalErrors && modalErrors[id as keyof FormErrors]) {
+      setModalErrors(prev => ({ ...prev, [id]: undefined }));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim()) {
-      setError("El nombre de la categoría es obligatorio.");
-      return;
-    }
+    setModalErrors(null);
 
     try {
       if (editingCategory) {
@@ -96,7 +110,21 @@ function CategoriesPage() {
       fetchCategories();
       handleCloseModal();
     } catch (err: any) {
-      setError(err.response?.data?.error || "Ocurrió un error.");
+      const errorData = err.response?.data;
+      
+      if (err.response?.status === 400 && errorData?.errors) {
+        const formattedErrors: FormErrors = {};
+        for (const validationError of errorData.errors) {
+          if (validationError.path) {
+            formattedErrors[validationError.path as keyof FormErrors] = validationError.msg;
+          }
+        }
+        setModalErrors(formattedErrors);
+      } else if (err.response?.status === 409) {
+        setModalErrors({ name: errorData.error });
+      } else {
+        setModalErrors({ general: errorData?.error || "Ocurrió un error inesperado." });
+      }
     }
   };
 
@@ -106,7 +134,8 @@ function CategoriesPage() {
         await categoryService.deleteCategory(categoryId);
         fetchCategories();
       } catch (err: any) {
-        alert(err.response?.data?.error || "No se pudo eliminar la categoría.");
+        const errorMsg = err.response?.data?.error || "No se pudo eliminar la categoría.";
+        alert(errorMsg);
       }
     }
   };
@@ -198,21 +227,43 @@ function CategoriesPage() {
       <Modal isOpen={isModalOpen} onRequestClose={handleCloseModal} style={modalStyles}>
         <h2 className="text-xl font-bold mb-4">{editingCategory ? 'Editar' : 'Crear'} Categoría</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {error && <p className="text-red-500">{error}</p>}
+          {modalErrors?.general && <p className="text-red-500">{modalErrors.general}</p>}
           <div>
             <Label htmlFor="name">Nombre</Label>
-            <Input id="name" type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })}/>
+            <Input 
+              id="name" 
+              type="text" 
+              value={formData.name} 
+              onChange={handleFormChange} 
+            />
+            {modalErrors?.name && <p className="text-red-500 mt-1">{modalErrors.name}</p>}
           </div>
           <div>
             <Label htmlFor="color">Color</Label>
             <div className="flex items-center gap-3">
-              <Input id="color" type="color" value={formData.color} onChange={(e) => setFormData({ ...formData, color: e.target.value })} className="w-16 h-10 p-1"/>
+              <Input 
+                id="color" 
+                type="color" 
+                value={formData.color} 
+                onChange={handleFormChange} 
+                className="w-16 h-10 p-1" 
+              />
               <span className="font-mono text-gray-700">{formData.color}</span>
             </div>
+            {modalErrors?.color && <p className="text-red-500 mt-1">{modalErrors.color}</p>}
           </div>
           <div className="flex justify-end gap-3 pt-4">
-            <button type="button" onClick={handleCloseModal} className="py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-gray-400 to-gray-500 hover:from-gray-500 hover:to-gray-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">Cancelar</button> 
-            <button type="submit" className="py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">Guardar</button>
+            <button 
+              type="button" 
+              onClick={handleCloseModal} 
+              className="py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-gray-400 to-gray-500 hover:from-gray-500 hover:to-gray-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">
+                Cancelar
+            </button>
+            <button 
+              type="submit" 
+              className="py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md">
+                Guardar
+            </button>
           </div>
         </form>
       </Modal>

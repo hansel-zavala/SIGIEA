@@ -1,6 +1,7 @@
 // backend/src/controllers/alergiaController.ts
 import { Request, Response } from "express";
 import { alergiaService } from "../services/alergiaService.js";
+import { AlergiaInUseError } from "../errors/alergiaErrors.js";
 
 export const getAllAlergias = async (req: Request, res: Response) => {
   try {
@@ -59,10 +60,8 @@ export const deleteAlergia = async (req: Request, res: Response) => {
     await alergiaService.deleteAlergia(alergiaId);
     res.json({ message: "Alergia eliminada correctamente." });
   } catch (error) {
-    if (error instanceof Error) {
-      if (error.message.includes("está asignada a otros estudiantes")) {
+    if (error instanceof AlergiaInUseError) {
         return res.status(400).json({ error: error.message });
-      }
     }
     res.status(500).json({ error: "No se pudo eliminar la alergia." });
   }

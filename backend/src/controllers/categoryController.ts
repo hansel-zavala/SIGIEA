@@ -1,31 +1,26 @@
 // backend/src/controllers/categoryController.ts
 import { Request, Response } from 'express';
-import prisma from '../lib/prisma.js';
+import { categoryService } from '../services/categoryService.js';
+import { CategoryInUseError, CategoryNameExistsError } from '../errors/categoryErrors.js';
 
 export const getAllCategories = async (req: Request, res: Response) => {
   try {
-    const categories = await prisma.category.findMany({
-      orderBy: { name: 'asc' },
-    });
+    const categories = await categoryService.getAllCategories();
     res.json(categories);
   } catch (error) {
     res.status(500).json({ error: 'No se pudieron obtener las categorías.' });
   }
 };
 
+
 export const createCategory = async (req: Request, res: Response) => {
   try {
     const { name, color } = req.body;
-    if (!name || !color) {
-      return res.status(400).json({ error: 'El nombre y el color son obligatorios.' });
-    }
-    const newCategory = await prisma.category.create({
-      data: { name, color },
-    });
+    const newCategory = await categoryService.createCategory(name, color);
     res.status(201).json(newCategory);
   } catch (error) {
-    if (error instanceof Error && 'code' in error && (error as any).code === 'P2002') {
-        return res.status(409).json({ error: 'Ya existe una categoría con ese nombre.' });
+    if (error instanceof CategoryNameExistsError) {
+      return res.status(409).json({ error: error.message }); // 409 Conflict
     }
     res.status(500).json({ error: 'No se pudo crear la categoría.' });
   }
@@ -34,15 +29,12 @@ export const createCategory = async (req: Request, res: Response) => {
 export const updateCategory = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, color } = req.body;
-    const updatedCategory = await prisma.category.update({
-      where: { id: parseInt(id) },
-      data: { name, color },
-    });
+    const { name, color } = req.body; // El validador asegura que al menos uno venga
+    const updatedCategory = await categoryService.updateCategory(parseInt(id), name, color);
     res.json(updatedCategory);
   } catch (error) {
-    if (error instanceof Error && 'code' in error && (error as any).code === 'P2002') {
-        return res.status(409).json({ error: 'Ya existe una categoría con ese nombre.' });
+    if (error instanceof CategoryNameExistsError) {
+      return res.status(409).json({ error: error.message }); // 409 Conflict
     }
     res.status(500).json({ error: 'No se pudo actualizar la categoría.' });
   }
@@ -51,20 +43,12 @@ export const updateCategory = async (req: Request, res: Response) => {
 export const deleteCategory = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    
-    const eventsWithCategory = await prisma.event.count({
-        where: { categoryId: parseInt(id) }
-    });
-
-    if (eventsWithCategory > 0) {
-        return res.status(400).json({ error: 'No se puede eliminar la categoría porque está siendo utilizada por uno o más eventos.' });
-    }
-
-    await prisma.category.delete({
-      where: { id: parseInt(id) },
-    });
+    await categoryService.deleteCategory(parseInt(id));
     res.json({ message: 'Categoría eliminada correctamente.' });
   } catch (error) {
+    if (error instanceof CategoryInUseError) {
+      return res.status(400).json({ error: error.message }); // 400 Bad Request
+    }
     res.status(500).json({ error: 'No se pudo eliminar la categoría.' });
   }
 };

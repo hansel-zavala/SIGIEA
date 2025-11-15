@@ -1,5 +1,6 @@
 // backend/src/services/alergiaService.ts
 import { alergiaRepository } from '../repositories/alergiaRepository.js';
+import { AlergiaInUseError, AlergiaNameExistsError } from '../errors/alergiaErrors.js';
 
 const getAllAlergias = async () => {
   return alergiaRepository.findAll();
@@ -23,7 +24,7 @@ const deleteAlergia = async (id: number) => {
   const studentCount = await alergiaRepository.countStudentsWithAlergia(id);
   
   if (studentCount > 0) {
-    throw new Error('No se puede eliminar la alergia porque está asignada a otros estudiantes.');
+    throw new AlergiaInUseError('No se puede eliminar la alergia porque está asignada a otros estudiantes.');
   }
   
   return alergiaRepository.remove(id);

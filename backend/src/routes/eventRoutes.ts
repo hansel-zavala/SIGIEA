@@ -2,49 +2,80 @@
 import express from 'express';
 import {
     getAllEvents,
-    createEvent,
     getEventById,
+    createEvent,
     updateEvent,
-    deleteEvent,
-    reactivateEvent,
-    exportEvents
+    deleteEvent
 } from '../controllers/eventController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { authorize } from '../middleware/authorizeMiddleware.js';
 import { Role, PermissionType } from '@prisma/client';
+import { validate } from '../middleware/validationMiddleware.js';
+import {
+  validateEventBody,
+  validateListEvents,
+  validateEventId
+} from '../validators/eventValidator.js';
 
 const router = express.Router();
 
-router.get('/', protect, authorize([
+router.use(protect);
+
+const viewAuth = authorize([
   { role: [Role.ADMIN] },
   { role: [Role.THERAPIST], permission: PermissionType.VIEW_EVENTS },
   { role: [Role.PARENT] }
-]), getAllEvents);
-router.get('/export/download', protect, authorize([
-  { role: [Role.ADMIN] },
-  { role: [Role.THERAPIST], permission: PermissionType.EXPORT_EVENTS },
-  { role: [Role.PARENT] }
-]), exportEvents);
-router.post('/', protect, authorize([
+]);
+
+const createAuth = authorize([
   { role: [Role.ADMIN] },
   { role: [Role.THERAPIST], permission: PermissionType.CREATE_EVENTS }
-]), createEvent);
-router.get('/:id', protect, authorize([
-  { role: [Role.ADMIN] },
-  { role: [Role.THERAPIST], permission: PermissionType.VIEW_EVENTS },
-  { role: [Role.PARENT] }
-]), getEventById);
-router.put('/:id', protect, authorize([
+]);
+
+const editAuth = authorize([
   { role: [Role.ADMIN] },
   { role: [Role.THERAPIST], permission: PermissionType.EDIT_EVENTS }
-]), updateEvent);
-router.delete('/:id', protect, authorize([
+]);
+
+const deleteAuth = authorize([
   { role: [Role.ADMIN] },
   { role: [Role.THERAPIST], permission: PermissionType.DELETE_EVENTS }
-]), deleteEvent);
-router.patch('/:id/reactivate', protect, authorize([
-  { role: [Role.ADMIN] },
-  { role: [Role.THERAPIST], permission: PermissionType.DELETE_EVENTS }
-]), reactivateEvent);
+]);
+
+router.get('/',
+  viewAuth,
+  validateListEvents,
+  validate,
+  getAllEvents
+);
+
+router.post('/',
+  createAuth,
+  validateEventBody,
+  validate,
+  createEvent
+);
+
+router.get('/:id',
+  viewAuth,
+  validateEventId,
+  validate,
+  getEventById
+);
+
+router.put('/:id',
+  editAuth,
+  validateEventId,
+  validateEventBody,
+  validate,
+  updateEvent
+);
+
+router.delete('/:id',
+  deleteAuth,
+  validateEventId,
+  validate,
+  deleteEvent
+);
 
 export default router;

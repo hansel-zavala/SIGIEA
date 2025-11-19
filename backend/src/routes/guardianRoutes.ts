@@ -9,29 +9,81 @@ import {
   exportGuardians,
 } from '../controllers/guardianController.js';
 import { protect } from '../middleware/authMiddleware.js';
-import { authorize, canViewGuardians, canEditGuardians, canDeleteGuardians, canExportGuardians } from '../middleware/authorizeMiddleware.js';
+import { authorize } from '../middleware/authorizeMiddleware.js';
 import { Role, PermissionType } from '@prisma/client';
+import { validate } from '../middleware/validationMiddleware.js';
+import {
+  validateGuardianId,
+  validateListGuardians,
+  validateUpdateGuardian,
+  validateExportGuardians
+} from '../validators/guardianValidator.js';
 
 const router = express.Router();
 
-router.get('/', protect, authorize([
+router.use(protect);
+
+const viewAuth = authorize([
   { role: [Role.ADMIN] },
   { role: [Role.THERAPIST], permission: PermissionType.VIEW_GUARDIANS }
-]), getAllGuardians);
-router.get('/export/download', protect, authorize([
-  { role: [Role.ADMIN] },
-  { role: [Role.THERAPIST], permission: PermissionType.EXPORT_GUARDIANS }
-]), exportGuardians);
-router.get('/:id', protect, authorize([
-  { role: [Role.ADMIN] },
-  { role: [Role.THERAPIST], permission: PermissionType.VIEW_GUARDIANS }
-]), getGuardianById);
-router.put('/:id', protect, authorize([
+]);
+
+const editAuth = authorize([
   { role: [Role.ADMIN] },
   { role: [Role.THERAPIST], permission: PermissionType.EDIT_GUARDIANS }
-]), updateGuardian);
-router.delete('/:id', protect, authorize({ role: [Role.ADMIN], permission: PermissionType.DELETE_GUARDIANS }), deleteGuardian);
-router.patch('/:id/reactivate', protect, authorize({ role: [Role.ADMIN], permission: PermissionType.DELETE_GUARDIANS }), reactivateGuardian);
+]);
 
+const deleteAuth = authorize([
+  { role: [Role.ADMIN] },
+  { role: [Role.THERAPIST], permission: PermissionType.DELETE_GUARDIANS }
+]);
+
+const exportAuth = authorize([
+  { role: [Role.ADMIN] },
+  { role: [Role.THERAPIST], permission: PermissionType.EXPORT_GUARDIANS }
+]);
+
+router.get('/',
+  viewAuth,
+  validateListGuardians,
+  validate,
+  getAllGuardians
+);
+
+router.get('/export/download',
+  exportAuth,
+  validateExportGuardians,
+  validate,
+  exportGuardians
+);
+
+router.get('/:id',
+  viewAuth,
+  validateGuardianId,
+  validate,
+  getGuardianById
+);
+
+router.put('/:id',
+  editAuth,
+  validateGuardianId,
+  validateUpdateGuardian,
+  validate,
+  updateGuardian
+);
+
+router.delete('/:id',
+  deleteAuth,
+  validateGuardianId,
+  validate,
+  deleteGuardian
+);
+
+router.patch('/:id/reactivate',
+  editAuth,
+  validateGuardianId,
+  validate,
+  reactivateGuardian
+);
 
 export default router;

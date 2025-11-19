@@ -12,36 +12,91 @@ import {
 import { protect } from '../middleware/authMiddleware.js';
 import { authorize } from '../middleware/authorizeMiddleware.js';
 import { Role, PermissionType } from '@prisma/client';
+import { validate } from '../middleware/validationMiddleware.js';
+import {
+  validateLeccionBody,
+  validateLeccionId,
+  validateListLecciones,
+  validateExportLecciones
+} from '../validators/leccionValidator.js';
 
 const router = express.Router();
 
-router.post('/', protect, authorize([
+router.use(protect);
+
+const viewAuth = authorize([
+  { role: [Role.ADMIN] },
+  { role: [Role.THERAPIST], permission: PermissionType.VIEW_LECCIONES }
+]);
+
+const createAuth = authorize([
   { role: [Role.ADMIN] },
   { role: [Role.THERAPIST], permission: PermissionType.CREATE_LECCIONES }
-]), createLeccion);
-router.get('/', protect, authorize([
-  { role: [Role.ADMIN] },
-  { role: [Role.THERAPIST], permission: PermissionType.VIEW_LECCIONES }
-]), getAllLecciones);
-router.get('/export/download', protect, authorize([
-  { role: [Role.ADMIN] },
-  { role: [Role.THERAPIST], permission: PermissionType.EXPORT_LECCIONES }
-]), exportLecciones);
-router.get('/:id', protect, authorize([
-  { role: [Role.ADMIN] },
-  { role: [Role.THERAPIST], permission: PermissionType.VIEW_LECCIONES }
-]), getLeccionById);
-router.put('/:id', protect, authorize([
+]);
+
+const editAuth = authorize([
   { role: [Role.ADMIN] },
   { role: [Role.THERAPIST], permission: PermissionType.EDIT_LECCIONES }
-]), updateLeccion);
-router.delete('/:id', protect, authorize([
+]);
+
+const deleteAuth = authorize([
   { role: [Role.ADMIN] },
   { role: [Role.THERAPIST], permission: PermissionType.DELETE_LECCIONES }
-]), deleteLeccion);
-router.patch('/:id/activate', protect, authorize([
+]);
+
+const exportAuth = authorize([
   { role: [Role.ADMIN] },
-  { role: [Role.THERAPIST], permission: PermissionType.DELETE_LECCIONES }
-]), activateLeccion);
+  { role: [Role.THERAPIST], permission: PermissionType.EXPORT_LECCIONES }
+]);
+
+router.get('/',
+  viewAuth,
+  validateListLecciones,
+  validate,
+  getAllLecciones
+);
+
+router.post('/',
+  createAuth,
+  validateLeccionBody,
+  validate,
+  createLeccion
+);
+
+router.get('/export/download',
+  exportAuth,
+  validateExportLecciones,
+  validate,
+  exportLecciones
+);
+
+router.get('/:id',
+  viewAuth,
+  validateLeccionId,
+  validate,
+  getLeccionById
+);
+
+router.put('/:id',
+  editAuth,
+  validateLeccionId,
+  validateLeccionBody,
+  validate,
+  updateLeccion
+);
+
+router.delete('/:id',
+  deleteAuth,
+  validateLeccionId,
+  validate,
+  deleteLeccion
+);
+
+router.patch('/:id/activate',
+  deleteAuth,
+  validateLeccionId,
+  validate,
+  activateLeccion
+);
 
 export default router;

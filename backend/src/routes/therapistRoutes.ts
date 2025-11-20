@@ -1,7 +1,8 @@
+// backend/src/routes/therapistRoutes.ts
 import express from 'express';
 import {
-    getAllTherapists,
     createTherapist,
+    getAllTherapists,
     getTherapistById,
     updateTherapist,
     deleteTherapist,
@@ -10,32 +11,93 @@ import {
     exportAssignedStudents
 } from '../controllers/therapistController.js';
 import { protect } from '../middleware/authMiddleware.js';
-import { authorize, isParentOfTherapistsAssignedToChild } from '../middleware/authorizeMiddleware.js';
+import { authorize } from '../middleware/authorizeMiddleware.js';
 import { Role, PermissionType } from '@prisma/client';
+
+import { validate } from '../middleware/validationMiddleware.js';
+import { 
+  validateCreateTherapist, 
+  validateUpdateTherapist, 
+  validateTherapistId, 
+  validateListTherapists,
+  validateExport
+} from '../validators/therapistValidator.js';
 
 const router = express.Router();
 
-router.get('/', protect, authorize([
+router.use(protect);
+
+const manageAuth = authorize([
   { role: [Role.ADMIN] },
-  { role: [Role.THERAPIST], permission: PermissionType.VIEW_THERAPISTS }
-]), getAllTherapists);
-router.get('/export/download', protect, authorize([
-  { role: [Role.ADMIN] },
-  { role: [Role.THERAPIST], permission: PermissionType.EXPORT_THERAPISTS }
-]), exportTherapists);
-router.get('/:id/export-students', protect, authorize([
-  { role: [Role.ADMIN] },
-  { role: [Role.THERAPIST], permission: PermissionType.EXPORT_THERAPISTS }
-]), exportAssignedStudents);
-router.post('/', protect, authorize({ role: [Role.ADMIN], permission: PermissionType.CREATE_THERAPISTS }), createTherapist);
-router.get('/:id', protect, authorize([
+  { role: [Role.THERAPIST], permission: PermissionType.MANAGE_USERS }
+]);
+
+const viewAuth = authorize([
   { role: [Role.ADMIN] },
   { role: [Role.THERAPIST], permission: PermissionType.VIEW_THERAPISTS },
-  // Allow PARENT only if the therapist is assigned to at least one of their children
-  { role: [Role.PARENT], resourceOwnerCheck: isParentOfTherapistsAssignedToChild }
-]), getTherapistById);
-router.put('/:id', protect, authorize({ role: [Role.ADMIN], permission: PermissionType.EDIT_THERAPISTS }), updateTherapist);
-router.delete('/:id', protect, authorize({ role: [Role.ADMIN], permission: PermissionType.DELETE_THERAPISTS }), deleteTherapist);
-router.patch('/:id/reactivate', protect, authorize({ role: [Role.ADMIN], permission: PermissionType.DELETE_THERAPISTS }), reactivateTherapist);
+  { role: [Role.PARENT] }
+]);
+
+const exportAuth = authorize([
+  { role: [Role.ADMIN] },
+  { role: [Role.THERAPIST], permission: PermissionType.EXPORT_THERAPISTS }
+]);
+
+router.get('/', 
+  viewAuth, 
+  validateListTherapists, 
+  validate, 
+  getAllTherapists
+);
+
+router.get('/export/download', 
+  exportAuth, 
+  validateExport,
+  validate, 
+  exportTherapists
+);
+
+router.post('/', 
+  manageAuth, 
+  validateCreateTherapist, 
+  validate, 
+  createTherapist
+);
+
+router.get('/:id', 
+  viewAuth, 
+  validateTherapistId, 
+  validate, 
+  getTherapistById
+);
+
+router.put('/:id', 
+  manageAuth, 
+  validateUpdateTherapist, 
+  validate, 
+  updateTherapist
+);
+
+router.delete('/:id', 
+  manageAuth,
+  validateTherapistId, 
+  validate, 
+  deleteTherapist
+);
+
+router.patch('/:id/reactivate', 
+  manageAuth, 
+  validateTherapistId, 
+  validate, 
+  reactivateTherapist
+);
+
+router.get('/:id/students/export', 
+  exportAuth, 
+  validateTherapistId, 
+  validateExport,
+  validate, 
+  exportAssignedStudents
+);
 
 export default router;

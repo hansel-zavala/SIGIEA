@@ -1,35 +1,60 @@
 // backend/src/routes/therapySessionRoutes.ts
 import express from 'express';
-import { createRecurringSessions, getSessionsByStudent, deleteSession, updateSession } from '../controllers/therapySessionController.js';
+import { 
+  createRecurringSessions, 
+  getSessionsByStudent, 
+  deleteSession, 
+  updateSession 
+} from '../controllers/therapySessionController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { authorize, isStudentTherapist, isParentOfStudent } from '../middleware/authorizeMiddleware.js';
 import { Role, PermissionType } from '@prisma/client';
+import { validate } from '../middleware/validationMiddleware.js';
+import { 
+  validateCreateRecurring, 
+  validateSessionId, 
+  validateUpdateSession 
+} from '../validators/therapySessionValidator.js';
 
-const router = express.Router({ mergeParams: true }); // mergeParams es importante para obtener el studentId
+const router = express.Router({ mergeParams: true }); 
 
-// Crear sesiones recurrentes: solo Admin o Terapeuta dueño del estudiante con permiso de manejo de sesiones
-router.post('/', protect, authorize([
+router.use(protect);
+
+const manageAuth = authorize([
   { role: [Role.ADMIN] },
   { role: [Role.THERAPIST], permission: PermissionType.MANAGE_SESSIONS, resourceOwnerCheck: isStudentTherapist }
-]), createRecurringSessions);
+]);
 
-// Obtener sesiones del estudiante: Admin, Terapeuta asignado o Padre del estudiante
-router.get('/', protect, authorize([
+const viewAuth = authorize([
   { role: [Role.ADMIN] },
   { role: [Role.THERAPIST], resourceOwnerCheck: isStudentTherapist },
   { role: [Role.PARENT], resourceOwnerCheck: isParentOfStudent }
-]), getSessionsByStudent);
+]);
 
-// Eliminar sesión: solo Admin o Terapeuta dueño con permiso
-router.delete('/:sessionId', protect, authorize([
-  { role: [Role.ADMIN] },
-  { role: [Role.THERAPIST], permission: PermissionType.MANAGE_SESSIONS, resourceOwnerCheck: isStudentTherapist }
-]), deleteSession);
+router.post('/', 
+  manageAuth, 
+  validateCreateRecurring, 
+  validate, 
+  createRecurringSessions
+);
 
-// Actualizar sesión: solo Admin o Terapeuta dueño con permiso
-router.put('/:sessionId', protect, authorize([
-  { role: [Role.ADMIN] },
-  { role: [Role.THERAPIST], permission: PermissionType.MANAGE_SESSIONS, resourceOwnerCheck: isStudentTherapist }
-]), updateSession);
+router.get('/', 
+  viewAuth, 
+  getSessionsByStudent
+);
+
+router.delete('/:sessionId', 
+  manageAuth, 
+  validateSessionId, 
+  validate, 
+  deleteSession
+);
+
+router.put('/:sessionId', 
+  manageAuth, 
+  validateUpdateSession, 
+  validate, 
+  updateSession
+);
 
 export default router;

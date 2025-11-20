@@ -1,69 +1,52 @@
 // backend/src/controllers/tipoParentescoController.ts
-
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import * as tipoParentescoService from '../services/tipoParentescoService.js';
+import { TipoParentescoNotFoundError } from '../errors/tipoParentescoErrors.js';
 
-const prisma = new PrismaClient();
+const handleError = (res: Response, error: unknown) => {
+  if (error instanceof TipoParentescoNotFoundError) {
+    return res.status(404).json({ message: error.message });
+  }
+  console.error('Error en tipoParentescoController:', error);
+  res.status(500).json({ message: 'Error interno del servidor.' });
+};
 
-// Obtener todos los tipos de parentesco
 export const getAllTiposParentesco = async (req: Request, res: Response) => {
   try {
-    const tiposParentesco = await prisma.tipoParentesco.findMany();
-    res.status(200).json(tiposParentesco);
+    const result = await tipoParentescoService.getAllTiposParentesco();
+    res.status(200).json(result);
   } catch (error) {
-    console.error('Error fetching tipos de parentesco:', error);
-    res.status(500).json({ message: 'Error al obtener los tipos de parentesco' });
+    handleError(res, error);
   }
 };
 
-// Crear un nuevo tipo de parentesco (solo para admins)
 export const createTipoParentesco = async (req: Request, res: Response) => {
-  const { nombre } = req.body;
-  if (!nombre) {
-    return res.status(400).json({ message: 'El campo nombre es requerido' });
-  }
-
   try {
-    const newTipoParentesco = await prisma.tipoParentesco.create({
-      data: {
-        nombre,
-      },
-    });
-    res.status(201).json(newTipoParentesco);
+    const { nombre } = req.body;
+    const result = await tipoParentescoService.createTipoParentesco(nombre);
+    res.status(201).json(result);
   } catch (error) {
-    console.error('Error creating tipo de parentesco:', error);
-    res.status(500).json({ message: 'Error al crear el tipo de parentesco' });
-  }
-};
-
-// Eliminar un tipo de parentesco (solo para admins)
-export const deleteTipoParentesco = async (req: Request, res: Response) => {
-  const { id } = req.params;
-  try {
-    await prisma.tipoParentesco.delete({
-      where: { id: parseInt(id) },
-    });
-    res.status(204).send();
-  } catch (error) {
-    console.error('Error deleting tipo de parentesco:', error);
-    res.status(500).json({ message: 'Error al eliminar el tipo de parentesco' });
+    handleError(res, error);
   }
 };
 
 export const updateTipoParentesco = async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { nombre } = req.body;
-  if (!nombre) {
-    return res.status(400).json({ message: 'El campo nombre es requerido' });
-  }
-
   try {
-    const updatedTipo = await prisma.tipoParentesco.update({
-      where: { id: parseInt(id) },
-      data: { nombre },
-    });
-    res.status(200).json(updatedTipo);
+    const { id } = req.params;
+    const { nombre } = req.body;
+    const result = await tipoParentescoService.updateTipoParentesco(parseInt(id), nombre);
+    res.status(200).json(result);
   } catch (error) {
-    res.status(500).json({ message: 'Error al actualizar el tipo de parentesco' });
+    handleError(res, error);
+  }
+};
+
+export const deleteTipoParentesco = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await tipoParentescoService.deleteTipoParentesco(parseInt(id));
+    res.status(204).send();
+  } catch (error) {
+    handleError(res, error);
   }
 };

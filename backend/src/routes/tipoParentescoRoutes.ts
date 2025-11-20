@@ -1,5 +1,4 @@
 // backend/src/routes/tipoParentescoRoutes.ts
-
 import { Router } from 'express';
 import {
   getAllTiposParentesco,
@@ -8,15 +7,42 @@ import {
   updateTipoParentesco,
 } from '../controllers/tipoParentescoController.js';
 import { protect, isAdmin } from '../middleware/authMiddleware.js';
+import { validate } from '../middleware/validationMiddleware.js';
+import { 
+  validateTipoParentescoBody, 
+  validateTipoParentescoId 
+} from '../validators/tipoParentescoValidator.js';
 
 const router = Router();
 
-// Ruta pública para obtener todos los tipos de parentesco
 router.get('/tiposparentesco', getAllTiposParentesco);
 
-// Rutas protegidas solo para administradores
-router.post('/tiposparentesco', protect, isAdmin, createTipoParentesco);
-router.put('/tiposparentesco/:id', protect, isAdmin, updateTipoParentesco);
-router.delete('/tiposparentesco/:id', protect, isAdmin, deleteTipoParentesco);
+router.post(
+  '/tiposparentesco', 
+  protect, 
+  isAdmin, 
+  validateTipoParentescoBody, 
+  validate, 
+  createTipoParentesco
+);
+
+router.put(
+  '/tiposparentesco/:id', 
+  protect, 
+  isAdmin, 
+  validateTipoParentescoId, 
+  validateTipoParentescoBody, 
+  validate, 
+  updateTipoParentesco
+);
+
+router.delete(
+  '/tiposparentesco/:id', 
+  protect, 
+  isAdmin, 
+  validateTipoParentescoId, 
+  validate, 
+  deleteTipoParentesco
+);
 
 export default router;

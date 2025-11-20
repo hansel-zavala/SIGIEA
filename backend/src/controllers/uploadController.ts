@@ -1,25 +1,26 @@
 // backend/src/controllers/uploadController.ts
 import { Request, Response } from 'express';
-import multer from 'multer';
-import path from 'path';
+import * as uploadService from '../services/uploadService.js';
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'public/uploads/');
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-export const upload = multer({ storage: storage });
+export const upload = uploadService.uploadMiddleware;
 
 export const uploadFile = (req: Request, res: Response) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'No se subió ningún archivo.' });
+  try {
+    const filePath = uploadService.processUpload(req.file);
+    res.json({ filePath });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Error al subir el archivo.';
+    res.status(400).json({ error: message });
   }
+};
 
-  const filePath = `/public/uploads/${req.file.filename}`;
-  res.status(200).json({ filePath });
+export const deleteFile = async (req: Request, res: Response) => {
+  try {
+    const { filename } = req.params;
+    await uploadService.deleteFile(filename);
+    res.json({ message: 'Archivo eliminado correctamente.' });
+  } catch (error) {
+    console.error('Error al eliminar archivo:', error);
+    res.status(500).json({ error: 'No se pudo eliminar el archivo.' });
+  }
 };

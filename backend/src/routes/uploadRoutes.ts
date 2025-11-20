@@ -1,12 +1,28 @@
 // backend/src/routes/uploadRoutes.ts
 import express from 'express';
-import { upload, uploadFile } from '../controllers/uploadController.js';
+import { 
+  uploadFile, 
+  deleteFile, 
+  upload
+} from '../controllers/uploadController.js';
 import { protect } from '../middleware/authMiddleware.js';
-import { authorize } from '../middleware/authorizeMiddleware.js';
-import { PermissionType } from '@prisma/client';
+
+import { validate } from '../middleware/validationMiddleware.js';
+import { validateFilename } from '../validators/uploadValidator.js';
 
 const router = express.Router();
 
-router.post('/', protect, authorize([{ permission: PermissionType.UPLOAD_FILES }]), upload.single('file'), uploadFile);
+router.post('/', 
+  protect, 
+  upload.single('file'),
+  uploadFile
+);
+
+router.delete('/:filename', 
+  protect, 
+  validateFilename, 
+  validate, 
+  deleteFile
+);
 
 export default router;

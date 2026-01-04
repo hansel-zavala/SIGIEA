@@ -1,4 +1,4 @@
-// backend/src/validators/user.validator.ts
+// backend/src/validators/userValidator.ts
 import { body } from 'express-validator';
 import { Role } from '@prisma/client';
 

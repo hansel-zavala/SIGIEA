@@ -4,8 +4,8 @@
 import prisma from '../lib/prisma.js';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { renderReportPdf } from './renderers/pdfRenderer.js';
-import { renderReportDocx } from './renderers/docxRenderer.js';
+import { renderReportPdf } from '../lib/renderers/pdfRenderer.js';
+import { renderReportDocx } from '../lib/renderers/docxRenderer.js';
 
 export type RenderFormat = 'pdf' | 'docx';
 export type RenderSize = 'A4' | 'OFICIO';

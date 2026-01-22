@@ -28,7 +28,7 @@ export const createCategory = async (req: Request, res: Response) => {
 
 export const updateCategory = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     const { name, color } = req.body;
     const updatedCategory = await categoryService.updateCategory(parseInt(id), name, color);
     res.json(updatedCategory);
@@ -42,7 +42,7 @@ export const updateCategory = async (req: Request, res: Response) => {
 
 export const deleteCategory = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     await categoryService.deleteCategory(parseInt(id));
     res.json({ message: 'Categoría eliminada correctamente.' });
   } catch (error) {

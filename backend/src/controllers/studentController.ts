@@ -32,7 +32,7 @@ export const getAllStudents = async (req: AuthRequest, res: Response) => {
 
 export const getStudentById = async (req: AuthRequest, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     const student = await studentService.getStudentById(id);
     res.json(student);
   } catch (error) {
@@ -42,7 +42,7 @@ export const getStudentById = async (req: AuthRequest, res: Response) => {
 
 export const updateStudent = async (req: AuthRequest, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     const updated = await studentService.updateStudent(id, req.body);
     res.json(updated);
   } catch (error) {
@@ -52,7 +52,7 @@ export const updateStudent = async (req: AuthRequest, res: Response) => {
 
 export const deleteStudent = async (req: AuthRequest, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     const result = await studentService.deleteStudent(id);
     res.json({ message: 'Estudiante desactivado correctamente.', student: result });
   } catch (error) {
@@ -62,7 +62,7 @@ export const deleteStudent = async (req: AuthRequest, res: Response) => {
 
 export const reactivateStudent = async (req: AuthRequest, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     const result = await studentService.reactivateStudent(id);
     res.json({ message: 'Estudiante reactivado correctamente.', student: result });
   } catch (error) {
@@ -72,7 +72,7 @@ export const reactivateStudent = async (req: AuthRequest, res: Response) => {
 
 export const addGuardianToStudent = async (req: AuthRequest, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     const result = await studentService.addGuardianToStudent(id, req.body);
     res.status(201).json(result);
   } catch (error) {

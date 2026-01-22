@@ -43,7 +43,7 @@ export const getPublishedTemplates = async (req: Request, res: Response) => {
 
 export const getTemplateById = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     const template = await templateService.getTemplateById(parseInt(id));
     res.json(template);
   } catch (error) {
@@ -53,7 +53,7 @@ export const getTemplateById = async (req: Request, res: Response) => {
 
 export const publishTemplate = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     const { publish } = req.body;
     const updated = await templateService.publishTemplate(parseInt(id), publish);
     res.json(updated);
@@ -64,7 +64,7 @@ export const publishTemplate = async (req: Request, res: Response) => {
 
 export const cloneTemplate = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     const cloned = await templateService.cloneTemplate(parseInt(id));
     res.status(201).json(cloned);
   } catch (error) {
@@ -74,7 +74,7 @@ export const cloneTemplate = async (req: Request, res: Response) => {
 
 export const updateTemplateMeta = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     const updated = await templateService.updateTemplateMeta(parseInt(id), req.body);
     res.json(updated);
   } catch (error) {
@@ -84,7 +84,7 @@ export const updateTemplateMeta = async (req: Request, res: Response) => {
 
 export const updateTemplateFull = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     const updated = await templateService.updateTemplateFull(parseInt(id), req.body);
     res.json(updated);
   } catch (error) {

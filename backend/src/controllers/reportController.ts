@@ -53,7 +53,7 @@ export const createReport = async (req: AuthRequest, res: Response) => {
 
 export const getReportsByStudent = async (req: AuthRequest, res: Response) => {
   try {
-    const { studentId } = req.params;
+    const { studentId } = req.params as { studentId: string };
     const reports = await reportService.getReportsByStudent(parseInt(studentId), req.user);
     res.json(reports);
   } catch (error) {
@@ -63,7 +63,7 @@ export const getReportsByStudent = async (req: AuthRequest, res: Response) => {
 
 export const getReportById = async (req: AuthRequest, res: Response) => {
   try {
-    const { reportId } = req.params;
+    const { reportId } = req.params as { reportId: string };
     const report = await reportService.getReportById(parseInt(reportId), req.user);
     res.json(report);
   } catch (error) {
@@ -73,7 +73,7 @@ export const getReportById = async (req: AuthRequest, res: Response) => {
 
 export const submitReportAnswers = async (req: AuthRequest, res: Response) => {
   try {
-    const { reportId } = req.params;
+    const { reportId } = req.params as { reportId: string };
     const { answers } = req.body;
     const user = req.user;
     
@@ -103,7 +103,7 @@ export const getExistingReport = async (req: AuthRequest, res: Response) => {
 
 export const renderReport = async (req: AuthRequest, res: Response) => {
   try {
-    const { reportId } = req.params;
+    const { reportId } = req.params as { reportId: string };
     const format = (String(req.query.format || 'pdf').toLowerCase() as 'pdf' | 'docx');
     const sizeQ = String(req.query.size || 'A4').toUpperCase();
     const size = (sizeQ === 'OFICIO' ? 'OFICIO' : 'A4') as 'A4' | 'OFICIO';

@@ -29,11 +29,11 @@ export const createAlergia = async (req: Request, res: Response) => {
 
 export const updateAlergia = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     const { nombre } = req.body;
     const updatedAlergia = await alergiaService.updateAlergia(
       parseInt(id),
-      nombre
+      nombre,
     );
     res.json(updatedAlergia);
   } catch (error) {
@@ -48,7 +48,7 @@ export const updateAlergia = async (req: Request, res: Response) => {
 
 export const deleteAlergia = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     const alergiaId = parseInt(id, 10);
 
     if (Number.isNaN(alergiaId)) {
@@ -61,7 +61,7 @@ export const deleteAlergia = async (req: Request, res: Response) => {
     res.json({ message: "Alergia eliminada correctamente." });
   } catch (error) {
     if (error instanceof AlergiaInUseError) {
-        return res.status(400).json({ error: error.message });
+      return res.status(400).json({ error: error.message });
     }
     res.status(500).json({ error: "No se pudo eliminar la alergia." });
   }

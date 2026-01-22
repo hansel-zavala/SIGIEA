@@ -39,7 +39,7 @@ export const getAllTherapists = async (req: AuthRequest, res: Response) => {
 
 export const getTherapistById = async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     const therapist = await therapistService.getTherapistById(id);
     res.json(therapist);
   } catch (error) {
@@ -49,7 +49,7 @@ export const getTherapistById = async (req: Request, res: Response) => {
 
 export const updateTherapist = async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     const updated = await therapistService.updateTherapist(id, req.body);
     res.json(updated);
   } catch (error) {
@@ -59,7 +59,7 @@ export const updateTherapist = async (req: Request, res: Response) => {
 
 export const deleteTherapist = async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     await therapistService.toggleTherapistStatus(id, false);
     res.json({ message: 'Terapeuta desactivado correctamente.' });
   } catch (error) {
@@ -69,7 +69,7 @@ export const deleteTherapist = async (req: Request, res: Response) => {
 
 export const reactivateTherapist = async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     await therapistService.toggleTherapistStatus(id, true);
     res.json({ message: 'Terapeuta reactivado correctamente.' });
   } catch (error) {
@@ -87,7 +87,7 @@ export const exportTherapists = async (req: Request, res: Response) => {
 
 export const exportAssignedStudents = async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     const format = req.query.format as string || 'csv';
     await therapistService.exportAssignedStudents(id, format, res);
   } catch (error) {

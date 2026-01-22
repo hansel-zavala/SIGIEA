@@ -37,7 +37,7 @@ export const getAllLecciones = async (req: AuthRequest, res: Response) => {
 
 export const getLeccionById = async (req: AuthRequest, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     const leccion = await leccionService.getLeccionById(id);
     res.json(leccion);
   } catch (error) {
@@ -47,7 +47,7 @@ export const getLeccionById = async (req: AuthRequest, res: Response) => {
 
 export const updateLeccion = async (req: AuthRequest, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     const updatedLeccion = await leccionService.updateLeccion(id, req.body);
     res.json(updatedLeccion);
   } catch (error) {
@@ -57,7 +57,7 @@ export const updateLeccion = async (req: AuthRequest, res: Response) => {
 
 export const deleteLeccion = async (req: AuthRequest, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     await leccionService.deleteLeccion(id);
     res.json({ message: 'Lección desactivada correctamente.' });
   } catch (error) {
@@ -67,7 +67,7 @@ export const deleteLeccion = async (req: AuthRequest, res: Response) => {
 
 export const activateLeccion = async (req: AuthRequest, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     await leccionService.activateLeccion(id);
     res.json({ message: 'Lección activada correctamente.' });
   } catch (error) {

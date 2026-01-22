@@ -32,7 +32,7 @@ export const createTipoParentesco = async (req: Request, res: Response) => {
 
 export const updateTipoParentesco = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     const { nombre } = req.body;
     const result = await tipoParentescoService.updateTipoParentesco(parseInt(id), nombre);
     res.status(200).json(result);
@@ -43,7 +43,7 @@ export const updateTipoParentesco = async (req: Request, res: Response) => {
 
 export const deleteTipoParentesco = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     await tipoParentescoService.deleteTipoParentesco(parseInt(id));
     res.status(204).send();
   } catch (error) {

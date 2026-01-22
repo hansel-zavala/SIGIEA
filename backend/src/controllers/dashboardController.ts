@@ -97,7 +97,7 @@ export const getTherapistAttendanceTrends = async (req: AuthRequest, res: Respon
 };
 
 export const getTherapistAttendanceById = async (req: AuthRequest, res: Response) => {
-  const { id } = req.params;
+  const { id } = req.params as { id: string };
   try {
     const { range } = req.query;
     const therapistId = parseInt(id);

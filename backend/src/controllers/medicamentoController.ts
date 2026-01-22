@@ -24,7 +24,7 @@ export const createMedicamento = async (req: Request, res: Response) => {
 
 export const updateMedicamento = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     const { nombre } = req.body;
     const updatedMedicamento = await medicamentoService.updateMedicamento(parseInt(id), nombre);
     res.json(updatedMedicamento);
@@ -35,7 +35,7 @@ export const updateMedicamento = async (req: Request, res: Response) => {
 
 export const deleteMedicamento = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     const medicamentoId = parseInt(id, 10);
 
     if (Number.isNaN(medicamentoId)) {

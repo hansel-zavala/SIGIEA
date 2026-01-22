@@ -16,7 +16,7 @@ export const uploadFile = (req: Request, res: Response) => {
 
 export const deleteFile = async (req: Request, res: Response) => {
   try {
-    const { filename } = req.params;
+    const { filename } = req.params as { filename: string };
     await uploadService.deleteFile(filename);
     res.json({ message: 'Archivo eliminado correctamente.' });
   } catch (error) {

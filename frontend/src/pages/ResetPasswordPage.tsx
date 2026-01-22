@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
 import { useToast } from '../context/ToastContext';
-import { FaUserShield, FaEnvelope, FaLock, FaEye, FaEyeSlash, FaKey, FaRedo } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaEye, FaEyeSlash, FaKey } from 'react-icons/fa';
 
 const ResetPasswordPage: React.FC = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
-  
+
   const [step, setStep] = useState<'email' | 'code' | 'password'>('email');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -15,7 +15,7 @@ const ResetPasswordPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
-  const [emailSent, setEmailSent] = useState(false);
+
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [ripples, setRipples] = useState<Array<{ id: number; x: number; y: number; size: number }>>([]);
@@ -72,7 +72,6 @@ const ResetPasswordPage: React.FC = () => {
 
     try {
       await authService.forgotPassword(email);
-      setEmailSent(true);
       setStep('code');
       setTimeLeft(15 * 60);
       showToast({ message: 'Si existe una cuenta con ese correo, se ha enviado un código de recuperación.', type: 'success' });
@@ -181,7 +180,7 @@ const ResetPasswordPage: React.FC = () => {
     }
 
     try {
-      const response = await authService.resendResetCode(email);
+      await authService.resendResetCode(email);
       setTimeLeft(15 * 60);
       showToast({ message: 'Si existe una cuenta con ese correo, se ha enviado un nuevo código de recuperación.', type: 'success' });
     } catch (error: any) {
@@ -219,9 +218,8 @@ const ResetPasswordPage: React.FC = () => {
                 setEmail(e.target.value);
                 setEmailError(''); // Limpiar error al escribir
               }}
-              className={`bg-white/10 border ${
-                emailError ? 'border-red-400 focus:ring-red-400' : 'border-white/20 focus:ring-white/30'
-              } w-full py-3 pl-10 pr-4 rounded-lg text-white placeholder-white/70 focus:outline-none focus:ring-2 transition-all`}
+              className={`bg-white/10 border ${emailError ? 'border-red-400 focus:ring-red-400' : 'border-white/20 focus:ring-white/30'
+                } w-full py-3 pl-10 pr-4 rounded-lg text-white placeholder-white/70 focus:outline-none focus:ring-2 transition-all`}
               placeholder="tu@ejemplo.com"
               required
             />
@@ -236,7 +234,7 @@ const ResetPasswordPage: React.FC = () => {
         <button
           type="submit"
           onClick={createRipple}
-          className="relative overflow-hidden bg-gradient-to-r from-indigo-500 to-purple-600 w-full py-3 px-4 rounded-lg font-semibold text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
+          className="relative overflow-hidden bg-gradient-to-r from-[#006764] to-[#29A690] w-full py-3 px-4 rounded-lg font-semibold text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
           disabled={loading}
         >
           {loading ? 'Enviando...' : 'Enviar Código'}
@@ -286,9 +284,8 @@ const ResetPasswordPage: React.FC = () => {
             }}
             placeholder="Ingresa el código de 6 dígitos"
             maxLength={6}
-            className={`bg-white/10 border ${
-              codeError ? 'border-red-400 focus:ring-red-400' : 'border-white/20 focus:ring-white/30'
-            } w-full py-3 px-4 rounded-lg text-white placeholder-white/70 focus:outline-none focus:ring-2 transition-all text-center text-lg tracking-widest`}
+            className={`bg-white/10 border ${codeError ? 'border-red-400 focus:ring-red-400' : 'border-white/20 focus:ring-white/30'
+              } w-full py-3 px-4 rounded-lg text-white placeholder-white/70 focus:outline-none focus:ring-2 transition-all text-center text-lg tracking-widest`}
             required
           />
           {codeError && (
@@ -301,7 +298,7 @@ const ResetPasswordPage: React.FC = () => {
         <button
           type="submit"
           onClick={createRipple}
-          className="relative overflow-hidden bg-gradient-to-r from-indigo-500 to-purple-600 w-full py-3 px-4 rounded-lg font-semibold text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
+          className="relative overflow-hidden bg-gradient-to-r from-[#006764] to-[#29A690] w-full py-3 px-4 rounded-lg font-semibold text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
           disabled={loading}
         >
           {loading ? 'Verificando...' : 'Verificar Código'}
@@ -328,7 +325,7 @@ const ResetPasswordPage: React.FC = () => {
         >
           {loading ? 'Reenviando...' : 'Reenviar Código'}
         </button>
-        
+
         <button
           onClick={() => setStep('email')}
           className="text-sm font-medium hover:underline text-left w-full"
@@ -366,9 +363,8 @@ const ResetPasswordPage: React.FC = () => {
                 setPasswordError(''); // Limpiar error al escribir
               }}
               placeholder="••••••••"
-              className={`bg-white/10 border ${
-                passwordError ? 'border-red-400 focus:ring-red-400' : 'border-white/20 focus:ring-white/30'
-              } w-full py-3 pl-10 pr-10 rounded-lg text-white placeholder-white/70 focus:outline-none focus:ring-2 transition-all`}
+              className={`bg-white/10 border ${passwordError ? 'border-red-400 focus:ring-red-400' : 'border-white/20 focus:ring-white/30'
+                } w-full py-3 pl-10 pr-10 rounded-lg text-white placeholder-white/70 focus:outline-none focus:ring-2 transition-all`}
               required
             />
             <button
@@ -405,9 +401,8 @@ const ResetPasswordPage: React.FC = () => {
                 setConfirmPasswordError(''); // Limpiar error al escribir
               }}
               placeholder="••••••••"
-              className={`bg-white/10 border ${
-                confirmPasswordError ? 'border-red-400 focus:ring-red-400' : 'border-white/20 focus:ring-white/30'
-              } w-full py-3 pl-10 pr-10 rounded-lg text-white placeholder-white/70 focus:outline-none focus:ring-2 transition-all`}
+              className={`bg-white/10 border ${confirmPasswordError ? 'border-red-400 focus:ring-red-400' : 'border-white/20 focus:ring-white/30'
+                } w-full py-3 pl-10 pr-10 rounded-lg text-white placeholder-white/70 focus:outline-none focus:ring-2 transition-all`}
               required
             />
             <button
@@ -432,7 +427,7 @@ const ResetPasswordPage: React.FC = () => {
         <button
           type="submit"
           onClick={createRipple}
-          className="relative overflow-hidden bg-gradient-to-r from-indigo-500 to-purple-600 w-full py-3 px-4 rounded-lg font-semibold text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
+          className="relative overflow-hidden bg-gradient-to-r from-[#006764] to-[#29A690] w-full py-3 px-4 rounded-lg font-semibold text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
           disabled={loading}
         >
           {loading ? 'Actualizando...' : 'Actualizar Contraseña'}
@@ -454,12 +449,12 @@ const ResetPasswordPage: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 overflow-hidden relative bg-gradient-to-br from-indigo-700 to-bg-blue-800 font-['Poppins']">
+    <div className="min-h-screen flex items-center justify-center p-4 overflow-hidden relative bg-gradient-to-br from-[#003057] to-[#006764] font-['Poppins']">
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden z-0">
-        <div className="absolute w-64 h-64 rounded-full bg-blue-300 opacity-20 -top-32 -left-32 animate-float"></div>
-        <div className="absolute w-96 h-96 rounded-full bg-indigo-300 opacity-20 -bottom-48 -right-48 animate-float animation-delay-1000"></div>
-        <div className="absolute w-80 h-80 rounded-full bg-pink-300 opacity-20 top-1/3 -right-20 animate-float animation-delay-1500"></div>
-        <div className="absolute w-72 h-72 rounded-full bg-blue-200 opacity-20 bottom-1/4 left-20 animate-float"></div>
+        <div className="absolute w-64 h-64 rounded-full bg-[#008E83] opacity-20 -top-32 -left-32 animate-float"></div>
+        <div className="absolute w-96 h-96 rounded-full bg-[#29A690] opacity-20 -bottom-48 -right-48 animate-float animation-delay-1000"></div>
+        <div className="absolute w-80 h-80 rounded-full bg-[#006764] opacity-20 top-1/3 -right-20 animate-float animation-delay-1500"></div>
+        <div className="absolute w-72 h-72 rounded-full bg-[#008E83] opacity-20 bottom-1/4 left-20 animate-float"></div>
       </div>
 
       <div className="relative z-10 w-full max-w-md">
@@ -471,7 +466,7 @@ const ResetPasswordPage: React.FC = () => {
             <h1 className="text-3xl font-bold mb-2">SIGIEA</h1>
             <p className="opacity-80">Recuperar Contraseña</p>
           </div>
-          
+
           {step === 'email' && renderEmailStep()}
           {step === 'code' && renderCodeStep()}
           {step === 'password' && renderPasswordStep()}

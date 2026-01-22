@@ -60,12 +60,12 @@ function LoginPage() {
 
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 overflow-hidden relative bg-gradient-to-br from-indigo-700 to-bg-blue-800 font-['Poppins']">
+    <div className="min-h-screen flex items-center justify-center p-4 overflow-hidden relative bg-gradient-to-br from-[#003057] to-[#006764] font-['Poppins']">
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden z-0">
-        <div className="absolute w-64 h-64 rounded-full bg-blue-300 opacity-20 -top-32 -left-32 animate-float"></div>
-        <div className="absolute w-96 h-96 rounded-full bg-indigo-300 opacity-20 -bottom-48 -right-48 animate-float animation-delay-1000"></div>
-        <div className="absolute w-80 h-80 rounded-full bg-pink-300 opacity-20 top-1/3 -right-20 animate-float animation-delay-1500"></div>
-        <div className="absolute w-72 h-72 rounded-full bg-blue-200 opacity-20 bottom-1/4 left-20 animate-float"></div>
+        <div className="absolute w-64 h-64 rounded-full bg-[#008E83] opacity-20 -top-32 -left-32 animate-float"></div>
+        <div className="absolute w-96 h-96 rounded-full bg-[#29A690] opacity-20 -bottom-48 -right-48 animate-float animation-delay-1000"></div>
+        <div className="absolute w-80 h-80 rounded-full bg-[#006764] opacity-20 top-1/3 -right-20 animate-float animation-delay-1500"></div>
+        <div className="absolute w-72 h-72 rounded-full bg-[#008E83] opacity-20 bottom-1/4 left-20 animate-float"></div>
       </div>
 
       <div className="relative z-10 w-full max-w-md">
@@ -77,14 +77,14 @@ function LoginPage() {
             <h1 className="text-3xl font-bold mb-2">SIGIEA</h1>
             <p className="opacity-80">Inicia sesión para acceder a tu cuenta</p>
           </div>
-          
+
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
               <div className="bg-red-500/20 border border-red-500/50 text-red-100 px-4 py-3 rounded-lg">
                 {error}
               </div>
             )}
-            
+
             <div className="space-y-4">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium mb-1">Correo electrónico</label>
@@ -103,7 +103,7 @@ function LoginPage() {
                   />
                 </div>
               </div>
-              
+
               <div>
                 <label htmlFor="password" className="block text-sm font-medium mb-1">Contraseña</label>
                 <div className="relative">
@@ -132,7 +132,7 @@ function LoginPage() {
                   </button>
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <input
@@ -153,11 +153,11 @@ function LoginPage() {
                 </button>
               </div>
             </div>
-            
+
             <button
               type="submit"
               onClick={createRipple}
-              className="relative overflow-hidden bg-gradient-to-r from-indigo-500 to-purple-600 w-full py-3 px-4 rounded-lg font-semibold text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
+              className="relative overflow-hidden bg-gradient-to-r from-[#006764] to-[#29A690] w-full py-3 px-4 rounded-lg font-semibold text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
             >
               Iniciar Sesión
               {ripples.map((ripple) => (

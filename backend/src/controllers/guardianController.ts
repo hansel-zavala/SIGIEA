@@ -29,7 +29,7 @@ export const getAllGuardians = async (req: Request, res: Response) => {
 
 export const getGuardianById = async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     const guardian = await guardianService.getGuardianById(id);
     res.json(guardian);
   } catch (error) {
@@ -39,7 +39,7 @@ export const getGuardianById = async (req: Request, res: Response) => {
 
 export const updateGuardian = async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     const updatedGuardian = await guardianService.updateGuardian(id, req.body);
     res.json(updatedGuardian);
   } catch (error) {
@@ -49,7 +49,7 @@ export const updateGuardian = async (req: Request, res: Response) => {
 
 export const deleteGuardian = async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     await guardianService.deleteGuardian(id);
     res.json({ message: 'Guardián desactivado correctamente.' });
   } catch (error) {
@@ -59,7 +59,7 @@ export const deleteGuardian = async (req: Request, res: Response) => {
 
 export const reactivateGuardian = async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     const reactivatedGuardian = await guardianService.reactivateGuardian(id);
     res.json({ message: 'Guardián reactivado correctamente.', guardian: reactivatedGuardian });
   } catch (error) {

@@ -34,7 +34,7 @@ export const createRecurringSessions = async (req: Request, res: Response) => {
 export const getSessionsByStudent = async (req: Request, res: Response) => {
   try {
     const { studentId } = req.params;
-    const sessions = await sessionService.getSessionsByStudent(parseInt(studentId));
+    const sessions = await sessionService.getSessionsByStudent(parseInt(studentId as string));
     res.json(sessions);
   } catch (error) {
     handleError(res, error);
@@ -44,7 +44,7 @@ export const getSessionsByStudent = async (req: Request, res: Response) => {
 export const updateSession = async (req: Request, res: Response) => {
   try {
     const { sessionId } = req.params;
-    const updatedSession = await sessionService.updateSession(parseInt(sessionId), req.body);
+    const updatedSession = await sessionService.updateSession(parseInt(sessionId as string), req.body);
     res.json(updatedSession);
   } catch (error) {
     handleError(res, error);
@@ -54,7 +54,7 @@ export const updateSession = async (req: Request, res: Response) => {
 export const deleteSession = async (req: Request, res: Response) => {
   try {
     const { sessionId } = req.params;
-    await sessionService.deleteSession(parseInt(sessionId));
+    await sessionService.deleteSession(parseInt(sessionId as string));
     res.status(200).json({ message: 'Sesión eliminada correctamente.' });
   } catch (error) {
     handleError(res, error);

@@ -11,7 +11,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@prisma/client": "^6.13.0",
+    "@prisma/client": "^6.19.2",
     "@types/cors": "^2.8.19",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.0.0",
@@ -27,7 +27,7 @@
     "nodemailer": "^7.0.10",
     "pdfkit": "^0.17.2",
     "pdfkit-table": "^0.1.99",
-    "prisma": "^6.13.0",
+    "prisma": "^6.19.2",
     "puppeteer": "^24.20.0"
   },
   "devDependencies": {

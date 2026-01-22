@@ -15,7 +15,7 @@ export const getAllEvents = async (req: Request, res: Response) => {
 
 export const getEventById = async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     const event = await eventService.getEventById(id);
     if (!event) {
       return res.status(404).json({ error: 'Evento no encontrado.' });
@@ -49,7 +49,7 @@ export const createEvent = async (req: AuthRequest, res: Response) => {
 
 export const updateEvent = async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     const dataToUpdate = req.body;
     
     const updatedEvent = await eventService.updateEvent(id, dataToUpdate);
@@ -62,7 +62,7 @@ export const updateEvent = async (req: Request, res: Response) => {
 
 export const deleteEvent = async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     await eventService.deleteEvent(id);
     res.json({ message: 'Evento eliminado correctamente.' });
   } catch (error) {

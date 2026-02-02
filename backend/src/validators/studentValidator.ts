@@ -1,36 +1,67 @@
 // backend/src/validators/studentValidator.ts
-import { body, query, param } from 'express-validator';
-import { Parentesco } from '@prisma/client';
+import { z } from "zod";
+import { Parentesco } from "@prisma/client";
 
-export const validateStudentId = [
-  param('id').isInt({ min: 1 }).withMessage('El ID del estudiante debe ser un número válido.'),
-];
+const numericString = z.coerce
+  .number({ invalid_type_error: "Debe ser un número válido" })
+  .int()
+  .min(1, "Debe ser mayor a 0");
 
-export const validateCreateStudent = [
-  body('nombres').trim().notEmpty().withMessage('Nombres obligatorios.'),
-  body('apellidos').trim().notEmpty().withMessage('Apellidos obligatorios.'),
-  body('dateOfBirth').isISO8601().toDate().withMessage('Fecha de nacimiento inválida.'),
-  body('therapistId').isInt({ min: 1 }).withMessage('Debe asignar un terapeuta válido.'),
-  
-  body('guardians')
-    .isArray({ min: 1 }).withMessage('Se requiere al menos un tutor.'),
-  
-  body('guardians.*.numeroIdentidad')
-    .trim().notEmpty().withMessage('DNI del tutor es obligatorio.'),
-];
+export const studentIdSchema = z.object({
+  params: z.object({
+    id: numericString,
+  }),
+});
 
-export const validateAddGuardian = [
-  body('numeroIdentidad').trim().notEmpty().withMessage('DNI obligatorio.'),
-  body('parentesco').isIn(Object.values(Parentesco)).withMessage('Parentesco inválido.'),
-];
+export const createStudentSchema = z.object({
+  body: z.object({
+    nombres: z.string().trim().min(1, "Nombres obligatorios."),
+    apellidos: z.string().trim().min(1, "Apellidos obligatorios."),
+    dateOfBirth: z.coerce.date({
+      invalid_type_error: "Fecha de nacimiento inválida.",
+    }),
+    therapistId: z
+      .number()
+      .int({ message: "Debe asignar un terapeuta válido." })
+      .min(1),
+    guardians: z
+      .array(
+        z.object({
+          numeroIdentidad: z
+            .string()
+            .trim()
+            .min(1, "DNI del tutor es obligatorio."),
+        }),
+      )
+      .min(1, "Se requiere al menos un tutor."),
+  }),
+});
 
-export const validateUpdateStudent = [
-  param('id').isInt(),
-  body('therapistId').optional().isInt({ min: 1 }),
-];
+export const addGuardianSchema = z.object({
+  body: z.object({
+    numeroIdentidad: z.string().trim().min(1, "DNI obligatorio."),
+    parentesco: z.nativeEnum(Parentesco, {
+      invalid_type_error: "Parentesco inválido.",
+    }),
+  }),
+});
 
-export const validateListStudents = [
-  query('page').optional().isInt({ min: 1 }),
-  query('limit').optional().isInt({ min: 1, max: 100 }),
-  query('status').optional().isIn(['active', 'inactive', 'all']),
-];
+export const updateStudentSchema = z.object({
+  body: z.object({
+    therapistId: z
+      .number()
+      .int({ message: "Debe ser un ID válido" })
+      .min(1)
+      .optional(),
+    nombres: z.string().trim().min(1).optional(),
+    apellidos: z.string().trim().min(1).optional(),
+  }),
+});
+
+export const listStudentsSchema = z.object({
+  query: z.object({
+    page: numericString.optional(),
+    limit: numericString.max(100).optional(),
+    status: z.enum(["active", "inactive", "all"]).optional(),
+  }),
+});

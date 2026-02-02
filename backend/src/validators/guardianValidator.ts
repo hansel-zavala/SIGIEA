@@ -1,29 +1,81 @@
-// backend/src/validators/guardian.validator.ts
-import { body, query, param } from 'express-validator';
-import { Parentesco } from '@prisma/client';
+// backend/src/validators/guardianValidator.ts
+import { z } from "zod";
+import { Parentesco } from "@prisma/client";
 
-export const validateGuardianId = [
-  param('id').isInt({ min: 1 }).withMessage('El ID del guardián debe ser un número válido.'),
-];
+const numericString = z.coerce
+  .number({ invalid_type_error: "Debe ser un número válido" })
+  .int()
+  .min(1, "Debe ser mayor a 0");
 
-export const validateListGuardians = [
-  query('page').optional().isInt({ min: 1 }).withMessage('La página debe ser un número positivo.'),
-  query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('El límite debe ser entre 1 y 100.'),
-  query('status').optional().isIn(['active', 'inactive', 'all']).withMessage('Estado no válido.'),
-  query('search').optional().isString().trim(),
-];
+export const guardianIdSchema = z.object({
+  params: z.object({
+    id: numericString,
+  }),
+});
 
-export const validateUpdateGuardian = [
-  body('nombres').optional().isString().trim().notEmpty().withMessage('El nombre no puede estar vacío.'),
-  body('apellidos').optional().isString().trim().notEmpty().withMessage('El apellido no puede estar vacío.'),
-  body('email').optional({ checkFalsy: true }).isEmail().withMessage('El correo no es válido.'),
-  body('password').optional().isString().isLength({ min: 6 }).withMessage('La contraseña debe tener al menos 6 caracteres.'),
-  body('numeroIdentidad').optional().isString().trim().notEmpty().withMessage('El DNI no puede estar vacío.'),
-  body('telefono').optional().isString().trim().notEmpty().withMessage('El teléfono no puede estar vacío.'),
-  body('parentesco').optional().isIn(Object.values(Parentesco)).withMessage('Parentesco no válido.'),
-];
+export const listGuardiansSchema = z.object({
+  query: z.object({
+    page: numericString.optional(),
+    limit: numericString
+      .max(100, "El límite debe ser entre 1 y 100.")
+      .optional(),
+    status: z
+      .enum(["active", "inactive", "all"], {
+        invalid_type_error: "Estado no válido.",
+      })
+      .optional(),
+    search: z.string().trim().optional(),
+  }),
+});
 
-export const validateExportGuardians = [
-  query('status').optional().isIn(['active', 'inactive', 'all']).withMessage('Estado no válido.'),
-  query('format').optional().isIn(['csv', 'excel', 'pdf']).withMessage('Formato no válido.'),
-];
+export const updateGuardianSchema = z.object({
+  body: z.object({
+    nombres: z
+      .string()
+      .trim()
+      .min(1, "El nombre no puede estar vacío.")
+      .optional(),
+    apellidos: z
+      .string()
+      .trim()
+      .min(1, "El apellido no puede estar vacío.")
+      .optional(),
+    email: z
+      .string()
+      .email("El correo no es válido.")
+      .optional()
+      .or(z.literal("")),
+    password: z
+      .string()
+      .min(6, "La contraseña debe tener al menos 6 caracteres.")
+      .optional(),
+    numeroIdentidad: z
+      .string()
+      .trim()
+      .min(1, "El DNI no puede estar vacío.")
+      .optional(),
+    telefono: z
+      .string()
+      .trim()
+      .min(1, "El teléfono no puede estar vacío.")
+      .optional(),
+    parentesco: z
+      .nativeEnum(Parentesco, { invalid_type_error: "Parentesco no válido." })
+      .optional(),
+  }),
+});
+
+export const exportGuardiansSchema = z.object({
+  query: z.object({
+    status: z
+      .enum(["active", "inactive", "all"], {
+        invalid_type_error: "Estado no válido.",
+      })
+      .optional(),
+    format: z
+      .enum(["csv", "excel", "pdf"], {
+        invalid_type_error: "Formato no válido.",
+      })
+      .optional(),
+  }),
+});

@@ -1,65 +1,61 @@
 // backend/src/validators/reportTemplateValidator.ts
-import { body, param } from 'express-validator';
+import { z } from "zod";
 
-export const validateTemplateId = [
-  param('id').isInt({ min: 1 }).withMessage('El ID de la plantilla debe ser válido.'),
-];
+const numericString = z.coerce
+  .number({ invalid_type_error: "Debe ser un número válido" })
+  .int()
+  .min(1, "Debe ser mayor a 0");
 
-const commonTemplateValidations = [
-  body('title')
-    .trim()
-    .notEmpty().withMessage('El título es obligatorio.')
-    .isString().withMessage('El título debe ser texto.')
-    .isLength({ min: 3 }).withMessage('El título debe tener al menos 3 caracteres.'),
-  
-  body('description')
-    .optional()
-    .trim()
-    .isString(),
-  
-  body('publish')
-    .optional()
-    .isBoolean().withMessage('El campo "publish" debe ser booleano.'),
-];
+export const templateIdSchema = z.object({
+  params: z.object({
+    id: numericString,
+  }),
+});
 
-export const validateCreateTemplate = [
-  ...commonTemplateValidations,
-  
-  body('sections')
-    .isArray().withMessage('Las secciones deben ser un arreglo.'),
-  
-  body('sections.*.title')
-    .trim()
-    .notEmpty().withMessage('El título de la sección es obligatorio.'),
-  
-  body('sections.*.order')
-    .isInt().withMessage('El orden de la sección debe ser un número.'),
+const itemSchema = z.object({
+  label: z.string().trim().min(1, "La etiqueta del ítem es obligatoria."),
+  type: z.string().trim().min(1, "El tipo de ítem es obligatorio."),
+  // Se pueden agregar más propiedades de item aquí
+});
 
-  body('sections.*.items')
-    .isArray().withMessage('Los ítems deben ser un arreglo.'),
+const sectionSchema = z.object({
+  title: z.string().trim().min(1, "El título de la sección es obligatorio."),
+  order: z
+    .number()
+    .int({ message: "El orden de la sección debe ser un número." }),
+  items: z.array(itemSchema).min(0, "Los ítems deben ser un arreglo."),
+});
 
-  body('sections.*.items.*.label')
-    .trim()
-    .notEmpty().withMessage('La etiqueta del ítem es obligatoria.'),
-  
-  body('sections.*.items.*.type')
-    .trim()
-    .notEmpty().withMessage('El tipo de ítem es obligatorio.'),
-];
+export const createTemplateSchema = z.object({
+  body: z.object({
+    title: z
+      .string()
+      .trim()
+      .min(3, "El título debe tener al menos 3 caracteres."),
+    description: z.string().trim().optional(),
+    publish: z
+      .boolean({ invalid_type_error: 'El campo "publish" debe ser booleano.' })
+      .optional(),
+    sections: z
+      .array(sectionSchema)
+      .min(0, "Las secciones deben ser un arreglo."),
+  }),
+});
 
-export const validateUpdateTemplateMeta = [
-  param('id').isInt({ min: 1 }),
-  body('title').optional().trim().isString().isLength({ min: 3 }),
-  body('description').optional().trim().isString(),
-  body('isActive').optional().isBoolean(),
-];
+export const updateTemplateMetaSchema = z.object({
+  body: z.object({
+    title: z.string().trim().min(3).optional(),
+    description: z.string().trim().optional(),
+    isActive: z.boolean().optional(),
+  }),
+});
 
-export const validateUpdateTemplateFull = [
-  param('id').isInt({ min: 1 }),
-  ...validateCreateTemplate,
-];
+export const updateTemplateFullSchema = createTemplateSchema;
 
-export const validatePublishTemplate = [
-  param('id').isInt({ min: 1 }),
-  body('publish').isBoolean().withMessage('El campo "publish" es obligatorio y debe ser booleano.'),
-];
+export const publishTemplateSchema = z.object({
+  body: z.object({
+    publish: z.boolean({
+      required_error: 'El campo "publish" es obligatorio.',
+    }),
+  }),
+});

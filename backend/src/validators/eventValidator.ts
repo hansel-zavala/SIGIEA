@@ -1,67 +1,68 @@
-// backend/src/validators/event.validator.ts
-import { body, query, param } from 'express-validator';
-import { EventAudience } from '@prisma/client';
+// backend/src/validators/eventValidator.ts
+import { z } from "zod";
+import { EventAudience } from "@prisma/client";
 
-export const validateEventBody = [
-  body('title')
-    .trim()
-    .notEmpty().withMessage('El título es obligatorio.')
-    .isString().withMessage('El título debe ser texto.')
-    .isLength({ min: 3 }).withMessage('El título debe tener al menos 3 caracteres.'),
+const numericString = z.coerce
+  .number({ invalid_type_error: "Debe ser un número válido" })
+  .int()
+  .min(1, "Debe ser mayor a 0");
 
-  body('startDate')
-    .notEmpty().withMessage('La fecha de inicio es obligatoria.')
-    .isISO8601().withMessage('La fecha de inicio debe ser una fecha válida.')
-    .toDate(),
-
-  body('endDate')
-    .notEmpty().withMessage('La fecha de fin es obligatoria.')
-    .isISO8601().withMessage('La fecha de fin debe ser una fecha válida.')
-    .toDate()
-    .custom((endDate, { req }) => {
-      if (endDate < req.body.startDate) {
-        throw new Error('La fecha de fin no puede ser anterior a la fecha de inicio.');
-      }
-      return true;
+export const createEventSchema = z.object({
+  body: z
+    .object({
+      title: z
+        .string({ required_error: "El título es obligatorio." })
+        .trim()
+        .min(1, "El título es obligatorio.")
+        .min(3, "El título debe tener al menos 3 caracteres."),
+      startDate: z.coerce.date({
+        required_error: "La fecha de inicio es obligatoria.",
+        invalid_type_error: "La fecha de inicio debe ser una fecha válida.",
+      }),
+      endDate: z.coerce.date({
+        required_error: "La fecha de fin es obligatoria.",
+        invalid_type_error: "La fecha de fin debe ser una fecha válida.",
+      }),
+      isAllDay: z
+        .boolean({
+          invalid_type_error: 'El campo "todo el día" debe ser booleano.',
+        })
+        .optional(),
+      location: z.string().trim().optional(),
+      description: z.string().trim().optional(),
+      audience: z
+        .nativeEnum(EventAudience, {
+          invalid_type_error: `La audiencia debe ser uno de: ${Object.values(EventAudience).join(", ")}`,
+        })
+        .optional(),
+      categoryId: z
+        .number()
+        .int({ message: "El ID de la categoría debe ser un número válido." })
+        .min(1)
+        .nullable()
+        .optional(),
+    })
+    .refine((data) => data.endDate >= data.startDate, {
+      message: "La fecha de fin no puede ser anterior a la fecha de inicio.",
+      path: ["endDate"],
     }),
+});
 
-  body('isAllDay')
-    .optional()
-    .isBoolean().withMessage('El campo "todo el día" debe ser booleano.'),
+export const listEventsSchema = z.object({
+  query: z.object({
+    start: z.coerce
+      .date({
+        invalid_type_error: 'La fecha "start" debe ser una fecha válida.',
+      })
+      .optional(),
+    end: z.coerce
+      .date({ invalid_type_error: 'La fecha "end" debe ser una fecha válida.' })
+      .optional(),
+  }),
+});
 
-  body('location')
-    .optional()
-    .isString()
-    .trim(),
-  
-  body('description')
-    .optional()
-    .isString()
-    .trim(),
-
-  body('audience')
-    .optional()
-    .isIn(Object.values(EventAudience))
-    .withMessage(`La audiencia debe ser uno de: ${Object.values(EventAudience).join(', ')}`),
-
-  body('categoryId')
-    .optional({ nullable: true })
-    .isInt({ min: 1 }).withMessage('El ID de la categoría debe ser un número válido.'),
-];
-
-export const validateListEvents = [
-  query('start')
-    .optional()
-    .isISO8601().withMessage('La fecha "start" debe ser una fecha válida.')
-    .toDate(),
-  
-  query('end')
-    .optional()
-    .isISO8601().withMessage('La fecha "end" debe ser una fecha válida.')
-    .toDate(),
-];
-
-export const validateEventId = [
-  param('id')
-    .isInt({ min: 1 }).withMessage('El ID del evento debe ser un número válido.'),
-];
+export const eventIdSchema = z.object({
+  params: z.object({
+    id: numericString,
+  }),
+});

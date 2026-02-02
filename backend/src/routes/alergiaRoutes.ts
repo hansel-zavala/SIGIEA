@@ -8,13 +8,13 @@ import {
 } from "../controllers/alergiaController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { validate } from "../middleware/validationMiddleware.js";
-import { validateAlergia } from "../validators/alergiaValidator.js";
+import { alergiaSchema } from "../validators/alergiaValidator.js";
 
 const router = express.Router();
 
 router.get("/", protect, getAllAlergias);
-router.post("/", protect, validateAlergia, validate, createAlergia);
-router.put("/:id", protect, validateAlergia, validate, updateAlergia);
+router.post("/", protect, validate(alergiaSchema), createAlergia);
+router.put("/:id", protect, validate(alergiaSchema), updateAlergia);
 router.delete("/:id", protect, deleteAlergia);
 
 export default router;

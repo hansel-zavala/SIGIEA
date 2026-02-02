@@ -1,50 +1,42 @@
-// src/validators/document.validator.ts
-import { query, body, param } from 'express-validator';
-import { DocumentOwnerType } from '@prisma/client';
+// src/validators/documentValidator.ts
+import { z } from "zod";
+import { DocumentOwnerType } from "@prisma/client";
 
-const isOwnerType = (value: string) => {
-  const normalized = value.trim().toUpperCase();
-  if (!Object.prototype.hasOwnProperty.call(DocumentOwnerType, normalized)) {
-    throw new Error('Tipo de propietario no válido.');
-  }
-  return true;
-};
+// Helper para convertir strings numéricos a numbers en query/params
+const numericString = z.coerce
+  .number({ invalid_type_error: "Debe ser un número válido" })
+  .int()
+  .min(1, "Debe ser mayor a 0");
 
-export const validateListDocuments = [
-  query('ownerType')
-    .optional()
-    .custom(isOwnerType),
-  query('ownerId')
-    .optional()
-    .isInt({ min: 1 }).withMessage('ID de propietario no válido.'),
-  query('page')
-    .optional()
-    .isInt({ min: 1 }).withMessage('El número de página no es válido.'),
-  query('pageSize')
-    .optional()
-    .isInt({ min: 1, max: 100 }).withMessage('El tamaño de página debe estar entre 1 y 100.'),
-];
+export const listDocumentsSchema = z.object({
+  query: z.object({
+    ownerType: z
+      .nativeEnum(DocumentOwnerType, {
+        errorMap: () => ({ message: "Tipo de propietario no válido." }),
+      })
+      .optional(),
+    ownerId: numericString.optional(),
+    page: numericString.optional(),
+    pageSize: numericString
+      .max(100, "El tamaño de página debe ser máximo 100")
+      .optional(),
+  }),
+});
 
-export const validateCreateDocument = [
-  body('ownerType')
-    .trim()
-    .notEmpty().withMessage('El tipo de propietario es obligatorio.')
-    .custom(isOwnerType),
-  
-  body('ownerId').optional(),
+export const createDocumentSchema = z.object({
+  body: z.object({
+    ownerType: z.nativeEnum(DocumentOwnerType, {
+      required_error: "El tipo de propietario es obligatorio.",
+      invalid_type_error: "Tipo de propietario no válido.",
+    }),
+    ownerId: z.coerce.number().int().min(1).optional(),
+    title: z.string().trim().optional(),
+    category: z.string().trim().optional(),
+  }),
+});
 
-  body('title')
-    .optional()
-    .isString()
-    .trim(),
-  
-  body('category')
-    .optional()
-    .isString()
-    .trim(),
-];
-
-export const validateDocumentId = [
-  param('id')
-    .isInt({ min: 1 }).withMessage('El ID del documento debe ser un número válido.'),
-];
+export const documentIdSchema = z.object({
+  params: z.object({
+    id: numericString,
+  }),
+});

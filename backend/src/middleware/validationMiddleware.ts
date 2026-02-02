@@ -1,30 +1,29 @@
 // backend/src/middleware/validationMiddleware.ts
-import { ValidationError, validationResult } from "express-validator";
 import { Request, Response, NextFunction } from "express";
+import { AnyZodObject, ZodError } from "zod";
 
-export const validate = (req: Request, res: Response, next: NextFunction) => {
-  const errors = validationResult(req);
-  if (errors.isEmpty()) {
-    return next();
-  }
+export const validate =
+  (schema: AnyZodObject) =>
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await schema.parseAsync({
+        body: req.body,
+        query: req.query,
+        params: req.params,
+      });
+      return next();
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const extractedErrors = error.errors.map((err) => ({
+          type: "field",
+          msg: err.message,
+          path: err.path.join("."),
+        }));
 
-  const extractedErrors = errors.array().map((err: ValidationError) => {
-    if (err.type === "field") {
-      return {
-        type: err.type,
-        msg: err.msg,
-        path: err.path,
-      };
+        return res.status(400).json({
+          errors: extractedErrors,
+        });
+      }
+      return res.status(500).json({ message: "Internal Server Error" });
     }
-
-    return {
-      type: err.type,
-      msg: err.msg,
-      path: "N/A",
-    };
-  });
-
-  return res.status(400).json({
-    errors: extractedErrors,
-  });
-};
+  };

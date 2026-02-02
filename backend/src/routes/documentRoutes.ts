@@ -13,9 +13,9 @@ import { Role, PermissionType } from '@prisma/client';
 
 import { validate } from '../middleware/validationMiddleware.js';
 import {
-  validateListDocuments,
-  validateCreateDocument,
-  validateDocumentId
+  listDocumentsSchema,
+  createDocumentSchema,
+  documentIdSchema
 } from '../validators/documentValidator.js';
 
 const router = express.Router();
@@ -35,30 +35,26 @@ const viewAuth = authorize([
 
 router.get('/',
   viewAuth,
-  validateListDocuments,
-  validate,
+  validate(listDocumentsSchema),
   listDocuments
 );
 
 router.post('/',
   manageAuth,
   documentUpload.single('file'),
-  validateCreateDocument,
-  validate,
+  validate(createDocumentSchema),
   createDocument
 );
 
 router.get('/:id/download',
   viewAuth,
-  validateDocumentId,
-  validate,
+  validate(documentIdSchema),
   downloadDocument
 );
 
 router.delete('/:id',
   manageAuth,
-  validateDocumentId,
-  validate,
+  validate(documentIdSchema),
   deleteDocument
 );
 

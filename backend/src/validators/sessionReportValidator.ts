@@ -1,19 +1,16 @@
-// backend/src/validators/sessionReport.validator.ts
-import { query } from 'express-validator';
+// backend/src/validators/sessionReportValidator.ts
+import { z } from "zod";
 
-export const validateSessionReportQuery = [
-  query('studentId')
-    .isInt({ min: 1 }).withMessage('El parámetro "studentId" es obligatorio y debe ser numérico.'),
-  
-  query('month')
-    .optional()
-    .isInt({ min: 1, max: 12 }).withMessage('El mes debe ser un número entre 1 y 12.'),
-  
-  query('year')
-    .optional()
-    .isInt({ min: 2000, max: 2100 }).withMessage('El año debe ser válido.'),
-    
-  query('therapistId')
-    .optional()
-    .isInt({ min: 1 }).withMessage('El ID del terapeuta debe ser válido.'),
-];
+const numericString = z.coerce
+  .number({ invalid_type_error: "Debe ser un número válido" })
+  .int()
+  .min(1, "Debe ser mayor a 0");
+
+export const sessionReportQuerySchema = z.object({
+  query: z.object({
+    studentId: numericString,
+    month: numericString.max(12).optional(),
+    year: numericString.min(2000).max(2100).optional(),
+    therapistId: numericString.optional(),
+  }),
+});

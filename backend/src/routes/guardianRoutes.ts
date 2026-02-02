@@ -1,5 +1,5 @@
 // backend/src/routes/guardianRoutes.ts
-import express from 'express';
+import express from "express";
 import {
   getAllGuardians,
   updateGuardian,
@@ -7,17 +7,17 @@ import {
   getGuardianById,
   reactivateGuardian,
   exportGuardians,
-} from '../controllers/guardianController.js';
-import { protect } from '../middleware/authMiddleware.js';
-import { authorize } from '../middleware/authorizeMiddleware.js';
-import { Role, PermissionType } from '@prisma/client';
-import { validate } from '../middleware/validationMiddleware.js';
+} from "../controllers/guardianController.js";
+import { protect } from "../middleware/authMiddleware.js";
+import { authorize } from "../middleware/authorizeMiddleware.js";
+import { Role, PermissionType } from "@prisma/client";
+import { validate } from "../middleware/validationMiddleware.js";
 import {
-  validateGuardianId,
-  validateListGuardians,
-  validateUpdateGuardian,
-  validateExportGuardians
-} from '../validators/guardianValidator.js';
+  guardianIdSchema,
+  listGuardiansSchema,
+  updateGuardianSchema,
+  exportGuardiansSchema,
+} from "../validators/guardianValidator.js";
 
 const router = express.Router();
 
@@ -25,65 +25,50 @@ router.use(protect);
 
 const viewAuth = authorize([
   { role: [Role.ADMIN] },
-  { role: [Role.THERAPIST], permission: PermissionType.VIEW_GUARDIANS }
+  { role: [Role.THERAPIST], permission: PermissionType.VIEW_GUARDIANS },
 ]);
 
 const editAuth = authorize([
   { role: [Role.ADMIN] },
-  { role: [Role.THERAPIST], permission: PermissionType.EDIT_GUARDIANS }
+  { role: [Role.THERAPIST], permission: PermissionType.EDIT_GUARDIANS },
 ]);
 
 const deleteAuth = authorize([
   { role: [Role.ADMIN] },
-  { role: [Role.THERAPIST], permission: PermissionType.DELETE_GUARDIANS }
+  { role: [Role.THERAPIST], permission: PermissionType.DELETE_GUARDIANS },
 ]);
 
 const exportAuth = authorize([
   { role: [Role.ADMIN] },
-  { role: [Role.THERAPIST], permission: PermissionType.EXPORT_GUARDIANS }
+  { role: [Role.THERAPIST], permission: PermissionType.EXPORT_GUARDIANS },
 ]);
 
-router.get('/',
-  viewAuth,
-  validateListGuardians,
-  validate,
-  getAllGuardians
-);
+router.get("/", viewAuth, validate(listGuardiansSchema), getAllGuardians);
 
-router.get('/export/download',
+router.get(
+  "/export/download",
   exportAuth,
-  validateExportGuardians,
-  validate,
-  exportGuardians
+  validate(exportGuardiansSchema),
+  exportGuardians,
 );
 
-router.get('/:id',
-  viewAuth,
-  validateGuardianId,
-  validate,
-  getGuardianById
-);
+router.get("/:id", viewAuth, validate(guardianIdSchema), getGuardianById);
 
-router.put('/:id',
+router.put(
+  "/:id",
   editAuth,
-  validateGuardianId,
-  validateUpdateGuardian,
-  validate,
-  updateGuardian
+  validate(guardianIdSchema),
+  validate(updateGuardianSchema),
+  updateGuardian,
 );
 
-router.delete('/:id',
-  deleteAuth,
-  validateGuardianId,
-  validate,
-  deleteGuardian
-);
+router.delete("/:id", deleteAuth, validate(guardianIdSchema), deleteGuardian);
 
-router.patch('/:id/reactivate',
+router.patch(
+  "/:id/reactivate",
   editAuth,
-  validateGuardianId,
-  validate,
-  reactivateGuardian
+  validate(guardianIdSchema),
+  reactivateGuardian,
 );
 
 export default router;

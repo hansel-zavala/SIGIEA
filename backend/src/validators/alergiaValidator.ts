@@ -1,11 +1,15 @@
 // backend/src/validators/alergiaValidator.ts
-import { body } from 'express-validator';
+import { z } from "zod";
 
-export const validateAlergia = [
-  body('nombre')
-    .trim()
-    .notEmpty().withMessage('El nombre es obligatorio.')
-    .isString().withMessage('El nombre debe ser una cadena de texto.')
-    .isLength({ min: 3 }).withMessage('El nombre debe tener al menos 3 caracteres.')
-    .isAlpha('es-ES', { ignore: ' ' }).withMessage('El nombre solo puede contener letras y espacios.')
-];
+export const alergiaSchema = z.object({
+  body: z.object({
+    nombre: z
+      .string({ required_error: "El nombre es obligatorio." })
+      .min(1, "El nombre es obligatorio.")
+      .min(3, "El nombre debe tener al menos 3 caracteres.")
+      .regex(
+        /^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$/,
+        "El nombre solo puede contener letras y espacios.",
+      ),
+  }),
+});

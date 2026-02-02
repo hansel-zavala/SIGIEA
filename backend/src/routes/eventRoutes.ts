@@ -12,9 +12,9 @@ import { authorize } from '../middleware/authorizeMiddleware.js';
 import { Role, PermissionType } from '@prisma/client';
 import { validate } from '../middleware/validationMiddleware.js';
 import {
-  validateEventBody,
-  validateListEvents,
-  validateEventId
+  createEventSchema,
+  listEventsSchema,
+  eventIdSchema
 } from '../validators/eventValidator.js';
 
 const router = express.Router();
@@ -44,37 +44,32 @@ const deleteAuth = authorize([
 
 router.get('/',
   viewAuth,
-  validateListEvents,
-  validate,
+  validate(listEventsSchema),
   getAllEvents
 );
 
 router.post('/',
   createAuth,
-  validateEventBody,
-  validate,
+  validate(createEventSchema),
   createEvent
 );
 
 router.get('/:id',
   viewAuth,
-  validateEventId,
-  validate,
+  validate(eventIdSchema),
   getEventById
 );
 
 router.put('/:id',
   editAuth,
-  validateEventId,
-  validateEventBody,
-  validate,
+  validate(eventIdSchema),
+  validate(createEventSchema),
   updateEvent
 );
 
 router.delete('/:id',
   deleteAuth,
-  validateEventId,
-  validate,
+  validate(eventIdSchema),
   deleteEvent
 );
 

@@ -1,32 +1,21 @@
 // backend/src/routes/userRoutes.ts
-import express from 'express';
-import { 
-  registerUser, 
-  loginUser, 
-  getUserProfile 
-} from '../controllers/userController.js';
-import { protect } from '../middleware/authMiddleware.js';
+import express from "express";
+import {
+  registerUser,
+  loginUser,
+  getUserProfile,
+} from "../controllers/userController.js";
+import { protect } from "../middleware/authMiddleware.js";
 
-import { validate } from '../middleware/validationMiddleware.js';
-import { validateRegister, validateLogin } from '../validators/userValidator.js';
+import { validate } from "../middleware/validationMiddleware.js";
+import { registerSchema, loginSchema } from "../validators/userValidator.js";
 
 const router = express.Router();
 
-router.post('/register', 
-  validateRegister, 
-  validate, 
-  registerUser
-);
+router.post("/register", validate(registerSchema), registerUser);
 
-router.post('/login', 
-  validateLogin, 
-  validate, 
-  loginUser
-);
+router.post("/login", validate(loginSchema), loginUser);
 
-router.get('/profile', 
-  protect, 
-  getUserProfile
-);
+router.get("/profile", protect, getUserProfile);
 
 export default router;

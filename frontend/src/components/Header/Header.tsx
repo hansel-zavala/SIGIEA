@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { FaBars, FaTimes, FaUserCircle, FaSignOutAlt, FaChevronDown } from 'react-icons/fa';
+import { FaBars, FaUserCircle, FaSignOutAlt, FaChevronDown } from 'react-icons/fa';
 
 interface HeaderProps {
   onToggleSidebar: () => void;
@@ -31,9 +31,9 @@ function Header({ onToggleSidebar, isOpen }: HeaderProps) {
       <div className="flex items-center">
         {/* --- CORRECCIÓN AQUÍ: SE ELIMINÓ 'md:hidden' --- */}
         <button className="text-gray-500 focus:outline-none" onClick={onToggleSidebar}>
-          {isOpen ? <FaTimes /> : <FaBars />}
+          {isOpen ? <FaBars /> : <FaBars />}
         </button>
-        <h1 className="text-xl font-semibold ml-4">SIGIEA</h1>
+        <h1 className="text-xl font-semibold ml-4">CIAJET</h1>
       </div>
 
       {/* Sección Derecha: El Menú Desplegable */}

@@ -10,7 +10,7 @@ import { protect } from '../middleware/authMiddleware.js';
 import { authorize } from '../middleware/authorizeMiddleware.js';
 import { Role, PermissionType } from '@prisma/client';
 import { validate } from '../middleware/validationMiddleware.js';
-import { validateCategory, validateUpdateCategory } from '../validators/categoryValidator.js';
+import { CategorySchema, UpdateCategorySchema } from '../validators/categoryValidator.js';
 
 const router = express.Router();
 
@@ -22,8 +22,8 @@ const auth = authorize([
 ]);
 
 router.get('/', auth, getAllCategories);
-router.post('/', auth, validateCategory, validate, createCategory);
-router.put('/:id', auth, validateUpdateCategory, validate, updateCategory);
+router.post('/', auth, validate(CategorySchema), createCategory);
+router.put('/:id', auth, validate(UpdateCategorySchema), updateCategory);
 router.delete('/:id', auth, deleteCategory);
 
 export default router;

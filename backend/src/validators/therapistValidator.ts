@@ -1,35 +1,63 @@
 // backend/src/validators/therapistValidator.ts
-import { body, query, param } from 'express-validator';
+import { z } from "zod";
 
-export const validateTherapistId = [
-  param('id').isInt({ min: 1 }).withMessage('ID inválido.'),
-];
+const numericString = z.coerce
+  .number({ invalid_type_error: "Debe ser un número válido" })
+  .int()
+  .min(1, "Debe ser mayor a 0");
 
-export const validateCreateTherapist = [
-  body('nombres').trim().notEmpty().withMessage('Nombres obligatorios.'),
-  body('apellidos').trim().notEmpty().withMessage('Apellidos obligatorios.'),
-  body('email').trim().isEmail().withMessage('Correo electrónico inválido.'),
-  body('password').isString().isLength({ min: 6 }).withMessage('La contraseña debe tener al menos 6 caracteres.'),
-  body('identityNumber').trim().notEmpty().withMessage('Número de identidad obligatorio.'),
-  body('specialty').trim().notEmpty().withMessage('La especialidad/cargo es obligatoria.'),
-  
-  body('dateOfBirth').optional().isISO8601().toDate(),
-  body('hireDate').optional().isISO8601().toDate(),
-  body('workDays').optional().isArray(),
-];
+export const therapistIdSchema = z.object({
+  params: z.object({
+    id: numericString,
+  }),
+});
 
-export const validateUpdateTherapist = [
-  param('id').isInt(),
-  body('email').optional().trim().isEmail(),
-  body('password').optional().isString().isLength({ min: 6 }),
-];
+export const createTherapistSchema = z.object({
+  body: z.object({
+    nombres: z.string().trim().min(1, "Nombres obligatorios."),
+    apellidos: z.string().trim().min(1, "Apellidos obligatorios."),
+    email: z.string().trim().email("Correo electrónico inválido."),
+    password: z
+      .string()
+      .min(6, "La contraseña debe tener al menos 6 caracteres."),
+    identityNumber: z
+      .string()
+      .trim()
+      .min(1, "Número de identidad obligatorio."),
+    specialty: z
+      .string()
+      .trim()
+      .min(1, "La especialidad/cargo es obligatoria."),
+    dateOfBirth: z.coerce.date().optional(),
+    hireDate: z.coerce.date().optional(),
+    workDays: z.array(z.any()).optional(),
+  }),
+});
 
-export const validateListTherapists = [
-  query('page').optional().isInt({ min: 1 }),
-  query('limit').optional().isInt({ min: 1, max: 100 }),
-  query('status').optional().isIn(['active', 'inactive', 'all']),
-];
+export const updateTherapistSchema = z.object({
+  body: z.object({
+    nombres: z.string().trim().min(1).optional(),
+    apellidos: z.string().trim().min(1).optional(),
+    email: z.string().trim().email("Correo electrónico inválido.").optional(),
+    password: z.string().min(6).optional(),
+    identityNumber: z.string().trim().min(1).optional(),
+    specialty: z.string().trim().min(1).optional(),
+    dateOfBirth: z.coerce.date().optional(),
+    hireDate: z.coerce.date().optional(),
+    workDays: z.array(z.any()).optional(),
+  }),
+});
 
-export const validateExport = [
-  query('format').optional().isIn(['csv', 'excel', 'pdf']),
-];
+export const listTherapistsSchema = z.object({
+  query: z.object({
+    page: numericString.optional(),
+    limit: numericString.max(100).optional(),
+    status: z.enum(["active", "inactive", "all"]).optional(),
+  }),
+});
+
+export const exportTherapistSchema = z.object({
+  query: z.object({
+    format: z.enum(["csv", "excel", "pdf"]).optional(),
+  }),
+});

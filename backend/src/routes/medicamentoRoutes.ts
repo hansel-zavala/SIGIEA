@@ -1,39 +1,37 @@
 // backend/src/routes/medicamentoRoutes.ts
-import express from 'express';
+import express from "express";
 import {
-    getAllMedicamentos,
-    createMedicamento,
-    updateMedicamento,
-    deleteMedicamento
-} from '../controllers/medicamentoController.js';
-import { protect } from '../middleware/authMiddleware.js';
-import { validate } from '../middleware/validationMiddleware.js';
-import { validateMedicamentoBody, validateMedicamentoId } from '../validators/medicamentoValidator.js';
+  getAllMedicamentos,
+  createMedicamento,
+  updateMedicamento,
+  deleteMedicamento,
+} from "../controllers/medicamentoController.js";
+import { protect } from "../middleware/authMiddleware.js";
+import { validate } from "../middleware/validationMiddleware.js";
+import {
+  medicamentoIdSchema,
+  medicamentoSchema,
+} from "../validators/medicamentoValidator.js";
 
 const router = express.Router();
 
-router.get('/', protect, getAllMedicamentos);
+router.get("/", protect, getAllMedicamentos);
 
-router.post('/', 
-  protect, 
-  validateMedicamentoBody, 
-  validate, 
-  createMedicamento
+router.post("/", protect, validate(medicamentoSchema), createMedicamento);
+
+router.put(
+  "/:id",
+  protect,
+  validate(medicamentoIdSchema),
+  validate(medicamentoSchema),
+  updateMedicamento,
 );
 
-router.put('/:id', 
-  protect, 
-  validateMedicamentoId, 
-  validateMedicamentoBody, 
-  validate, 
-  updateMedicamento
-);
-
-router.delete('/:id', 
-  protect, 
-  validateMedicamentoId,
-  validate,
-  deleteMedicamento
+router.delete(
+  "/:id",
+  protect,
+  validate(medicamentoIdSchema),
+  deleteMedicamento,
 );
 
 export default router;

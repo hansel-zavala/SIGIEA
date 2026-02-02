@@ -1,32 +1,31 @@
 // backend/src/validators/userValidator.ts
-import { body } from 'express-validator';
-import { Role } from '@prisma/client';
+import { z } from "zod";
+import { Role } from "@prisma/client";
 
-export const validateRegister = [
-  body('name')
-    .trim()
-    .notEmpty().withMessage('El nombre es obligatorio.'),
-  
-  body('email')
-    .trim()
-    .notEmpty().withMessage('El correo es obligatorio.')
-    .isEmail().withMessage('Correo inválido.'),
-  
-  body('password')
-    .isString()
-    .isLength({ min: 6 }).withMessage('La contraseña debe tener al menos 6 caracteres.'),
-  
-  body('role')
-    .optional()
-    .isIn(Object.values(Role)).withMessage('Rol inválido.'),
-];
+export const registerSchema = z.object({
+  body: z.object({
+    name: z.string().trim().min(1, "El nombre es obligatorio."),
+    email: z
+      .string()
+      .trim()
+      .min(1, "El correo es obligatorio.")
+      .email("Correo inválido."),
+    password: z
+      .string()
+      .min(6, "La contraseña debe tener al menos 6 caracteres."),
+    role: z
+      .nativeEnum(Role, { invalid_type_error: "Rol inválido." })
+      .optional(),
+  }),
+});
 
-export const validateLogin = [
-  body('email')
-    .trim()
-    .notEmpty().withMessage('El correo es obligatorio.')
-    .isEmail().withMessage('Correo inválido.'),
-
-  body('password')
-    .notEmpty().withMessage('La contraseña es obligatoria.'),
-];
+export const loginSchema = z.object({
+  body: z.object({
+    email: z
+      .string()
+      .trim()
+      .min(1, "El correo es obligatorio.")
+      .email("Correo inválido."),
+    password: z.string().min(1, "La contraseña es obligatoria."),
+  }),
+});

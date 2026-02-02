@@ -2,13 +2,13 @@
 import { NavLink } from 'react-router-dom';
 import { FaHome, FaUserGraduate, FaBook, FaFileSignature, FaUsers, FaUserMd, FaCalendarDay, FaClipboardList, FaWpforms, FaFolderOpen, FaCog, FaChartBar } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
-import logo from '../../assets/apo-autis-logo.png';
+import logo from '../../assets/Logo_CIAJET.png';
 
 interface SidebarProps {
   isOpen: boolean;
 }
 
-function Sidebar({ isOpen }: SidebarProps) {
+function Sidebar({ isOpen }: SidebarProps) { 
   const { user } = useAuth();
 
   console.log('Sidebar user:', user);

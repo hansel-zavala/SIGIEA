@@ -1,34 +1,62 @@
 // backend/src/validators/reportValidator.ts
-import { body, query, param } from 'express-validator';
+import { z } from "zod";
 
-export const validateReportId = [
-  param('reportId').isInt({ min: 1 }).withMessage('El ID del reporte debe ser un número válido.'),
-];
+const numericString = z.coerce
+  .number({ invalid_type_error: "Debe ser un número válido" })
+  .int()
+  .min(1, "Debe ser mayor a 0");
 
-export const validateStudentId = [
-  param('studentId').isInt({ min: 1 }).withMessage('El ID del estudiante debe ser un número válido.'),
-];
+export const reportIdSchema = z.object({
+  params: z.object({
+    reportId: numericString,
+  }),
+});
 
-export const validateCreateReport = [
-  body('studentId')
-    .isInt({ min: 1 }).withMessage('El ID del estudiante es obligatorio y debe ser válido.'),
-  body('templateId')
-    .isInt({ min: 1 }).withMessage('El ID de la plantilla es obligatorio y debe ser válido.'),
-];
+export const studentIdSchema = z.object({
+  params: z.object({
+    studentId: numericString,
+  }),
+});
 
-export const validateSubmitAnswers = [
-  body('answers')
-    .isArray().withMessage('Las respuestas deben ser un arreglo.'),
-  body('answers.*.itemId')
-    .isInt({ min: 1 }).withMessage('Cada respuesta debe tener un ID de ítem válido.'),
-];
+export const createReportSchema = z.object({
+  body: z.object({
+    studentId: z
+      .number()
+      .int()
+      .min(1, "El ID del estudiante es obligatorio y debe ser válido."),
+    templateId: z
+      .number()
+      .int()
+      .min(1, "El ID de la plantilla es obligatorio y debe ser válido."),
+  }),
+});
 
-export const validateExistingReportQuery = [
-  query('studentId').isInt({ min: 1 }).withMessage('El ID del estudiante es obligatorio.'),
-  query('templateId').isInt({ min: 1 }).withMessage('El ID de la plantilla es obligatorio.'),
-];
+export const submitAnswersSchema = z.object({
+  body: z.object({
+    answers: z
+      .array(
+        z.object({
+          itemId: z
+            .number()
+            .int()
+            .min(1, "Cada respuesta debe tener un ID de ítem válido."),
+          // otros campos de respuesta
+        }),
+      )
+      .min(0, "Las respuestas deben ser un arreglo."),
+  }),
+});
 
-export const validateRenderReport = [
-  query('format').optional().isIn(['pdf', 'docx']).withMessage('Formato inválido (pdf o docx).'),
-  query('size').optional().isIn(['A4', 'OFICIO', 'a4', 'oficio']).withMessage('Tamaño inválido (A4 o OFICIO).'),
-];
+export const existingReportQuerySchema = z.object({
+  query: z.object({
+    studentId: numericString,
+    templateId: numericString,
+  }),
+});
+
+export const renderReportSchema = z.object({
+  query: z.object({
+    format: z.enum(["pdf", "docx"]).optional(),
+    size: z.enum(["A4", "OFICIO", "a4", "oficio"]).optional(),
+  }),
+});

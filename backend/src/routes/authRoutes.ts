@@ -9,16 +9,16 @@ import {
 } from "../controllers/authController.js";
 import { validate } from "../middleware/validationMiddleware.js";
 import {
-  validateSendCode,
-  validateVerifyCode,
-  validateResetPassword,
+  sendCodeSchema,
+  verifyCodeSchema,
+  resetPasswordSchema,
 } from "../validators/authvValidator.js";
 
 const router = express.Router();
 
-router.post("/send-reset-code", validateSendCode, validate, sendResetCode);
-router.post("/resend-reset-code", validateSendCode, validate, resendResetCode);
-router.post("/verify-code", validateVerifyCode, validate, verifyCode);
-router.post("/reset-password", validateResetPassword, validate, resetPassword);
+router.post("/send-reset-code", validate(sendCodeSchema), sendResetCode);
+router.post("/resend-reset-code", validate(sendCodeSchema), resendResetCode);
+router.post("/verify-code", validate(verifyCodeSchema), verifyCode);
+router.post("/reset-password", validate(resetPasswordSchema), resetPassword);
 
 export default router;

@@ -33,7 +33,7 @@ function Header({ onToggleSidebar, isOpen }: HeaderProps) {
         <button className="text-gray-500 focus:outline-none" onClick={onToggleSidebar}>
           {isOpen ? <FaBars /> : <FaBars />}
         </button>
-        <h1 className="text-xl font-semibold ml-4">CIAJET</h1>
+        <h1 className="text-xl font-semibold ml-4">CIATEJ</h1>
       </div>
 
       {/* Sección Derecha: El Menú Desplegable */}

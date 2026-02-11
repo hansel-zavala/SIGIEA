@@ -51,8 +51,9 @@ export const updateTherapistSchema = z.object({
 export const listTherapistsSchema = z.object({
   query: z.object({
     page: numericString.optional(),
-    limit: numericString.max(100).optional(),
+    limit: numericString.max(1000).optional(),
     status: z.enum(["active", "inactive", "all"]).optional(),
+    search: z.string().optional(),
   }),
 });
 

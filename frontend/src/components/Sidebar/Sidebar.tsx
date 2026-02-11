@@ -2,7 +2,7 @@
 import { NavLink } from 'react-router-dom';
 import { FaHome, FaUserGraduate, FaBook, FaFileSignature, FaUsers, FaUserMd, FaCalendarDay, FaClipboardList, FaWpforms, FaFolderOpen, FaCog, FaChartBar } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
-import logo from '../../assets/Logo_CIAJET.png';
+import logo from '../../assets/Logo_CIATEJ.png';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -58,7 +58,7 @@ function Sidebar({ isOpen }: SidebarProps) {
           className={`w-auto mx-auto transition-all duration-300 ${isOpen ? 'h-16' : 'h-10'}`}
         />
         {isOpen && (
-          <h1 className="text-xl font-bold text-center mt-2">APO-AUTIS</h1>
+          <h1 className="text-xl font-bold text-center mt-2">CIATEJ</h1>
         )}
       </div>
 

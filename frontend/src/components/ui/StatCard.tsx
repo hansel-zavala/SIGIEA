@@ -6,38 +6,49 @@ interface StatCardProps {
   value: number | string;
   icon: React.ReactNode;
   color: 'pink' | 'blue' | 'green' | 'purple';
-  growth?: number | null; // Nuevo prop para el crecimiento
+  growth?: number | null;
 }
 
 function StatCard({ title, value, icon, color, growth }: StatCardProps) {
-  const gradientClasses = {
-    pink: 'from-[#ffc0cb] to-[#ff8a9a]',
-    blue: 'from-[#89cff0] to-[#4682b4]',
-    green: 'from-[#98fb98] to-[#3cb371]',
-    purple: 'from-[#e6e6fa] to-[#d8bfd8]',
+  const colorConfig = {
+    pink: { bg: 'bg-rose-50', text: 'text-rose-600', icon: 'text-rose-400', accent: 'bg-rose-100' },
+    blue: { bg: 'bg-sky-50', text: 'text-sky-600', icon: 'text-sky-400', accent: 'bg-sky-100' },
+    green: { bg: 'bg-emerald-50', text: 'text-emerald-600', icon: 'text-emerald-400', accent: 'bg-emerald-100' },
+    purple: { bg: 'bg-violet-50', text: 'text-violet-600', icon: 'text-violet-400', accent: 'bg-violet-100' },
   };
 
-  const growthText = growth !== null && growth !== undefined ? (growth >= 0 ? `Incrementado en ${growth}%` : `Disminuido en ${Math.abs(growth)}%`) : null;
+  const c = colorConfig[color];
+
+  const growthText =
+    growth !== null && growth !== undefined
+      ? growth >= 0
+        ? `+${growth}%`
+        : `${growth}%`
+      : null;
 
   return (
-    <div className={`relative overflow-hidden text-white rounded-2xl shadow-lg ring-1 ring-black/5 p-6 h-32 bg-gradient-to-br ${gradientClasses[color]}`}>
-      {/* Círculos decorativos */}
-      <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/20 rounded-full"></div>
-      <div className="absolute -bottom-16 -right-2 w-32 h-32 bg-white/10 rounded-full"></div>
-
-      <div className="relative z-10 h-full flex flex-col justify-between">
-        <div className="flex justify-between items-start">
-          <span className="text-sm font-medium uppercase tracking-wider">{title}</span>
-          <span className="text-white/80">{icon}</span>
+    <div className={`relative overflow-hidden rounded-2xl ${c.bg} p-6 transition-shadow hover:shadow-md ring-1 ring-black/5`}>
+      <div className="flex items-start justify-between">
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-gray-500 tracking-wide">{title}</p>
+          <p className={`text-3xl font-bold ${c.text}`}>{value}</p>
+          {growthText ? (
+            <span
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${(growth ?? 0) >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                }`}
+            >
+              {growthText}
+            </span>
+          ) : (
+            <span className="text-xs opacity-0 select-none">—</span>
+          )}
         </div>
-        <p className="text-4xl font-bold mt-2">{value}</p>
-        {growthText ? (
-          <p className="text-xs opacity-90">{growthText}</p>
-        ) : (
-          <p className="text-xs opacity-0 select-none">placeholder</p>
-        )}
+        <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${c.accent} ${c.icon}`}>
+          {icon}
+        </div>
       </div>
     </div>
   );
 }
+
 export default StatCard;

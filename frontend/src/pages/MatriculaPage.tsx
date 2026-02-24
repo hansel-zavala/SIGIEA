@@ -9,7 +9,7 @@ import medicamentoService, { type Medicamento, } from "../services/medicamentoSe
 import alergiaService, { type Alergia } from "../services/alergiaService";
 import MultiSelectWithCatalog from "../components/ui/MultiSelectWithCatalog";
 import { SelectWithCatalog } from "../components/ui/SelectWithCatalog";
-import {  departamentos,  municipiosPorDepartamento, } from "../data/honduras-data";
+import { departamentos, municipiosPorDepartamento, } from "../data/honduras-data";
 import { FaPlus, FaTrash } from "react-icons/fa";
 import CustomDatePicker from "../components/ui/DatePicker";
 import { getAllTiposParentesco, createTipoParentesco, deleteTipoParentesco, updateTipoParentesco } from "../services/tipoParentescoService";
@@ -138,27 +138,38 @@ function MatriculaPage() {
   const [guardianIndexToDelete, setGuardianIndexToDelete] = useState<number | null>(null);
   const { showToast } = useToast();
 
+  const clearFieldError = (fieldName: string) => {
+    setFormErrors((prev) => {
+      if (!prev[fieldName]) return prev;
+      const { [fieldName]: _, ...rest } = prev;
+      if (Object.keys(rest).length === 0) {
+        setError("");
+      }
+      return rest;
+    });
+  };
+
   const validateFile = (file: File | null) => {
-  if (!file) return "";
+    if (!file) return "";
 
-  const allowedFileTypes = [
-    "image/jpeg",
-    "image/png",
-    "application/pdf",
-    "application/msword",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  ];
-  if (!allowedFileTypes.includes(file.type)) {
-    return "Archivo no válido. Solo se permiten imágenes, PDF o Word.";
-  }
+    const allowedFileTypes = [
+      "image/jpeg",
+      "image/png",
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ];
+    if (!allowedFileTypes.includes(file.type)) {
+      return "Archivo no válido. Solo se permiten imágenes, PDF o Word.";
+    }
 
-  const maxSizeInBytes = 5 * 1024 * 1024;
-  if (file.size > maxSizeInBytes) {
-    return "El archivo es demasiado grande. El límite es de 5MB.";
-  }
+    const maxSizeInBytes = 5 * 1024 * 1024;
+    if (file.size > maxSizeInBytes) {
+      return "El archivo es demasiado grande. El límite es de 5MB.";
+    }
 
-  return "";
-};
+    return "";
+  };
 
 
   useEffect(() => {
@@ -171,18 +182,24 @@ function MatriculaPage() {
   }, [departamento]);
 
   useEffect(() => {
-    therapistService.getAllTherapists("", 1, 999).then((response) => {setTherapists(response.data);}).catch(() => setError("No se pudo cargar la lista de terapeutas."));
+    therapistService.getAllTherapists("", 1, 999).then((response) => { setTherapists(response.data); }).catch(() => setError("No se pudo cargar la lista de terapeutas."));
     medicamentoService.getAll().then(setAllMedicamentos).catch(() => setError("No se pudo cargar el catálogo de medicamentos."));
     alergiaService.getAll().then(setAllAlergias).catch(() => setError("No se pudo cargar el catálogo de alergias."));
   }, []);
 
-  const handleStudentSelectChange = (name: string, value: string | null) => {setStudentData((prev) => ({ ...prev, [name]: value || "" }));};
+
+
+  const handleStudentSelectChange = (name: string, value: string | null) => {
+    setStudentData((prev) => ({ ...prev, [name]: value || "" }));
+    clearFieldError(name);
+  };
 
   const handleDateChange = (date: Date | null) => {
     setStudentData((prev) => ({
       ...prev,
       dateOfBirth: date ? date.toISOString().split("T")[0] : "",
     }));
+    clearFieldError('dateOfBirth');
   };
 
   const handleGuardianSelectChange = (
@@ -197,9 +214,10 @@ function MatriculaPage() {
     if (name === 'parentesco' && value !== 'Tutor_Legal' && value !== 'Otro') {
       guardianToUpdate.parentescoEspecifico = '';
     }
-    
+
     newGuardians[index] = guardianToUpdate;
     setGuardians(newGuardians);
+    clearFieldError(`guardian_${name}_${index}`);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -208,40 +226,44 @@ function MatriculaPage() {
     const checked = isCheckbox ? (e.target as HTMLInputElement).checked : false;
 
     if (name === 'nombres' || name === 'apellidos') {
-        const filteredValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
-        setStudentData(prev => ({ ...prev, [name]: filteredValue }));
-        return;
+      const filteredValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
+      setStudentData(prev => ({ ...prev, [name]: filteredValue }));
+      clearFieldError(name);
+      return;
     }
 
     setStudentData((prev) => ({
       ...prev,
       [name]: isCheckbox ? checked : value,
     }));
+    clearFieldError(name);
+    if (isCheckbox) clearFieldError('tiposDeAtencion');
   };
 
-  const handleGuardianChange = ( index: number, e: React.ChangeEvent<HTMLInputElement>) => {
-  const { name, value } = e.target;
-  const newGuardians = [...guardians];
-  const guardianToUpdate = { ...newGuardians[index] };
+  const handleGuardianChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const newGuardians = [...guardians];
+    const guardianToUpdate = { ...newGuardians[index] };
 
-  let processedValue = value;
+    let processedValue = value;
 
-  if (name === 'nombres' || name === 'apellidos') {
-    processedValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
-  } else if (name === 'numeroIdentidad' || name === 'telefono') {
-    const numericValue = value.replace(/[^0-9]/g, '');
-    const maxLength = name === 'numeroIdentidad' ? 13 : 8;
-    processedValue = numericValue.slice(0, maxLength);
-  } else if (name === 'email') {
-    processedValue = value.trim();
-  } else if (name === 'password') {
-    processedValue = value;
-  }
+    if (name === 'nombres' || name === 'apellidos') {
+      processedValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
+    } else if (name === 'numeroIdentidad' || name === 'telefono') {
+      const numericValue = value.replace(/[^0-9]/g, '');
+      const maxLength = name === 'numeroIdentidad' ? 13 : 8;
+      processedValue = numericValue.slice(0, maxLength);
+    } else if (name === 'email') {
+      processedValue = value.trim();
+    } else if (name === 'password') {
+      processedValue = value;
+    }
 
-  guardianToUpdate[name as keyof Guardian] = processedValue as any;
-  newGuardians[index] = guardianToUpdate;
-  setGuardians(newGuardians);
-};
+    guardianToUpdate[name as keyof Guardian] = processedValue as any;
+    newGuardians[index] = guardianToUpdate;
+    setGuardians(newGuardians);
+    clearFieldError(`guardian_${name}_${index}`);
+  };
 
   const addGuardian = () => {
     setGuardians([
@@ -259,7 +281,7 @@ function MatriculaPage() {
       },
     ]);
   };
-  
+
   const handleRemoveGuardianClick = (index: number) => {
     setGuardianIndexToDelete(index); // Guardamos el índice de la ficha a eliminar
     setConfirmOpen(true); // Abrimos el diálogo
@@ -269,7 +291,7 @@ function MatriculaPage() {
     if (guardianIndexToDelete !== null) {
       // Filtramos el array para quitar la ficha correspondiente
       setGuardians(guardians.filter((_, i) => i !== guardianIndexToDelete));
-      
+
       // Reseteamos los estados del diálogo
       setGuardianIndexToDelete(null);
       setConfirmOpen(false);
@@ -286,6 +308,7 @@ function MatriculaPage() {
       const newFiles = [...guardianIdFiles];
       newFiles[index] = e.target.files[0];
       setGuardianIdFiles(newFiles);
+      clearFieldError(`guardianIdFile_${index}`);
     }
   };
 
@@ -371,105 +394,105 @@ function MatriculaPage() {
   };
 
   const validateForm = () => {
-  const errors: Record<string, string> = {};
-  const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
-  const addressRegex = /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s.,#\-°]+$/;
-  const dniRegex = /^\d{13}$/;
-  const phoneRegex = /^\d{8}$/;
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const errors: Record<string, string> = {};
+    const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+    const addressRegex = /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s.,#\-°]+$/;
+    const dniRegex = /^\d{13}$/;
+    const phoneRegex = /^\d{8}$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  if (!studentData.nombres.trim()) errors.nombres = "Los nombres son obligatorios.";
-  else if (!nameRegex.test(studentData.nombres)) errors.nombres = "Los nombres solo deben contener letras.";
+    if (!studentData.nombres.trim()) errors.nombres = "Los nombres son obligatorios.";
+    else if (!nameRegex.test(studentData.nombres)) errors.nombres = "Los nombres solo deben contener letras.";
 
-  if (!studentData.apellidos.trim()) errors.apellidos = "Los apellidos son obligatorios.";
-  else if (!nameRegex.test(studentData.apellidos)) errors.apellidos = "Los apellidos solo deben contener letras.";
-  
-  if (!studentData.dateOfBirth) errors.dateOfBirth = "La fecha de nacimiento es obligatoria.";
-  else if (new Date(studentData.dateOfBirth) > new Date()) errors.dateOfBirth = "La fecha no puede ser futura.";
-  
-  if (!departamento) errors.departamento = "Debe seleccionar un departamento.";
-  if (!municipio) errors.municipio = "Debe seleccionar un municipio.";
-  if (!studentData.genero) errors.genero = "Debe seleccionar un género.";
-  if (!studentData.zona) errors.zona = "Debe seleccionar una zona.";
-  if (!studentData.jornada) errors.jornada = "Debe seleccionar una jornada.";
-  if (!studentData.tipoSangre) errors.tipoSangre = "Debe seleccionar un tipo de sangre.";
-  if (!therapistId) errors.therapistId = "Debe seleccionar un terapeuta.";
-  if (!Object.values(tiposDeAtencion).some((_, index) => studentData[tiposDeAtencion[index].id as keyof typeof studentData] === true)) {errors.tiposDeAtencion = "Debe seleccionar al menos un tipo de atención.";}
+    if (!studentData.apellidos.trim()) errors.apellidos = "Los apellidos son obligatorios.";
+    else if (!nameRegex.test(studentData.apellidos)) errors.apellidos = "Los apellidos solo deben contener letras.";
 
-  if (!studentData.direccion.trim()) errors.direccion = "La dirección es obligatoria.";
-  else if (!addressRegex.test(studentData.direccion)) errors.direccion = "La dirección contiene caracteres no permitidos.";
+    if (!studentData.dateOfBirth) errors.dateOfBirth = "La fecha de nacimiento es obligatoria.";
+    else if (new Date(studentData.dateOfBirth) > new Date()) errors.dateOfBirth = "La fecha no puede ser futura.";
 
-  if (!studentData.referenciaMedica.trim()) errors.referenciaMedica = "La referencia médica es obligatoria.";
-  else if (!addressRegex.test(studentData.referenciaMedica)) errors.referenciaMedica = "El nombre contiene caracteres no permitidos.";
+    if (!departamento) errors.departamento = "Debe seleccionar un departamento.";
+    if (!municipio) errors.municipio = "Debe seleccionar un municipio.";
+    if (!studentData.genero) errors.genero = "Debe seleccionar un género.";
+    if (!studentData.zona) errors.zona = "Debe seleccionar una zona.";
+    if (!studentData.jornada) errors.jornada = "Debe seleccionar una jornada.";
+    if (!studentData.tipoSangre) errors.tipoSangre = "Debe seleccionar un tipo de sangre.";
+    if (!therapistId) errors.therapistId = "Debe seleccionar un terapeuta.";
+    if (!Object.values(tiposDeAtencion).some((_, index) => studentData[tiposDeAtencion[index].id as keyof typeof studentData] === true)) { errors.tiposDeAtencion = "Debe seleccionar al menos un tipo de atención."; }
 
-  // Validar archivos requeridos
-  /*if (!partidaFile) errors.partidaFileError = "La partida de nacimiento es obligatoria.";
-  else errors.partidaFileError = validateFile(partidaFile);*/
-  if (partidaFile) errors.partidaFileError = validateFile(partidaFile);
-  
-  /*if (studentData.recibioEvaluacion && !evaluacionFile) errors.evaluacionFileError = "El archivo de evaluación es obligatorio.";
-  else errors.evaluacionFileError = validateFile(evaluacionFile);*/
-  if (studentData.recibioEvaluacion && evaluacionFile) errors.evaluacionFileError = validateFile(evaluacionFile);
+    if (!studentData.direccion.trim()) errors.direccion = "La dirección es obligatoria.";
+    else if (!addressRegex.test(studentData.direccion)) errors.direccion = "La dirección contiene caracteres no permitidos.";
 
-  const guardianDNIs = new Set<string>();
-  const parentescoCount = { Padre: 0, Madre: 0 };
+    if (!studentData.referenciaMedica.trim()) errors.referenciaMedica = "La referencia médica es obligatoria.";
+    else if (!addressRegex.test(studentData.referenciaMedica)) errors.referenciaMedica = "El nombre contiene caracteres no permitidos.";
 
-  const emailsSet = new Set<string>();
-  guardians.forEach((guardian, index) => {
-    if (!guardian.nombres.trim()) errors[`guardian_nombres_${index}`] = "Los nombres son obligatorios.";
-    else if (!nameRegex.test(guardian.nombres)) errors[`guardian_nombres_${index}`] = "Solo debe contener letras.";
-    if (!guardian.apellidos.trim()) errors[`guardian_apellidos_${index}`] = "Los apellidos son obligatorios.";
-    else if (!nameRegex.test(guardian.apellidos)) errors[`guardian_apellidos_${index}`] = "Solo debe contener letras.";
+    // Validar archivos requeridos
+    /*if (!partidaFile) errors.partidaFileError = "La partida de nacimiento es obligatoria.";
+    else errors.partidaFileError = validateFile(partidaFile);*/
+    if (partidaFile) errors.partidaFileError = validateFile(partidaFile);
 
-    if (!guardian.numeroIdentidad.trim()) errors[`guardian_numeroIdentidad_${index}`] = "El DNI es obligatorio.";
-    else if (!dniRegex.test(guardian.numeroIdentidad)) errors[`guardian_numeroIdentidad_${index}`] = "El DNI debe tener 13 dígitos.";
-    else if (guardianDNIs.has(guardian.numeroIdentidad)) errors[`guardian_numeroIdentidad_${index}`] = "Este DNI ya fue ingresado.";
-    else guardianDNIs.add(guardian.numeroIdentidad);
+    /*if (studentData.recibioEvaluacion && !evaluacionFile) errors.evaluacionFileError = "El archivo de evaluación es obligatorio.";
+    else errors.evaluacionFileError = validateFile(evaluacionFile);*/
+    if (studentData.recibioEvaluacion && evaluacionFile) errors.evaluacionFileError = validateFile(evaluacionFile);
 
-    if (!guardian.telefono.trim()) errors[`guardian_telefono_${index}`] = "El teléfono es obligatorio.";
-    else if (!phoneRegex.test(guardian.telefono)) errors[`guardian_telefono_${index}`] = "El teléfono debe tener 8 dígitos.";
+    const guardianDNIs = new Set<string>();
+    const parentescoCount = { Padre: 0, Madre: 0 };
 
-    if (!guardian.direccionEmergencia.trim()) errors[`guardian_direccionEmergencia_${index}`] = "La dirección es obligatoria.";
-    else if (!addressRegex.test(guardian.direccionEmergencia)) errors[`guardian_direccionEmergencia_${index}`] = "La dirección contiene caracteres no permitidos.";
+    const emailsSet = new Set<string>();
+    guardians.forEach((guardian, index) => {
+      if (!guardian.nombres.trim()) errors[`guardian_nombres_${index}`] = "Los nombres son obligatorios.";
+      else if (!nameRegex.test(guardian.nombres)) errors[`guardian_nombres_${index}`] = "Solo debe contener letras.";
+      if (!guardian.apellidos.trim()) errors[`guardian_apellidos_${index}`] = "Los apellidos son obligatorios.";
+      else if (!nameRegex.test(guardian.apellidos)) errors[`guardian_apellidos_${index}`] = "Solo debe contener letras.";
 
-    if (!guardian.parentesco) errors[`guardian_parentesco_${index}`] = "El parentesco es obligatorio.";
-    else if (guardian.parentesco === 'Padre' || guardian.parentesco === 'Madre') {
-      parentescoCount[guardian.parentesco]++;
-      if (parentescoCount[guardian.parentesco] > 1) {
-        errors[`guardian_parentesco_${index}`] = `Solo se puede registrar un ${guardian.parentesco}.`;
+      if (!guardian.numeroIdentidad.trim()) errors[`guardian_numeroIdentidad_${index}`] = "El DNI es obligatorio.";
+      else if (!dniRegex.test(guardian.numeroIdentidad)) errors[`guardian_numeroIdentidad_${index}`] = "El DNI debe tener 13 dígitos.";
+      else if (guardianDNIs.has(guardian.numeroIdentidad)) errors[`guardian_numeroIdentidad_${index}`] = "Este DNI ya fue ingresado.";
+      else guardianDNIs.add(guardian.numeroIdentidad);
+
+      if (!guardian.telefono.trim()) errors[`guardian_telefono_${index}`] = "El teléfono es obligatorio.";
+      else if (!phoneRegex.test(guardian.telefono)) errors[`guardian_telefono_${index}`] = "El teléfono debe tener 8 dígitos.";
+
+      if (!guardian.direccionEmergencia.trim()) errors[`guardian_direccionEmergencia_${index}`] = "La dirección es obligatoria.";
+      else if (!addressRegex.test(guardian.direccionEmergencia)) errors[`guardian_direccionEmergencia_${index}`] = "La dirección contiene caracteres no permitidos.";
+
+      if (!guardian.parentesco) errors[`guardian_parentesco_${index}`] = "El parentesco es obligatorio.";
+      else if (guardian.parentesco === 'Padre' || guardian.parentesco === 'Madre') {
+        parentescoCount[guardian.parentesco]++;
+        if (parentescoCount[guardian.parentesco] > 1) {
+          errors[`guardian_parentesco_${index}`] = `Solo se puede registrar un ${guardian.parentesco}.`;
+        }
       }
-    }
 
-    if ((guardian.parentesco === 'Tutor_Legal' || guardian.parentesco === 'Otro') && !guardian.parentescoEspecifico) {
-      errors[`guardian_parentescoEspecifico_${index}`] = "Debe especificar el parentesco.";
-    }
+      if ((guardian.parentesco === 'Tutor_Legal' || guardian.parentesco === 'Otro') && !guardian.parentescoEspecifico) {
+        errors[`guardian_parentescoEspecifico_${index}`] = "Debe especificar el parentesco.";
+      }
 
-    // Validación de credenciales opcionales del padre
-    const hasEmail = !!guardian.email && guardian.email.trim().length > 0;
-    const hasPassword = !!guardian.password && guardian.password.trim().length > 0;
-    if (hasEmail || hasPassword) {
-      if (!hasEmail) errors[`guardian_email_${index}`] = 'Debes ingresar el correo.';
-      if (!hasPassword) errors[`guardian_password_${index}`] = 'Debes ingresar la contraseña.';
-    }
-    if (hasEmail) {
-      if (!emailRegex.test(guardian.email!)) errors[`guardian_email_${index}`] = 'Correo inválido.';
-      if (emailsSet.has(guardian.email!)) errors[`guardian_email_${index}`] = 'Este correo ya está repetido.';
-      emailsSet.add(guardian.email!);
-    }
-    if (hasPassword) {
-      if ((guardian.password || '').length < 6) errors[`guardian_password_${index}`] = 'Mínimo 6 caracteres.';
-    }
+      // Validación de credenciales opcionales del padre
+      const hasEmail = !!guardian.email && guardian.email.trim().length > 0;
+      const hasPassword = !!guardian.password && guardian.password.trim().length > 0;
+      if (hasEmail || hasPassword) {
+        if (!hasEmail) errors[`guardian_email_${index}`] = 'Debes ingresar el correo.';
+        if (!hasPassword) errors[`guardian_password_${index}`] = 'Debes ingresar la contraseña.';
+      }
+      if (hasEmail) {
+        if (!emailRegex.test(guardian.email!)) errors[`guardian_email_${index}`] = 'Correo inválido.';
+        if (emailsSet.has(guardian.email!)) errors[`guardian_email_${index}`] = 'Este correo ya está repetido.';
+        emailsSet.add(guardian.email!);
+      }
+      if (hasPassword) {
+        if ((guardian.password || '').length < 6) errors[`guardian_password_${index}`] = 'Mínimo 6 caracteres.';
+      }
 
-    // Archivo de Identidad
-    /*if (!guardianIdFiles[index]) errors[`guardianIdFile_${index}`] = "La copia de identidad es obligatoria.";
-    else errors[`guardianIdFile_${index}`] = validateFile(guardianIdFiles[index]);*/
-    if (guardianIdFiles[index]) errors[`guardianIdFile_${index}`] = validateFile(guardianIdFiles[index]);
-  });
+      // Archivo de Identidad
+      /*if (!guardianIdFiles[index]) errors[`guardianIdFile_${index}`] = "La copia de identidad es obligatoria.";
+      else errors[`guardianIdFile_${index}`] = validateFile(guardianIdFiles[index]);*/
+      if (guardianIdFiles[index]) errors[`guardianIdFile_${index}`] = validateFile(guardianIdFiles[index]);
+    });
 
-  const finalErrors = Object.fromEntries(Object.entries(errors).filter(([_, value]) => value));
-  setFormErrors(finalErrors);
-  return Object.keys(finalErrors).length === 0;
-};
+    const finalErrors = Object.fromEntries(Object.entries(errors).filter(([_, value]) => value));
+    setFormErrors(finalErrors);
+    return Object.keys(finalErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -501,9 +524,8 @@ function MatriculaPage() {
         copiaIdentidadUrl: guardianIdUrls[index]?.filePath || "",
       }));
 
-      const lugarNacimiento = `${
-        municipios.find((m) => m.id === municipio)?.nombre
-      }, ${departamentos.find((d) => d.id === departamento)?.nombre}`;
+      const lugarNacimiento = `${municipios.find((m) => m.id === municipio)?.nombre
+        }, ${departamentos.find((d) => d.id === departamento)?.nombre}`;
 
       const fullMatriculaData = {
         ...studentData,
@@ -585,7 +607,7 @@ function MatriculaPage() {
                 instanceId="depto-select"
                 inputId="departamento"
                 value={deptoOptions.find((d) => d.value === departamento) || null}
-                onChange={(option) => setDepartamento(option?.value || "")}
+                onChange={(option) => { setDepartamento(option?.value || ""); clearFieldError('departamento'); }}
                 options={deptoOptions}
                 placeholder="Busca o selecciona un departamento"
               />
@@ -598,7 +620,7 @@ function MatriculaPage() {
                 instanceId="municipio-select"
                 inputId="municipio"
                 value={municipioOptions.find((m) => m.value === municipio) || null}
-                onChange={(option) => setMunicipio(option?.value || "")}
+                onChange={(option) => { setMunicipio(option?.value || ""); clearFieldError('municipio'); }}
                 options={municipioOptions}
                 placeholder="Busca o selecciona un municipio"
                 isDisabled={!departamento}
@@ -629,13 +651,13 @@ function MatriculaPage() {
               />
               {formErrors.direccion && (<p className="text-red-500 text-sm mt-1">{formErrors.direccion}</p>)}
             </div>
-            
+
             <div>
               <Label htmlFor="genero">Género</Label>
               <Select
                 instanceId="genero-select"
                 inputId="genero"
-                value={ genderOptions.find((o) => o.value === studentData.genero) || null }
+                value={genderOptions.find((o) => o.value === studentData.genero) || null}
                 onChange={(option) => handleStudentSelectChange("genero", option?.value || null)}
                 placeholder=" Selecciona el género "
                 options={genderOptions}
@@ -661,7 +683,7 @@ function MatriculaPage() {
               <Select
                 instanceId="zona-select"
                 inputId="zona"
-                value={ zonaOptions.find((o) => o.value === studentData.zona) || null }
+                value={zonaOptions.find((o) => o.value === studentData.zona) || null}
                 onChange={(option) => handleStudentSelectChange("zona", option?.value || null)}
                 placeholder=" Selecciona la zona "
                 options={zonaOptions}
@@ -674,7 +696,7 @@ function MatriculaPage() {
               <Select
                 instanceId="jornada-select"
                 inputId="jornada"
-                value={ jornadaOptions.find((o) => o.value === studentData.jornada) || null }
+                value={jornadaOptions.find((o) => o.value === studentData.jornada) || null}
                 onChange={(option) => handleStudentSelectChange("jornada", option?.value || null)}
                 placeholder=" Selecciona la jornada "
                 options={jornadaOptions}
@@ -729,29 +751,30 @@ function MatriculaPage() {
                 Subir Partida de Nacimiento
               </Label>
               {partidaFile ? (
-            <div className="flex items-center justify-between p-2 border rounded-md bg-gray-50">
-              <span className="text-sm text-gray-700">{partidaFile.name}</span>
-              <button
-                type="button"
-                onClick={() => setPartidaFile(null)}
-                className="text-red-500 hover:text-red-700"
-                title="Eliminar archivo"
-              >
-                <FaTrash />
-              </button>
-            </div>
-          ) : (
-            <Input
-              id="partidaNacimientoUrl"
-              name="partidaNacimientoUrl"
-              type="file"
-              accept={acceptedFileTypes}
-              onChange={(e) =>
-                setPartidaFile(e.target.files ? e.target.files[0] : null)
-              }
-              className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-200 file:text-violet-700 hover:file:bg-violet-100"
-            />
-          )}
+                <div className="flex items-center justify-between p-2 border rounded-md bg-gray-50">
+                  <span className="text-sm text-gray-700">{partidaFile.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => setPartidaFile(null)}
+                    className="text-red-500 hover:text-red-700"
+                    title="Eliminar archivo"
+                  >
+                    <FaTrash />
+                  </button>
+                </div>
+              ) : (
+                <Input
+                  id="partidaNacimientoUrl"
+                  name="partidaNacimientoUrl"
+                  type="file"
+                  accept={acceptedFileTypes}
+                  onChange={(e) => {
+                    setPartidaFile(e.target.files ? e.target.files[0] : null);
+                    clearFieldError('partidaFileError');
+                  }}
+                  className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-200 file:text-violet-700 hover:file:bg-violet-100"
+                />
+              )}
               {formErrors.partidaFileError && (<p className="text-red-500 text-sm mt-1"> {formErrors.partidaFileError}</p>)}
             </div>
 
@@ -772,30 +795,30 @@ function MatriculaPage() {
                 <Label htmlFor="resultadoEvaluacionUrl">
                   Subir Resultado de Evaluación
                 </Label>
-            {evaluacionFile ? (
-              <div className="flex items-center justify-between p-2 border rounded-md bg-gray-50">
-                <span className="text-sm text-gray-700">{evaluacionFile.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => setEvaluacionFile(null)}
-                    className="text-red-500 hover:text-red-700"
-                    title="Eliminar archivo"
-                    >   
-                    <FaTrash />
-                  </button>
+                {evaluacionFile ? (
+                  <div className="flex items-center justify-between p-2 border rounded-md bg-gray-50">
+                    <span className="text-sm text-gray-700">{evaluacionFile.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => setEvaluacionFile(null)}
+                      className="text-red-500 hover:text-red-700"
+                      title="Eliminar archivo"
+                    >
+                      <FaTrash />
+                    </button>
+                  </div>
+                ) : (
+                  <Input
+                    id="resultadoEvaluacionUrl"
+                    name="resultadoEvaluacionUrl"
+                    type="file"
+                    accept={acceptedFileTypes}
+                    onChange={(e) => { setEvaluacionFile(e.target.files ? e.target.files[0] : null); clearFieldError('evaluacionFileError'); }}
+                    className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-200 file:text-violet-700 hover:file:bg-violet-100"
+                  />
+                )}
+                {formErrors.evaluacionFileError && (<p className="text-red-500 text-sm mt-1">{formErrors.evaluacionFileError} </p>)}
               </div>
-            ) : (
-              <Input
-                id="resultadoEvaluacionUrl"
-                name="resultadoEvaluacionUrl"
-                type="file"
-                accept={acceptedFileTypes}
-                onChange={(e) => setEvaluacionFile(e.target.files ? e.target.files[0] : null)}
-                className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-200 file:text-violet-700 hover:file:bg-violet-100"
-              />
-            )}
-            {formErrors.evaluacionFileError && (<p className="text-red-500 text-sm mt-1">{formErrors.evaluacionFileError} </p>)}
-          </div>
             )}
           </div>
         </fieldset>
@@ -864,10 +887,10 @@ function MatriculaPage() {
             <Select
               instanceId="therapist-matricula-select"
               inputId="therapistId"
-              value={ therapists.map((t) => ({ value: String(t.id), label: t.fullName })).find((o) => o.value === therapistId) || null }
-              onChange={(option) => setTherapistId(option?.value || "")}
+              value={therapists.map((t) => ({ value: String(t.id), label: t.fullName })).find((o) => o.value === therapistId) || null}
+              onChange={(option) => { setTherapistId(option?.value || ""); clearFieldError('therapistId'); }}
               placeholder="Selecciona un terapeuta"
-              options={therapists.map((therapist) => ({value: String(therapist.id),label: therapist.fullName, }))}
+              options={therapists.map((therapist) => ({ value: String(therapist.id), label: therapist.fullName, }))}
             />
             {formErrors.therapistId && (<p className="text-red-500 text-sm mt-1">{formErrors.therapistId}</p>)}
           </div>
@@ -878,8 +901,8 @@ function MatriculaPage() {
             Información de los Padres o Tutores
           </legend>
           <div className="flex justify-between items-center mb-4 gap-4">
-        <p className="text-xs text-gray-500 mt-1">La primera ficha va a ser para el padre principal. </p>
-        <div/>
+            <p className="text-xs text-gray-500 mt-1">La primera ficha va a ser para el padre principal. </p>
+            <div />
           </div>
           {guardians.map((guardian, index) => (
             <div key={index} className="mt-4 p-4 border border-violet-300 rounded-md relative">
@@ -911,7 +934,7 @@ function MatriculaPage() {
                   {formErrors[`guardian_apellidos_${index}`] && (<p className="text-red-500 text-sm mt-1">{formErrors[`guardian_apellidos_${index}`]}</p>)}
                 </div>
 
-                
+
 
                 <div>
                   <Label htmlFor={`g-numeroIdentidad-${index}`}>
@@ -998,13 +1021,13 @@ function MatriculaPage() {
                     options={parentescoOptions}
                   />
                   {formErrors[`guardian_parentesco_${index}`] && (
-                  <p className="text-red-500 text-sm mt-1">{formErrors[`guardian_parentesco_${index}`]}</p>
+                    <p className="text-red-500 text-sm mt-1">{formErrors[`guardian_parentesco_${index}`]}</p>
                   )}
                 </div>
 
                 {(guardian.parentesco === 'Tutor_Legal' || guardian.parentesco === 'Otro') && (
-                <div>
-                  <SelectWithCatalog
+                  <div>
+                    <SelectWithCatalog
                       label="Especifique Parentesco"
                       catalogName="Tipos de Parentesco"
                       instanceId={`g-parentesco-especifico-select-${index}`}
@@ -1016,10 +1039,10 @@ function MatriculaPage() {
                       deleteOptionService={deleteTipoParentesco}
                       placeholder="Seleccione el tipo"
                     />
-                  {formErrors[`guardian_parentescoEspecifico_${index}`] && (
-                  <p className="text-red-500 text-sm mt-1">{formErrors[`guardian_parentescoEspecifico_${index}`]}</p>
-                  )}
-                </div>
+                    {formErrors[`guardian_parentescoEspecifico_${index}`] && (
+                      <p className="text-red-500 text-sm mt-1">{formErrors[`guardian_parentescoEspecifico_${index}`]}</p>
+                    )}
+                  </div>
                 )}
 
                 <div className="md:col-span-2">
@@ -1027,21 +1050,21 @@ function MatriculaPage() {
                     Subir Copia de Identidad
                   </Label>
                   {guardianIdFiles[index] ? (
-                <div className="flex items-center justify-between p-2 border rounded-md bg-gray-50">
-                  <span className="text-sm text-gray-700">{guardianIdFiles[index]?.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                    const newFiles = [...guardianIdFiles];
-                    newFiles[index] = null;
-                    setGuardianIdFiles(newFiles);
-                    }}
-                    className="text-red-500 hover:text-red-700"
-                    title="Eliminar archivo"
-                    >
-                    <FaTrash />
-                  </button>
-                </div>
+                    <div className="flex items-center justify-between p-2 border rounded-md bg-gray-50">
+                      <span className="text-sm text-gray-700">{guardianIdFiles[index]?.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newFiles = [...guardianIdFiles];
+                          newFiles[index] = null;
+                          setGuardianIdFiles(newFiles);
+                        }}
+                        className="text-red-500 hover:text-red-700"
+                        title="Eliminar archivo"
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
                   ) : (
                     <Input
                       id={`g-copiaIdentidadUrl-${index}`}
@@ -1055,7 +1078,7 @@ function MatriculaPage() {
                   {formErrors[`guardianIdFile_${index}`] && (<p className="text-red-500 text-sm mt-1">{formErrors[`guardianIdFile_${index}`]}</p>)}
                 </div>
               </div>
-              
+
               {guardians.length > 1 && (
                 <button
                   type="button"
@@ -1070,21 +1093,21 @@ function MatriculaPage() {
         </fieldset>
 
         <div className="pt-6 flex justify-end gap-6">
-            <button
-              type="button"
-              onClick={addGuardian}
-              className="min-w-[220px] py-3 px-4 text-white font-bold rounded-lg bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md"
-            >
-              <FaPlus className="text-xl" />
-              <span className="text-lg">Crear Nueva Ficha</span>
-            </button>
-            <button
-              type="submit"
-              className="min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md"
-            >
-              Matricular Estudiante
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={addGuardian}
+            className="min-w-[220px] py-3 px-4 text-white font-bold rounded-lg bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md"
+          >
+            <FaPlus className="text-xl" />
+            <span className="text-lg">Crear Nueva Ficha</span>
+          </button>
+          <button
+            type="submit"
+            className="min-w-[220px] py-3 px-8 text-white font-bold rounded-lg bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-md"
+          >
+            Matricular Estudiante
+          </button>
+        </div>
       </form>
 
       {/* 5. Añadir el componente del diálogo al final del JSX */}

@@ -1,5 +1,5 @@
 // frontend/src/components/ui/MultiSelectWithCatalog.tsx
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { FaCog, FaTimes } from 'react-icons/fa';
 import CatalogModal from './CatalogModal';
 
@@ -33,6 +33,21 @@ function MultiSelectWithCatalog({
 }: MultiSelectProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
+  const selectorRef = useRef<HTMLDivElement>(null);
+
+  // Cierra el dropdown al hacer clic fuera del contenedor
+  useEffect(() => {
+    if (!isSelectorOpen) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (selectorRef.current && !selectorRef.current.contains(e.target as Node)) {
+        setIsSelectorOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isSelectorOpen]);
 
   // Filtra los ítems del catálogo que aún no han sido seleccionados
   const availableItems = allItems.filter(
@@ -66,7 +81,7 @@ function MultiSelectWithCatalog({
         ))}
 
         {/* Botón para abrir el selector de ítems */}
-        <div className="relative">
+        <div className="relative" ref={selectorRef}>
           <button
             type="button"
             onClick={() => setIsSelectorOpen(!isSelectorOpen)}
@@ -102,7 +117,7 @@ function MultiSelectWithCatalog({
         onClick={() => setIsModalOpen(true)}
         className="text-sm text-violet-600 hover:underline mt-2 flex items-center gap-1"
       >
-        <FaCog /> Gestionar Catálogo
+        <FaCog /> {catalogTitle}
       </button>
 
       {/* El Modal que creamos en el paso anterior */}
